@@ -76,8 +76,14 @@ if [ $? -eq 0 ]; then
     echo "   4. 確認服務狀態為 'Live'"
     echo "   5. 確認服務 URL 正確"
     echo ""
-    echo "📖 詳細故障排除指南: cat RENDER_TROUBLESHOOTING.md"
-    echo "🔧 運行診斷工具: python diagnose.py [您的實際URL]"
+    echo "� 防止網站休眠 (Render 免費方案30分鐘會自動暫停):"
+    echo "   🛠️  啟動保活服務: ./keep_alive.sh &"
+    echo "   �📖 詳細指南: cat WEBSITE_UPTIME_GUIDE.md"
+    echo ""
+    echo "📖 其他指南:"
+    echo "   • 故障排除: cat RENDER_TROUBLESHOOTING.md"
+    echo "   • 診斷工具: python diagnose.py [您的實際URL]"
+    echo "   • AdSense 設置: cat ADSENSE_READY.md"
     
 else
     echo "❌ 推送失敗！請檢查："
