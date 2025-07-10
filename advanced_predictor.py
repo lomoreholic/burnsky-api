@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, accuracy_score
 import warnings
+import pytz
 warnings.filterwarnings('ignore')
 
 class AdvancedBurnskyPredictor:
@@ -50,10 +51,13 @@ class AdvancedBurnskyPredictor:
             date = datetime.now().date()
         
         try:
+            # 設定香港時區
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
             s = sun(self.hong_kong.observer, date=date)
-            # 轉換為本地時間（香港時間）
-            sunset_time = s['sunset'].astimezone().replace(tzinfo=None)
-            sunrise_time = s['sunrise'].astimezone().replace(tzinfo=None)
+            
+            # 轉換為香港時間
+            sunset_time = s['sunset'].astimezone(hk_tz).replace(tzinfo=None)
+            sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
             
             return {
                 'sunset': sunset_time,
@@ -85,9 +89,12 @@ class AdvancedBurnskyPredictor:
             date = datetime.now().date()
         
         try:
+            # 設定香港時區
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
             s = sun(self.hong_kong.observer, date=date)
-            # 轉換為本地時間（香港時間）
-            sunrise_time = s['sunrise'].astimezone().replace(tzinfo=None)
+            
+            # 轉換為香港時間
+            sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
             
             return {
                 'sunrise': sunrise_time,
@@ -113,10 +120,13 @@ class AdvancedBurnskyPredictor:
             date = datetime.now().date()
         
         try:
+            # 設定香港時區
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
             s = sun(self.hong_kong.observer, date=date)
+            
             # 確保時區正確 - 轉換為香港時間
-            sunrise_time = s['sunrise'].astimezone().replace(tzinfo=None)
-            sunset_time = s['sunset'].astimezone().replace(tzinfo=None)
+            sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
+            sunset_time = s['sunset'].astimezone(hk_tz).replace(tzinfo=None)
             
             return {
                 'sunrise': sunrise_time,
