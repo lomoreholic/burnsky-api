@@ -212,6 +212,16 @@ def api_docs():
     </html>
     """
 
+@app.route("/privacy")
+def privacy():
+    """隱私政策頁面"""
+    return render_template('privacy.html')
+
+@app.route("/terms")
+def terms():
+    """使用條款頁面"""
+    return render_template('terms.html')
+
 @app.route("/test")
 def test():
     """測試路由"""
