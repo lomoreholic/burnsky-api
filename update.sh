@@ -53,22 +53,40 @@ if [ $? -eq 0 ]; then
         echo "⏳ 等待部署完成..."
         echo "   (通常需要 3-5 分鐘)"
         
-        read -p "📱 請輸入你的應用網址: " app_url
+        read -p "📱 請輸入你的應用網址 (留空使用預設): " app_url
         
-        if [ -n "$app_url" ]; then
-            echo ""
-            echo "🧪 正在測試更新後的應用..."
-            python test_deployment.py "$app_url"
+        if [ -z "$app_url" ]; then
+            app_url="https://burnsky-api.onrender.com"
+            echo "🔗 使用預設網址: $app_url"
         fi
+        
+        echo ""
+        echo "🧪 正在測試更新後的應用..."
+        python test_deployment.py "$app_url"
     fi
     
     echo ""
     echo "🎉 更新完成！"
     echo "📱 你的燒天預測系統已自動更新"
+    echo ""
+    echo "🔍 如果網站仍然無法載入，請檢查："
+    echo "   1. Render Dashboard: https://dashboard.render.com/"
+    echo "   2. 等待 3-5 分鐘讓部署完成"
+    echo "   3. 檢查部署日誌是否有錯誤"
+    echo "   4. 確認服務狀態為 'Live'"
+    echo "   5. 確認服務 URL 正確"
+    echo ""
+    echo "📖 詳細故障排除指南: cat RENDER_TROUBLESHOOTING.md"
+    echo "🔧 運行診斷工具: python diagnose.py [您的實際URL]"
     
 else
     echo "❌ 推送失敗！請檢查："
     echo "   1. 網路連接是否正常"
     echo "   2. GitHub 認證是否有效"
     echo "   3. Repository 權限是否正確"
+    echo ""
+    echo "🔧 常見解決方案："
+    echo "   • 重新設定 GitHub 認證: git config --global user.email 'your-email@example.com'"
+    echo "   • 檢查遠端 URL: git remote -v"
+    echo "   • 強制推送 (小心使用): git push --force-with-lease origin main"
 fi
