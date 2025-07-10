@@ -1,5 +1,6 @@
 import math
 from datetime import datetime, time
+import pytz
 from advanced_predictor import AdvancedBurnskyPredictor
 
 # 初始化進階預測器
@@ -100,7 +101,9 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
 
 def calculate_time_factor():
     """計算時間因子 - 日落前後30分鐘得分最高"""
-    now = datetime.now()
+    # 使用香港時區
+    hk_tz = pytz.timezone('Asia/Hong_Kong')
+    now = datetime.now(hk_tz)
     current_hour = now.hour
     current_minute = now.minute
     

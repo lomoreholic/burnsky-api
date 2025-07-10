@@ -48,7 +48,9 @@ class AdvancedBurnskyPredictor:
     def get_sunset_info(self, date=None):
         """獲取精確的日出日落時間"""
         if date is None:
-            date = datetime.now().date()
+            # 使用香港時區的當前日期
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
+            date = datetime.now(hk_tz).date()
         
         try:
             # 設定香港時區
@@ -86,7 +88,9 @@ class AdvancedBurnskyPredictor:
     def get_sunrise_info(self, date=None):
         """獲取精確的日出時間"""
         if date is None:
-            date = datetime.now().date()
+            # 使用香港時區的當前日期
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
+            date = datetime.now(hk_tz).date()
         
         try:
             # 設定香港時區
@@ -117,7 +121,9 @@ class AdvancedBurnskyPredictor:
     def get_sunrise_sunset_info(self, date=None):
         """獲取詳細的日出日落時間信息"""
         if date is None:
-            date = datetime.now().date()
+            # 使用香港時區的當前日期
+            hk_tz = pytz.timezone('Asia/Hong_Kong')
+            date = datetime.now(hk_tz).date()
         
         try:
             # 設定香港時區
@@ -160,7 +166,9 @@ class AdvancedBurnskyPredictor:
     
     def calculate_advanced_time_factor(self, prediction_type='sunset', advance_hours=2):
         """進階時間因子計算 - 基於實際日落時間"""
-        current_time = datetime.now()
+        # 強制使用香港時區
+        hk_tz = pytz.timezone('Asia/Hong_Kong')
+        current_time = datetime.now(hk_tz).replace(tzinfo=None)
         prediction_time = current_time + timedelta(hours=advance_hours)
         
         # 獲取預測時間當天的日出或日落時間

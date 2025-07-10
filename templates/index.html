@@ -302,6 +302,7 @@
         <div class="header">
             <h1>🔥 燒天預測系統</h1>
             <p>基於香港天文台數據的智能燒天預測</p>
+            <div id="currentTime" style="font-size: 1rem; color: #666; margin-top: 10px; font-weight: 500;"></div>
         </div>
         <div class="main-card">
             <div class="loading" id="loading">
@@ -396,6 +397,29 @@
     </div>
 
     <script>
+        // 香港時區處理函數
+        function getHongKongTime() {
+            return new Date().toLocaleString('zh-TW', {
+                timeZone: 'Asia/Hong_Kong',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        function getHongKongTimeShort() {
+            return new Date().toLocaleString('zh-TW', {
+                timeZone: 'Asia/Hong_Kong',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        }
+
         async function loadPrediction() {
             const loading = document.getElementById('loading');
             const content = document.getElementById('content');
@@ -451,9 +475,9 @@
                 // 更新分析摘要
                 updateAnalysisSummary(data.analysis_details.analysis_summary);
                 
-                // 更新時間
+                // 更新時間 - 強制使用香港時區
                 document.getElementById('lastUpdated').textContent = 
-                    `最後更新: ${new Date().toLocaleString('zh-TW')}`;
+                    `最後更新: ${getHongKongTime()} (香港時間)`;
                 
                 loading.style.display = 'none';
                 content.style.display = 'block';
@@ -747,6 +771,29 @@
                 });
             }
         }
+
+        // 更新當前香港時間顯示
+        function updateCurrentTime() {
+            const currentTimeElement = document.getElementById('currentTime');
+            const hkTime = new Date().toLocaleString('zh-TW', {
+                timeZone: 'Asia/Hong_Kong',
+                weekday: 'long',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            currentTimeElement.textContent = `🕐 香港時間: ${hkTime}`;
+        }
+
+        // 每秒更新時間
+        setInterval(updateCurrentTime, 1000);
+        
+        // 頁面載入時立即更新時間
+        updateCurrentTime();
 
         // 頁面載入時自動執行
         document.addEventListener('DOMContentLoaded', loadPrediction);
