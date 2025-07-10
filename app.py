@@ -230,8 +230,7 @@ def test():
 @app.route("/ads.txt")
 def ads_txt():
     """Google AdSense ads.txt 文件"""
-    # 請將 ca-pub-XXXXXXXXXXXXXXXX 替換為您的實際 AdSense 發布商 ID
-    ads_content = "google.com, ca-pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0"
+    ads_content = "google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0"
     return ads_content, 200, {'Content-Type': 'text/plain'}
 
 @app.route("/google<verification_code>.html")
