@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# 🔥 燒天預測系統 - AdSense 快速設置指南
+
+echo "🎯 AdSense 網站驗證 - 快速設置"
+echo "================================"
+echo ""
+echo "您目前在申請 AdSense 帳戶，需要驗證網站所有權。"
+echo "請按照以下步驟操作："
+echo ""
+
+echo "📱 第一步：獲取驗證信息"
+echo "1. 前往 Google AdSense: https://adsense.google.com/"
+echo "2. 登入並點擊 '新增網站'"
+echo "3. 輸入您的網站: https://burnsky-api.onrender.com"
+echo "4. Google 會顯示驗證方法"
+echo ""
+
+echo "📋 第二步：選擇驗證方法"
+echo ""
+echo "方法 A - HTML Meta Tag（推薦）:"
+echo "   如果 Google 顯示類似這樣的代碼："
+echo "   <meta name=\"google-adsense-account\" content=\"ca-pub-1234567890123456\">"
+echo ""
+echo "   請運行："
+echo "   ./verify_adsense.sh meta ca-pub-您的16位數字"
+echo ""
+echo "方法 B - HTML 文件下載:"
+echo "   如果 Google 要求下載 HTML 文件，例如 google123abc.html"
+echo ""
+echo "   請運行："
+echo "   ./verify_adsense.sh file google您的驗證文件名.html"
+echo ""
+
+echo "🚀 第三步：部署更新"
+echo "   ./update.sh"
+echo ""
+
+echo "🧪 第四步：測試驗證"
+echo "   python diagnose.py https://burnsky-api.onrender.com"
+echo ""
+
+echo "✅ 第五步：完成驗證"
+echo "   回到 AdSense 控制台，點擊 '驗證'"
+echo ""
+
+echo "💡 範例操作："
+echo "   假設您的 Publisher ID 是 ca-pub-1234567890123456"
+echo ""
+echo "   1. ./verify_adsense.sh meta ca-pub-1234567890123456"
+echo "   2. ./update.sh"
+echo "   3. 等待 3-5 分鐘"
+echo "   4. 在 AdSense 控制台點擊驗證"
+echo ""
+
+echo "📞 需要幫助？"
+echo "   ./verify_adsense.sh           - 查看完整幫助"
+echo "   ./verify_adsense.sh status    - 查看當前狀態"
+echo "   cat ADSENSE_SETUP_GUIDE.md    - 詳細指南"
+echo ""
+echo "🎉 祝您 AdSense 申請順利！"

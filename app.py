@@ -227,6 +227,117 @@ def test():
     """測試路由"""
     return "Flask 正常運作！免責聲明測試"
 
+@app.route("/ads.txt")
+def ads_txt():
+    """Google AdSense ads.txt 文件"""
+    # 請將 ca-pub-XXXXXXXXXXXXXXXX 替換為您的實際 AdSense 發布商 ID
+    ads_content = "google.com, ca-pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0"
+    return ads_content, 200, {'Content-Type': 'text/plain'}
+
+@app.route("/google<verification_code>.html")
+def google_verification(verification_code):
+    """Google 網站驗證文件路由"""
+    return f"google-site-verification: google{verification_code}.html", 200, {'Content-Type': 'text/plain'}
+
+@app.route("/adsense")
+def adsense_status():
+    """AdSense 設置狀態頁面"""
+    return """
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AdSense 設置狀態 - 燒天預測</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .status { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #007bff; }
+            .success { border-left-color: #28a745; background: #d4edda; }
+            .warning { border-left-color: #ffc107; background: #fff3cd; }
+            .error { border-left-color: #dc3545; background: #f8d7da; }
+            code { background: #e9ecef; padding: 2px 5px; border-radius: 3px; }
+        </style>
+    </head>
+    <body>
+        <h1>🔥 燒天預測系統 - AdSense 設置狀態</h1>
+        
+        <div class="status warning">
+            <h3>⚠️ AdSense 設置待完成</h3>
+            <p>您的網站已準備好 AdSense 驗證，但還需要完成以下步驟：</p>
+        </div>
+        
+        <h3>📋 驗證清單</h3>
+        <ol>
+            <li><strong>ads.txt 文件</strong>: ✅ 已設置 <a href="/ads.txt" target="_blank">/ads.txt</a></li>
+            <li><strong>網站驗證</strong>: ⏳ 等待設置</li>
+            <li><strong>發布商 ID</strong>: ⏳ 等待輸入</li>
+            <li><strong>隱私政策</strong>: ✅ 已設置 <a href="/privacy" target="_blank">/privacy</a></li>
+            <li><strong>使用條款</strong>: ✅ 已設置 <a href="/terms" target="_blank">/terms</a></li>
+        </ol>
+        
+        <h3>🔧 下一步操作</h3>
+        <ol>
+            <li>從 Google AdSense 獲取您的發布商 ID</li>
+            <li>運行設置腳本: <code>./adsense_verify.sh</code></li>
+            <li>在 AdSense 後台添加網站並驗證所有權</li>
+        </ol>
+        
+        <div class="status">
+            <p><strong>網站 URL</strong>: https://burnsky-api.onrender.com</p>
+            <p><strong>驗證文件</strong>: 動態生成 (支援任何 Google 驗證碼)</p>
+            <p><strong>最後更新</strong>: 2025年7月10日</p>
+        </div>
+        
+        <p><a href="/">← 返回主頁</a></p>
+    </body>
+    </html>
+    """
+
+@app.route("/robots.txt")
+def robots_txt():
+    """搜索引擎爬蟲指示文件"""
+    robots_content = """User-agent: *
+Allow: /
+
+# Google AdSense
+User-agent: Mediapartners-Google
+Allow: /
+
+Sitemap: https://burnsky-api.onrender.com/sitemap.xml"""
+    return robots_content, 200, {'Content-Type': 'text/plain'}
+
+@app.route("/sitemap.xml")
+def sitemap():
+    """網站地圖"""
+    sitemap_content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://burnsky-api.onrender.com/</loc>
+        <lastmod>2025-07-10</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>https://burnsky-api.onrender.com/api</loc>
+        <lastmod>2025-07-10</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://burnsky-api.onrender.com/privacy</loc>
+        <lastmod>2025-07-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>https://burnsky-api.onrender.com/terms</loc>
+        <lastmod>2025-07-10</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+</urlset>"""
+    return sitemap_content, 200, {'Content-Type': 'application/xml'}
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get('PORT', 5001))

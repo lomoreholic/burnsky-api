@@ -51,10 +51,12 @@ def main():
     
     # 檢查的 URL 列表
     urls_to_check = [
-        "https://burnsky-predictor.onrender.com",
-        "https://burnsky-predictor.onrender.com/test",
-        "https://burnsky-predictor.onrender.com/predict",
-        "https://burnsky-predictor.onrender.com/api",
+        "https://burnsky-api.onrender.com",
+        "https://burnsky-api.onrender.com/test",
+        "https://burnsky-api.onrender.com/predict",
+        "https://burnsky-api.onrender.com/api",
+        "https://burnsky-api.onrender.com/ads.txt",
+        "https://burnsky-api.onrender.com/robots.txt",
     ]
     
     if len(sys.argv) > 1:
@@ -64,6 +66,8 @@ def main():
             f"{custom_url}/test",
             f"{custom_url}/predict",
             f"{custom_url}/api",
+            f"{custom_url}/ads.txt",
+            f"{custom_url}/robots.txt",
         ]
     
     results = []
