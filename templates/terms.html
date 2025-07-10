@@ -23,6 +23,22 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1240px) {
+            .container {
+                max-width: calc(100% - 40px);
+                margin: 0 auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                max-width: calc(100% - 30px);
+            }
         }
 
         .main-card {
@@ -32,6 +48,16 @@
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.2);
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .main-card {
+                padding: 25px;
+                border-radius: 16px;
+            }
         }
 
         h1, h2 { 
