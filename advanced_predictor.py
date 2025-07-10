@@ -255,7 +255,7 @@ class AdvancedBurnskyPredictor:
                 detected_types.append({
                     'type': keyword,
                     'cloud_type': info['type'],
-                    'score': info['score']
+                    'score': round(info['score'])  # 確保分數是整數
                 })
                 total_score += info['score']
         
