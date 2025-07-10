@@ -1,11 +1,12 @@
-# Render.com 部署配置
-# 用於 Render.com 自動部署
-
-# 安裝依賴
-pip install -r requirements.txt
-
-# 收集靜態文件（如果有的話）
-# python manage.py collectstatic --noinput
-
-# 啟動 Gunicorn 伺服器
-gunicorn app:app --bind 0.0.0.0:$PORT
+services:
+  - type: web
+    name: burnsky-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
