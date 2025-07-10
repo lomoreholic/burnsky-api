@@ -5,33 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>隱私政策 | 燒天預測系統</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
             line-height: 1.6;
-            max-width: 800px;
+        }
+
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            color: #333;
         }
-        h1, h2 { color: #2c3e50; }
-        .header { text-align: center; margin-bottom: 30px; }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        h1, h2 { 
+            color: #2c3e50; 
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: white;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 40px;
+        }
+
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            color: white;
+        }
+        
         .back-link { 
             display: inline-block; 
-            margin: 20px 0; 
+            margin: 0 0 20px 0; 
             color: #3498db; 
-            text-decoration: none; 
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 20px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+            transition: all 0.3s ease;
         }
-        .back-link:hover { text-decoration: underline; }
-        .update-date { color: #666; font-style: italic; }
+        
+        .back-link:hover { 
+            background: rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .update-date { 
+            color: rgba(255, 255, 255, 0.8); 
+            font-style: italic; 
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ol, ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .about-section {
+            background: linear-gradient(135deg, #e8f4f8, #d4f1f4);
+            padding: 25px;
+            border-radius: 16px;
+            margin: 25px 0;
+            border-left: 4px solid #3498db;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.1);
+        }
+
+        .about-section strong {
+            color: #2c3e50;
+        }
+
+        .about-section ul {
+            margin-top: 10px;
+        }
+
+        .about-section li {
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .about-section {
+            background: linear-gradient(135deg, #e8f4f8, #d4f1f4);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔥 燒天預測系統 - 隱私政策</h1>
-        <p class="update-date">最後更新：2025年7月10日</p>
-    </div>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 燒天預測系統 - 隱私政策</h1>
+            <p class="update-date">最後更新：2025年7月10日</p>
+        </div>
 
-    <a href="/" class="back-link">← 返回燒天預測</a>
+        <div class="main-card">
+            <a href="/" class="back-link">← 返回燒天預測</a>
 
     <h2>1. 資料收集</h2>
     <p>我們的燒天預測系統收集以下資料：</p>
@@ -117,6 +215,21 @@
     <h2>9. 政策更新</h2>
     <p>我們可能會不時更新此隱私政策。重大變更將在網站上公佈，並更新「最後更新」日期。繼續使用我們的服務即表示您接受更新後的政策。</p>
 
+    <h2>關於我們</h2>
+    <div class="about-section">
+        <p><strong>千始創意</strong>是一家專注於氣象科技創新的香港公司，致力於為用戶提供精確且實用的天氣預測服務。</p>
+        <p><strong>我們的使命：</strong>運用先進的機器學習技術和香港天文台的權威數據，為香港市民提供最準確的「燒天」預測，讓每個人都能捕捉到這份大自然的美麗。</p>
+        <p><strong>技術特色：</strong></p>
+        <ul>
+            <li>🤖 先進的機器學習預測算法</li>
+            <li>📊 整合香港天文台官方數據</li>
+            <li>🌅 精確的日出日落時間計算</li>
+            <li>☁️ 智能雲層類型分析</li>
+            <li>📱 響應式設計，支援各種設備</li>
+        </ul>
+        <p><strong>服務承諾：</strong>我們承諾保護用戶隱私，嚴格遵守香港法律法規，並持續改進服務品質。</p>
+    </div>
+
     <h2>10. 聯絡我們</h2>
     <p>如果您對此隱私政策或我們的資料處理方式有任何疑問，請聯絡我們：</p>
     <ul>
@@ -130,5 +243,7 @@
     </div>
 
     <a href="/" class="back-link">← 返回燒天預測</a>
+        </div>
+    </div>
 </body>
 </html>
