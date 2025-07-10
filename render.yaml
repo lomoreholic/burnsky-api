@@ -1,0 +1,11 @@
+# Render.com 部署配置
+# 用於 Render.com 自動部署
+
+# 安裝依賴
+pip install -r requirements.txt
+
+# 收集靜態文件（如果有的話）
+# python manage.py collectstatic --noinput
+
+# 啟動 Gunicorn 伺服器
+gunicorn app:app --bind 0.0.0.0:$PORT

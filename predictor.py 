@@ -1,0 +1,22 @@
+def calculate_burnsky_score(weather_data, sun_data):
+    score = 0
+
+    # 雲量適中（假設 30–70 為理想）
+    cloud = weather_data.get("cloud_amount", 50)
+    if 30 <= cloud <= 70:
+        score += 30
+
+    # 濕度適中（假設 50–80 為理想）
+    humidity = weather_data.get("humidity", 70)
+    if 50 <= humidity <= 80:
+        score += 20
+
+    # 能見度高（假設 > 8km）
+    visibility = weather_data.get("visibility", 10)
+    if visibility and float(visibility) > 8:
+        score += 20
+
+    # 日落時間接近（可加入時間判斷）
+    score += 30  # 暫時固定加分
+
+    return score
