@@ -167,7 +167,7 @@ def calculate_temperature_factor(weather_data):
             score = 2
             description += " (溫度過高或過低)"
         
-        return {'score': score, 'description': description, 'temperature': hko_temp}
+        return {'score': round(score), 'description': description, 'temperature': hko_temp}
     
     except Exception as e:
         return {'score': 0, 'description': f'溫度數據解析錯誤: {str(e)}'}
@@ -205,7 +205,7 @@ def calculate_humidity_factor(weather_data):
             score = 5
             description += " (濕度過高或過低)"
         
-        return {'score': score, 'description': description, 'humidity': hko_humidity}
+        return {'score': round(score), 'description': description, 'humidity': hko_humidity}
     
     except Exception as e:
         return {'score': 0, 'description': f'濕度數據解析錯誤: {str(e)}'}
@@ -247,7 +247,7 @@ def calculate_visibility_factor(weather_data):
             score -= 5
             description += "，有天氣警告"
         
-        return {'score': max(0, score), 'description': description}
+        return {'score': round(max(0, score)), 'description': description}
     
     except Exception as e:
         return {'score': 5, 'description': f'能見度評估錯誤: {str(e)}'}
@@ -278,7 +278,7 @@ def calculate_weather_description_factor(forecast_data):
         score = 5
         description += " (不利燒天條件)"
     
-    return {'score': score, 'description': description}
+    return {'score': round(score), 'description': description}
 
 def calculate_uv_factor(weather_data):
     """計算UV指數因子 - 高UV表示日照充足"""
@@ -307,7 +307,7 @@ def calculate_uv_factor(weather_data):
             score = 2
             description += " (低，日照不足)"
         
-        return {'score': score, 'description': description, 'uv_index': uv_value}
+        return {'score': round(score), 'description': description, 'uv_index': uv_value}
     
     except Exception as e:
         return {'score': 0, 'description': f'UV指數解析錯誤: {str(e)}'}

@@ -184,37 +184,53 @@ class AdvancedBurnskyPredictor:
             time_str = time_info['sunset_str']
         
         # 計算預測時間與目標時間的差距（分鐘）
-        time_diff_minutes = abs((prediction_time - target_time).total_seconds() / 60)
+        time_diff_signed = (target_time - prediction_time).total_seconds() / 60  # 正數表示還未到時間，負數表示已過時間
+        time_diff_minutes = abs(time_diff_signed)
+        
+        # 生成清楚的時間描述
+        if time_diff_signed > 0:
+            hours = int(time_diff_signed // 60)
+            minutes = int(time_diff_signed % 60)
+            if hours > 0:
+                time_desc = f"還有 {hours}小時{minutes}分鐘 到{time_label}"
+            else:
+                time_desc = f"還有 {minutes}分鐘 到{time_label}"
+        else:
+            hours = int(time_diff_minutes // 60)
+            minutes = int(time_diff_minutes % 60)
+            if hours > 0:
+                time_desc = f"{time_label}已過 {hours}小時{minutes}分鐘"
+            else:
+                time_desc = f"{time_label}已過 {minutes}分鐘"
         
         # 評分邏輯 - 基於預測時間是否接近燒天最佳時段
         if time_diff_minutes <= 30:  # 目標時間前後30分鐘
             score = 20
-            description = f"黃金時段！預測時間距離{time_label}({time_str}) {int(time_diff_minutes)}分鐘"
+            description = f"黃金時段！{time_desc}({time_str})"
         elif time_diff_minutes <= 60:  # 目標時間前後1小時
             score = 15
-            description = f"良好時段，預測時間距離{time_label}({time_str}) {int(time_diff_minutes)}分鐘"
+            description = f"良好時段，{time_desc}({time_str})"
         elif time_diff_minutes <= 120:  # 目標時間前後2小時
             score = 10
-            description = f"可接受時段，預測時間距離{time_label}({time_str}) {int(time_diff_minutes)}分鐘"
+            description = f"可接受時段，{time_desc}({time_str})"
         else:
             score = 5
-            description = f"非理想時段，預測時間距離{time_label}({time_str}) {int(time_diff_minutes)}分鐘"
+            description = f"非理想時段，{time_desc}({time_str})"
         
         # 額外加分：最佳時段
-        time_diff_signed = (prediction_time - target_time).total_seconds() / 60
         if prediction_type == 'sunset':
             # 日落前15分鐘到日落後45分鐘為最佳
-            if -15 <= time_diff_signed <= 45:
+            if -15 <= -time_diff_signed <= 45:  # 注意符號，因為 time_diff_signed 定義相反
                 score += 5
                 description += " (最佳燒天時段)"
         else:  # sunrise
             # 日出前45分鐘到日出後15分鐘為最佳
-            if -45 <= time_diff_signed <= 15:
+            if -45 <= -time_diff_signed <= 15:
                 score += 5
                 description += " (最佳燒天時段)"
         
         return {
-            'score': min(25, score),  # 最高25分
+            'score': round(min(25, score)),  # 最高25分，round成整數
             'description': description,
             'target_time': time_str,
             'target_type': time_label,
@@ -282,7 +298,7 @@ class AdvancedBurnskyPredictor:
             analysis += f" | 不利條件: {', '.join(unfavorable)}"
         
         return {
-            'score': final_score,
+            'score': round(final_score),  # round成整數
             'description': analysis,
             'detected_types': detected_types,
             'favorable_conditions': burnsky_favorable,
@@ -537,7 +553,7 @@ class AdvancedBurnskyPredictor:
         importance = dict(zip(feature_names, self.regression_model.feature_importances_))
         
         return {
-            'ml_burnsky_score': max(0, min(100, regression_pred)),
+            'ml_burnsky_score': round(max(0, min(100, regression_pred))),  # round成整數
             'ml_class': classification_pred,
             'ml_class_probabilities': {
                 'low': classification_proba[0],
