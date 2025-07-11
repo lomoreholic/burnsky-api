@@ -61,6 +61,15 @@ class AdvancedBurnskyPredictor:
             sunset_time = s['sunset'].astimezone(hk_tz).replace(tzinfo=None)
             sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
             
+            # 修復 astral 庫的日期錯誤：確保時間在正確的日期
+            if sunset_time.date() != date:
+                correct_sunset = datetime.combine(date, sunset_time.time())
+                sunset_time = correct_sunset
+            
+            if sunrise_time.date() != date:
+                correct_sunrise = datetime.combine(date, sunrise_time.time())
+                sunrise_time = correct_sunrise
+            
             return {
                 'sunset': sunset_time,
                 'sunrise': sunrise_time,
@@ -100,6 +109,12 @@ class AdvancedBurnskyPredictor:
             # 轉換為香港時間
             sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
             
+            # 修復 astral 庫的日期錯誤：確保日出時間在正確的日期
+            if sunrise_time.date() != date:
+                # 如果 astral 返回的日期不對，手動調整到正確日期
+                correct_sunrise = datetime.combine(date, sunrise_time.time())
+                sunrise_time = correct_sunrise
+            
             return {
                 'sunrise': sunrise_time,
                 'sunrise_str': sunrise_time.strftime('%H:%M')
@@ -133,6 +148,17 @@ class AdvancedBurnskyPredictor:
             # 確保時區正確 - 轉換為香港時間
             sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
             sunset_time = s['sunset'].astimezone(hk_tz).replace(tzinfo=None)
+            
+            # 修復 astral 庫的日期錯誤：確保時間在正確的日期
+            if sunrise_time.date() != date:
+                # 如果 astral 返回的日期不對，手動調整到正確日期
+                correct_sunrise = datetime.combine(date, sunrise_time.time())
+                sunrise_time = correct_sunrise
+            
+            if sunset_time.date() != date:
+                # 如果 astral 返回的日期不對，手動調整到正確日期
+                correct_sunset = datetime.combine(date, sunset_time.time())
+                sunset_time = correct_sunset
             
             return {
                 'sunrise': sunrise_time,
@@ -172,16 +198,24 @@ class AdvancedBurnskyPredictor:
         prediction_time = current_time + timedelta(hours=advance_hours)
         
         # 獲取預測時間當天的日出或日落時間
+        prediction_date = prediction_time.date()
+        
         if prediction_type == 'sunrise':
-            time_info = self.get_sunrise_info(prediction_time.date())
+            time_info = self.get_sunrise_info(prediction_date)
             target_time = time_info['sunrise']
             time_label = '日出'
             time_str = time_info['sunrise_str']
         else:  # sunset
-            time_info = self.get_sunset_info(prediction_time.date())
+            time_info = self.get_sunset_info(prediction_date)
             target_time = time_info['sunset']
             time_label = '日落'
             time_str = time_info['sunset_str']
+        
+        # 確保target_time是在預測日期的正確時間
+        if target_time.date() != prediction_date:
+            # 如果日期不匹配，手動校正
+            correct_time = datetime.combine(prediction_date, target_time.time())
+            target_time = correct_time
         
         # 計算預測時間與目標時間的差距（分鐘）
         time_diff_signed = (target_time - prediction_time).total_seconds() / 60  # 正數表示還未到時間，負數表示已過時間
@@ -231,13 +265,32 @@ class AdvancedBurnskyPredictor:
                     score += 3
                     description += " (燒天持續時段)"
         else:  # sunrise
-            # 日出前45分鐘到日出後15分鐘為最佳
-            if -45 <= -time_diff_signed <= 15:
-                score += 5
-                description += " (最佳燒天時段)"
+            # 日出前1小時到日出後15分鐘為最佳，日出前1小時特別加分
+            if -60 <= -time_diff_signed <= 15:  
+                if -60 <= -time_diff_signed <= -30:  # 日出前1小時到30分鐘，特別加分
+                    score += 10  # 提升日出前黃金時段分數
+                    description += " (日出前黃金預測時段⭐)"
+                elif -30 <= -time_diff_signed <= 0:  # 日出前30分鐘到日出
+                    score += 7  # 稍微提升分數
+                    description += " (最佳燒天時段)"
+                else:  # 日出後
+                    score += 4  # 稍微提升分數
+                    description += " (燒天持續時段)"
+        
+        # 早晨專屬加分 - 日出前特殊條件
+        if prediction_type == 'sunrise':
+            # 檢查是否為最佳早晨時段（6:00-7:30）
+            if 6 <= prediction_time.hour <= 7 and prediction_time.minute <= 30:
+                score += 2
+                description += " 🌅"
+            
+            # 日出前1小時15分鐘到45分鐘是最理想的預測時段
+            if -75 <= -time_diff_signed <= -45:
+                score += 3
+                description += " (超級預測時段)"
         
         return {
-            'score': round(min(25, score)),  # 最高25分，round成整數
+            'score': round(min(28, score)),  # 提升最高分數到28分
             'description': description,
             'target_time': time_str,
             'target_type': time_label,
