@@ -217,12 +217,19 @@ class AdvancedBurnskyPredictor:
             score = 5
             description = f"非理想時段，{time_desc}({time_str})"
         
-        # 額外加分：最佳時段
+        # 額外加分：最佳時段 - 優化日落前1小時預測
         if prediction_type == 'sunset':
-            # 日落前15分鐘到日落後45分鐘為最佳
-            if -15 <= -time_diff_signed <= 45:  # 注意符號，因為 time_diff_signed 定義相反
-                score += 5
-                description += " (最佳燒天時段)"
+            # 日落前1小時到日落後45分鐘為最佳，日落前1小時特別加分
+            if -60 <= -time_diff_signed <= 45:  
+                if -60 <= -time_diff_signed <= -30:  # 日落前1小時到30分鐘，特別加分
+                    score += 8
+                    description += " (日落前黃金預測時段)"
+                elif -30 <= -time_diff_signed <= 0:  # 日落前30分鐘到日落
+                    score += 5
+                    description += " (最佳燒天時段)"
+                else:  # 日落後
+                    score += 3
+                    description += " (燒天持續時段)"
         else:  # sunrise
             # 日出前45分鐘到日出後15分鐘為最佳
             if -45 <= -time_diff_signed <= 15:
