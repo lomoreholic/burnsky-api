@@ -4,10 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Google AdSense 驗證標籤 -->
+    <!-- SEO 基本標籤 -->
+    <title>燒天預測系統 | 香港日落火燒雲預測 | BurnSky AI 人工智能天氣分析</title>
+    <meta name="description" content="香港最精準的燒天預測系統！結合AI人工智能與氣象數據，實時預測日落火燒雲機率。提供詳細分析因子、天氣數據和拍攝建議，是攝影愛好者的必備工具。">
+    <meta name="keywords" content="燒天預測,火燒雲,日落,香港天氣,攝影,天空,雲層分析,AI預測,人工智能,天氣預報,BurnSky">
+    <meta name="author" content="BurnSky Team">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="zh-TW">
+    <meta name="revisit-after" content="1 days">
+    
+    <!-- Open Graph 社交媒體標籤 -->
+    <meta property="og:title" content="燒天預測系統 | 香港日落火燒雲AI預測">
+    <meta property="og:description" content="香港最精準的燒天預測系統！結合AI與氣象數據，實時預測日落火燒雲機率，提供專業拍攝建議。">
+    <meta property="og:image" content="https://burnsky-api.onrender.com/static/burnsky-og-image.jpg">
+    <meta property="og:url" content="https://burnsky-api.onrender.com">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="BurnSky 燒天預測系統">
+    <meta property="og:locale" content="zh_TW">
+    
+    <!-- Twitter Card 標籤 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="燒天預測系統 | 香港日落火燒雲AI預測">
+    <meta name="twitter:description" content="香港最精準的燒天預測系統！結合AI與氣象數據，實時預測日落火燒雲機率。">
+    <meta name="twitter:image" content="https://burnsky-api.onrender.com/static/burnsky-og-image.jpg">
+    <meta name="twitter:site" content="@BurnSkyHK">
+    
+    <!-- 網站驗證標籤 -->
+    <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE">
     <meta name="google-adsense-account" content="ca-pub-3552699426860096">
     
-    <title>燒天預測系統 | BurnSky Predictor</title>
+    <!-- 結構化數據 - JSON-LD -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "BurnSky 燒天預測系統",
+        "description": "香港最精準的燒天預測系統，結合AI人工智能與氣象數據，實時預測日落火燒雲機率",
+        "url": "https://burnsky-api.onrender.com",
+        "applicationCategory": "Weather Application",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "HKD"
+        },
+        "creator": {
+            "@type": "Organization",
+            "name": "BurnSky Team",
+            "url": "https://burnsky-api.onrender.com"
+        },
+        "keywords": "燒天預測,火燒雲,日落,香港天氣,攝影,AI預測",
+        "inLanguage": "zh-TW",
+        "isAccessibleForFree": true,
+        "potentialAction": {
+            "@type": "UseAction",
+            "target": "https://burnsky-api.onrender.com"
+        }
+    }
+    </script>
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://burnsky-api.onrender.com">
+    
+    <!-- 網站圖標 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    
+    <!-- 預載入重要資源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <style>
         * {
             margin: 0;
@@ -29,6 +95,9 @@
             padding: 20px;
             width: 100%;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         @media (max-width: 1240px) {
@@ -41,7 +110,7 @@
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
-                max-width: calc(100% - 30px);
+                max-width: calc(100% - 20px);
             }
         }
 
@@ -73,6 +142,7 @@
             margin-bottom: 30px;
             border: 1px solid rgba(255,255,255,0.2);
             width: 100%;
+            max-width: 900px;
             box-sizing: border-box;
         }
 
@@ -80,6 +150,7 @@
             .main-card {
                 padding: 25px;
                 border-radius: 16px;
+                max-width: 100%;
             }
         }
 
@@ -163,9 +234,22 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
-        .refresh-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        /* 只在非觸控設備上啟用 hover 效果 */
+        @media (hover: hover) and (pointer: fine) {
+            .refresh-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            }
+        }
+
+        /* 手機版按鈕優化 */
+        @media (max-width: 768px) {
+            .refresh-btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 200px;
+            }
         }
 
         .analysis-grid {
@@ -174,6 +258,20 @@
             gap: 25px;
             margin-top: 40px;
             margin-bottom: 30px;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin-top: 30px;
+                margin-bottom: 20px;
+                padding: 0 10px;
+            }
         }
 
         .factor-card {
@@ -183,14 +281,36 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.08);
             border-left: 4px solid #667eea;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer;
             position: relative;
             overflow: hidden;
         }
 
-        .factor-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        /* 只在非觸控設備上啟用 hover 效果 */
+        @media (hover: hover) and (pointer: fine) {
+            .factor-card {
+                cursor: pointer;
+            }
+            
+            .factor-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            }
+            
+            .factor-card:hover .factor-description {
+                opacity: 1;
+                max-height: 200px;
+                transform: translateY(0);
+            }
+        }
+
+        /* 手機版始終顯示說明文字 */
+        @media (max-width: 768px) {
+            .factor-description {
+                opacity: 1 !important;
+                max-height: none !important;
+                transform: translateY(0) !important;
+                margin-top: 15px;
+            }
         }
 
         .factor-header {
@@ -224,12 +344,6 @@
             transform: translateY(-10px);
             transition: opacity 0.3s ease, max-height 0.3s ease, transform 0.3s ease;
             overflow: hidden;
-        }
-
-        .factor-card:hover .factor-description {
-            opacity: 1;
-            max-height: 200px;
-            transform: translateY(0);
         }
 
         .summary-section {
@@ -275,6 +389,15 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .weather-data {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
         }
 
         .weather-card {
@@ -286,9 +409,12 @@
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .weather-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        /* 只在非觸控設備上啟用 hover 效果 */
+        @media (hover: hover) and (pointer: fine) {
+            .weather-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+            }
         }
 
         .weather-icon {
@@ -343,9 +469,15 @@
                 font-size: 2.5rem;
             }
             
+            .header p {
+                font-size: 1.1rem;
+                margin-bottom: 20px;
+            }
+            
             .main-card {
                 padding: 25px;
-                margin: 10px;
+                border-radius: 16px;
+                max-width: 100%;
             }
             
             .score-circle {
@@ -361,56 +493,93 @@
             .score-number {
                 font-size: 2.2rem;
             }
+            
+            .prediction-level {
+                font-size: 1.5rem;
+                padding: 12px 20px;
+            }
+            
+            .refresh-btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 200px;
+            }
+            
+            .factor-description {
+                opacity: 1 !important;
+                max-height: none !important;
+                transform: translateY(0) !important;
+                margin-top: 15px;
+            }
+            
+            .analysis-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin-top: 30px;
+                margin-bottom: 20px;
+                padding: 0 10px;
+            }
+            
+            .weather-data {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <!-- 主要標題區域 -->
+        <header class="header">
             <h1>🔥 燒天預測系統</h1>
             <p>基於香港天文台數據的智能燒天預測</p>
             <div id="currentTime" style="font-size: 1rem; color: #666; margin-top: 10px; font-weight: 500;"></div>
-        </div>
+        </header>
         
-        <!-- 頂部廣告位置 -->
-        <div class="main-card" style="background: rgba(248, 249, 250, 0.95); text-align: center; padding: 20px;">
+        <!-- 廣告區域 -->
+        <aside class="main-card" style="background: rgba(248, 249, 250, 0.95); text-align: center; padding: 20px;">
             <small style="color: #6c757d; border: 1px dashed #dee2e6; padding: 10px 20px; border-radius: 8px; display: inline-block;">
                 廣告位置（等待 AdSense 審核通過）
             </small>
-        </div>
+        </aside>
 
-        <div class="main-card">
+        <!-- 主要應用程式內容 -->
+        <main class="main-card" role="main">
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>正在分析天氣數據...</p>
             </div>
 
             <div id="content" style="display: none;">
-                <div class="prediction-section">
+                <!-- 預測結果區域 -->
+                <section class="prediction-section" aria-labelledby="prediction-title">
+                    <h2 id="prediction-title" style="display: none;">燒天預測結果</h2>
                     <div class="score-display">
                         <div class="score-circle">
                             <div class="score-inner">
-                                <div class="score-number" id="scoreNumber">--</div>
+                                <div class="score-number" id="scoreNumber" aria-live="polite">--</div>
                                 <div class="score-label">燒天指數</div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="prediction-level" id="predictionLevel">載入中...</div>
-                    <div class="probability" id="probability">計算中...</div>
+                    <div class="prediction-level" id="predictionLevel" aria-live="polite">載入中...</div>
+                    <div class="probability" id="probability" aria-live="polite">計算中...</div>
                     
-                    <!-- 預測選項控制項 -->
+                    <!-- 預測控制項 -->
                     <div class="prediction-controls" style="margin: 20px 0; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap;">
-                        <div class="control-group">
-                            <label for="predictionType" style="font-weight: 600; color: #333; margin-right: 8px;">預測類型:</label>
-                            <select id="predictionType" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem;">
+                        <div class="control-group" style="text-align: center; min-width: 150px;">
+                            <label for="predictionType" style="font-weight: 600; color: #333; margin-right: 8px; display: block; margin-bottom: 5px;">預測類型:</label>
+                            <select id="predictionType" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem; width: 100%;" aria-describedby="prediction-type-help">
                                 <option value="sunset">🌅 日落燒天</option>
                                 <option value="sunrise">🌄 日出燒天</option>
                             </select>
+                            <small id="prediction-type-help" style="display: none;">選擇預測日出或日落燒天</small>
                         </div>
-                        <div class="control-group">
-                            <label for="advanceHours" style="font-weight: 600; color: #333; margin-right: 8px;">提前時間:</label>
-                            <select id="advanceHours" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem;">
+                        <div class="control-group" style="text-align: center; min-width: 150px;">
+                            <label for="advanceHours" style="font-weight: 600; color: #333; margin-right: 8px; display: block; margin-bottom: 5px;">提前時間:</label>
+                            <select id="advanceHours" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem; width: 100%;" aria-describedby="advance-hours-help">
                                 <option value="0">⏰ 即時預測</option>
                                 <option value="1">⏰ 1小時後</option>
                                 <option value="2" selected>⏰ 2小時後</option>
@@ -420,29 +589,35 @@
                                 <option value="8">⏰ 8小時後</option>
                                 <option value="12">⏰ 12小時後</option>
                             </select>
+                            <small id="advance-hours-help" style="display: none;">選擇提前預測的時間</small>
                         </div>
                     </div>
                     
-                    <button class="refresh-btn" onclick="loadPrediction()">
+                    <button class="refresh-btn" onclick="loadPrediction()" aria-label="重新載入燒天預測">
                         🔄 重新預測
                     </button>
-                </div>
+                </section>
 
-                <div class="weather-section">
-                    <div class="weather-title">🌦️ 天氣數據</div>
-                    <div class="weather-data" id="weatherData">
+                <!-- 天氣數據區域 -->
+                <section class="weather-section" aria-labelledby="weather-title">
+                    <h2 class="weather-title" id="weather-title">🌦️ 天氣數據</h2>
+                    <div class="weather-data" id="weatherData" role="region" aria-live="polite">
                         <!-- 天氣數據將動態載入 -->
                     </div>
-                </div>
+                </section>
 
-                <div class="summary-section">
-                    <div class="summary-title">💡 智能分析摘要</div>
-                    <div id="analysisSummary">
+                <!-- 智能分析摘要區域 -->
+                <section class="summary-section" aria-labelledby="summary-title">
+                    <h2 class="summary-title" id="summary-title">💡 智能分析摘要</h2>
+                    <div id="analysisSummary" role="region" aria-live="polite">
                         <!-- 分析摘要將動態載入 -->
                     </div>
-                </div>
+                </section>
 
-                <div class="analysis-grid" id="analysisGrid">
+                <!-- 分析因子區域 -->
+                <section aria-labelledby="factors-title">
+                    <h2 id="factors-title" style="text-align: center; color: #333; margin: 30px 0 20px; font-size: 1.4rem;">📊 詳細分析因子</h2>
+                    <div class="analysis-grid" id="analysisGrid" role="region" aria-live="polite">
                     <!-- 分析因子將動態載入 -->
                 </div>
 
@@ -1010,5 +1185,22 @@
         // 每5分鐘自動更新
         setInterval(loadPrediction, 300000);
     </script>
+    
+    <!-- 頁腳 -->
+    <footer style="text-align: center; padding: 30px 0; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.2);">
+        <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+            <p>© 2025 BurnSky 燒天預測系統 | 基於香港天文台開放數據</p>
+            <p style="margin: 10px 0;">
+                <a href="/privacy" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 10px;">私隱政策</a>
+                <a href="/terms" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 10px;">使用條款</a>
+                <a href="mailto:contact@burnsky.hk" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 10px;">聯絡我們</a>
+            </p>
+            <p style="font-size: 0.8rem; margin-top: 15px;">
+                🌅 讓科技與自然美景相遇 | Made with ❤️ in Hong Kong
+            </p>
+        </div>
+    </footer>
+        </main>
+    </div>
 </body>
 </html>

@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# 主要頁面
+Allow: /
+Allow: /predict*
+Allow: /privacy
+Allow: /terms
+
+# 靜態資源
+Allow: /static/
+
+# 禁止抓取的路徑
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /api/internal/
+
+# 網站地圖
+Sitemap: https://burnsky-api.onrender.com/static/sitemap.xml
+
+# 抓取延遲 (建議)
+Crawl-delay: 1
