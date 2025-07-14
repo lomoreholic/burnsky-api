@@ -73,8 +73,8 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
         traditional_score = score
         ml_score = ml_result['ml_burnsky_score']
         
-        # 加權平均 (傳統算法 60%, 機器學習 40%)
-        final_score = traditional_score * 0.6 + ml_score * 0.4
+        # 加權平均 (傳統算法 40%, 機器學習 60%)
+        final_score = traditional_score * 0.4 + ml_score * 0.6
         
         details['score_breakdown'] = {
             'traditional_score': traditional_score,
@@ -500,8 +500,8 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
             # 提前預測時更依賴機器學習
             final_score = traditional_score * 0.4 + ml_score * 0.6
         else:
-            # 即時預測時平衡權重
-            final_score = traditional_score * 0.6 + ml_score * 0.4
+            # 即時預測時也以機器學習為主
+            final_score = traditional_score * 0.4 + ml_score * 0.6
         
         details['score_breakdown'] = {
             'traditional_score': traditional_score,
