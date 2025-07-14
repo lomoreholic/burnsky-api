@@ -266,15 +266,15 @@ class AdvancedBurnskyPredictor:
                     description += " (燒天持續時段)"
         else:  # sunrise
             # 日出前1小時到日出後15分鐘為最佳，日出前1小時特別加分
-            if -60 <= -time_diff_signed <= 15:  
-                if -60 <= -time_diff_signed <= -30:  # 日出前1小時到30分鐘，特別加分
-                    score += 10  # 提升日出前黃金時段分數
-                    description += " (日出前黃金預測時段⭐)"
-                elif -30 <= -time_diff_signed <= 0:  # 日出前30分鐘到日出
-                    score += 7  # 稍微提升分數
+            if -90 <= -time_diff_signed <= 15:  
+                if -90 <= -time_diff_signed <= -45:  # 日出前1.5小時到45分鐘，黃金預測時段
+                    score += 10  # 大幅加分，與日落保持一致
+                    description += " ⭐黃金預測時段⭐"
+                elif -45 <= -time_diff_signed <= 0:  # 日出前45分鐘到日出
+                    score += 7
                     description += " (最佳燒天時段)"
                 else:  # 日出後
-                    score += 4  # 稍微提升分數
+                    score += 4
                     description += " (燒天持續時段)"
         
         # 早晨專屬加分 - 日出前特殊條件
