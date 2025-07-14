@@ -303,9 +303,28 @@
             }
         }
 
-        /* 手機版始終顯示說明文字 */
+        /* 手機版點擊切換功能 */
         @media (max-width: 768px) {
-            .factor-description {
+            .factor-card {
+                cursor: pointer;
+                position: relative;
+            }
+            
+            .factor-card::after {
+                content: '👆 點擊查看詳情';
+                position: absolute;
+                bottom: 10px;
+                right: 15px;
+                font-size: 0.7rem;
+                color: #999;
+                opacity: 0.8;
+            }
+            
+            .factor-card.expanded::after {
+                content: '👆 點擊收起';
+            }
+            
+            .factor-card.expanded .factor-description {
                 opacity: 1 !important;
                 max-height: none !important;
                 transform: translateY(0) !important;
@@ -417,6 +436,19 @@
             }
         }
 
+        /* 手機版天氣卡片點擊效果 */
+        @media (max-width: 768px) {
+            .weather-card {
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            
+            .weather-card:active {
+                transform: scale(0.98);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            }
+        }
+
         .weather-icon {
             font-size: 2.5rem;
             margin-bottom: 10px;
@@ -504,13 +536,6 @@
                 font-size: 1rem;
                 width: 100%;
                 max-width: 200px;
-            }
-            
-            .factor-description {
-                opacity: 1 !important;
-                max-height: none !important;
-                transform: translateY(0) !important;
-                margin-top: 15px;
             }
             
             .analysis-grid {
@@ -820,6 +845,15 @@
                 }
             };
             
+            // 手機版點擊切換功能
+            function addMobileToggle(card) {
+                if (window.innerWidth <= 768) {
+                    card.addEventListener('click', function() {
+                        this.classList.toggle('expanded');
+                    });
+                }
+            }
+            
             // 添加評分分解卡片
             if (details.score_breakdown) {
                 const breakdown = details.score_breakdown;
@@ -840,6 +874,7 @@
                         <br><small style="color: #888; font-style: italic;">📊 結合傳統天氣分析（60%權重）與AI機器學習（40%權重）的智能綜合評分，融合多種氣象因子預測</small>
                     </div>
                 `;
+                addMobileToggle(card);
                 grid.appendChild(card);
             }
             
@@ -905,6 +940,7 @@
                             </div>
                         `;
                     }
+                    addMobileToggle(card);
                     grid.appendChild(card);
                 }
             }
@@ -930,6 +966,7 @@
                         <br><small style="color: #888; font-style: italic;">🤖 基於歷史氣象數據訓練的機器學習模型，分析複雜氣象模式進行分類預測</small>
                     </div>
                 `;
+                addMobileToggle(mlCard);
                 grid.appendChild(mlCard);
             }
             
@@ -954,6 +991,7 @@
                         <br><small style="color: #888; font-style: italic;">🔥 根據氣象條件預測燒天強度等級，評估最佳拍攝時機與效果</small>
                     </div>
                 `;
+                addMobileToggle(intensityCard);
                 grid.appendChild(intensityCard);
             }
             
@@ -989,6 +1027,7 @@
                         <br><small style="color: #888; font-style: italic;">🎨 分析大氣散射條件，預測燒天可能呈現的色彩效果與變化趨勢</small>
                     </div>
                 `;
+                addMobileToggle(colorCard);
                 grid.appendChild(colorCard);
             }
         }
