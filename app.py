@@ -4,6 +4,8 @@ from predictor import calculate_burnsky_score
 from forecast_extractor import forecast_extractor
 import numpy as np
 import os
+from datetime import datetime
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -224,6 +226,16 @@ def api_info():
     }
     
     return jsonify(api_docs)
+
+@app.route("/health")
+def health_check():
+    """健康檢查端點 - 用於Render監控"""
+    return jsonify({
+        "status": "healthy",
+        "service": "燒天預測 API",
+        "version": "2.0",
+        "timestamp": datetime.now().isoformat()
+    })
 
 # SEO 和合規性路由
 @app.route('/robots.txt')
