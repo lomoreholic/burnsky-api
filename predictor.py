@@ -532,17 +532,31 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
     # 確保分數在0-100範圍內
     final_score = max(0, min(100, final_score))
     
-    # 8. 燒天程度預測
+    # 8. 新增：雲層厚度與顏色可見度分析
+    cloud_visibility_result = advanced_predictor.analyze_cloud_thickness_and_color_visibility(weather_data, forecast_data)
+    details['cloud_visibility_analysis'] = cloud_visibility_result
+    
+    # 根據雲層厚度調整分數
+    if cloud_visibility_result['color_visibility_percentage'] < 30:
+        # 厚雲天氣，降低整體分數但提供替代價值
+        score = score * 0.8  # 輕微降分
+        details['cloud_visibility_analysis']['score_adjustment'] = '厚雲天氣調整：專注明暗變化'
+    elif cloud_visibility_result['color_visibility_percentage'] > 80:
+        # 極佳顏色條件，輕微加分
+        score = score * 1.1
+        details['cloud_visibility_analysis']['score_adjustment'] = '極佳顏色條件加分'
+    
+    # 9. 燒天程度預測
     intensity_prediction = advanced_predictor.predict_burnsky_intensity(final_score)
     details['intensity_prediction'] = intensity_prediction
     
-    # 9. 燒天顏色預測
+    # 10. 燒天顏色預測
     color_prediction = advanced_predictor.predict_burnsky_colors(
         weather_data, forecast_data, final_score
     )
     details['color_prediction'] = color_prediction
     
-    # 10. 生成進階分析摘要
+    # 生成進階分析摘要
     details['total_score'] = final_score
     details['analysis_summary'] = generate_analysis_summary_enhanced(details)
     

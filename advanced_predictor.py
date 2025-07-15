@@ -868,3 +868,312 @@ class AdvancedBurnskyPredictor:
         }
         
         return {name: color_map.get(name, '#FFFFFF') for name in color_names if name in color_map}
+    
+    def analyze_cloud_thickness_and_color_visibility(self, weather_data, forecast_data):
+        """
+        分析雲層厚度和顏色可見度 - 增強版
+        區分「顏色燒天」vs「明暗燒天」
+        整合衛星雲圖分析技術
+        """
+        # 首先使用原有邏輯作為基礎
+        analysis = {
+            'cloud_thickness_level': 'unknown',
+            'color_visibility_percentage': 50,
+            'visibility_type': 'mixed',
+            'photography_type': 'standard',
+            'specific_recommendations': [],
+            'color_expectations': [],
+            'technical_details': {},
+            'satellite_analysis': None,  # 新增衛星分析結果
+            'enhanced_accuracy': False   # 是否使用了增強分析
+        }
+        
+        try:
+            # 1. 嘗試載入衛星雲圖分析器
+            try:
+                from satellite_cloud_analyzer import SatelliteCloudAnalyzer
+                satellite_analyzer = SatelliteCloudAnalyzer()
+                
+                # 執行深度衛星分析
+                satellite_result = satellite_analyzer.analyze_real_time_cloud_conditions(
+                    weather_data, forecast_data
+                )
+                
+                if satellite_result and satellite_result.get('data_confidence', 0) > 60:
+                    # 衛星數據可信度足夠，使用增強分析
+                    analysis = self._integrate_satellite_analysis(analysis, satellite_result)
+                    analysis['enhanced_accuracy'] = True
+                    analysis['satellite_analysis'] = satellite_result
+                else:
+                    # 回退到原有分析方法
+                    analysis = self._perform_basic_cloud_analysis(analysis, weather_data, forecast_data)
+                    
+            except ImportError:
+                # 衛星分析模組不可用，使用原有方法
+                analysis = self._perform_basic_cloud_analysis(analysis, weather_data, forecast_data)
+                
+        except Exception as e:
+            analysis['error'] = f'雲層厚度分析失敗: {str(e)}'
+            # 提供基本預設值
+            analysis.update({
+                'cloud_thickness_level': 'moderate',
+                'color_visibility_percentage': 50,
+                'visibility_type': 'mixed',
+                'photography_type': 'standard',
+                'specific_recommendations': ['⚠️ 分析系統暫時不可用，建議結合實際觀察'],
+                'color_expectations': ['請參考實時天空狀況'],
+                'technical_details': {'error': str(e)}
+            })
+        
+        return analysis
+    
+    def _integrate_satellite_analysis(self, base_analysis, satellite_result):
+        """整合衛星分析結果到基礎分析中"""
+        # 從衛星分析獲取更準確的數據
+        visibility_prediction = satellite_result.get('visibility_prediction', {})
+        cloud_analysis = satellite_result.get('cloud_analysis', {})
+        burnsky_suitability = satellite_result.get('burnsky_suitability', {})
+        photography_guidance = satellite_result.get('photography_guidance', {})
+        
+        # 更新顏色可見度
+        color_visibility = visibility_prediction.get('color_visibility_percentage', 50)
+        base_analysis['color_visibility_percentage'] = color_visibility
+        
+        # 根據衛星數據確定雲層厚度等級
+        cloud_coverage = cloud_analysis.get('coverage_estimate', 50)
+        dominant_type = cloud_analysis.get('dominant_type', 'unknown')
+        
+        if cloud_coverage <= 20 and dominant_type in ['clear', 'cirrus']:
+            base_analysis['cloud_thickness_level'] = 'clear_to_thin'
+            base_analysis['visibility_type'] = 'excellent_colors'
+            base_analysis['photography_type'] = 'color_focused'
+        elif cloud_coverage <= 50 and dominant_type in ['cumulus', 'mixed']:
+            base_analysis['cloud_thickness_level'] = 'moderate'
+            base_analysis['visibility_type'] = 'good_colors'
+            base_analysis['photography_type'] = 'color_with_drama'
+        elif cloud_coverage <= 80:
+            base_analysis['cloud_thickness_level'] = 'thick'
+            base_analysis['visibility_type'] = 'limited_colors'
+            base_analysis['photography_type'] = 'contrast_focused'
+        else:
+            base_analysis['cloud_thickness_level'] = 'very_thick_overcast'
+            base_analysis['visibility_type'] = 'brightness_only'
+            base_analysis['photography_type'] = 'silhouette_only'
+        
+        # 從攝影指導獲取建議
+        if photography_guidance.get('composition_tips'):
+            base_analysis['specific_recommendations'] = photography_guidance['composition_tips'][:4]
+        
+        # 從可見度預測獲取顏色期望
+        if visibility_prediction.get('dominant_colors_expected'):
+            base_analysis['color_expectations'] = visibility_prediction['dominant_colors_expected']
+        
+        # 詳細技術資訊
+        base_analysis['technical_details'] = {
+            'satellite_confidence': satellite_result.get('data_confidence', 0),
+            'cloud_coverage': cloud_coverage,
+            'dominant_cloud_type': dominant_type,
+            'atmospheric_transparency': satellite_result.get('visibility_prediction', {}).get('transparency_percentage', 50),
+            'analysis_method': 'satellite_enhanced'
+        }
+        
+        # 根據適宜度添加特殊建議
+        suitability_level = burnsky_suitability.get('suitability_level', 'moderate')
+        if suitability_level == 'excellent':
+            base_analysis['specific_recommendations'].insert(0, '🌟 衛星數據顯示絕佳條件！')
+        elif suitability_level == 'poor':
+            base_analysis['specific_recommendations'].insert(0, '📡 衛星分析建議等待更好時機')
+        
+        return base_analysis
+    
+    def _perform_basic_cloud_analysis(self, analysis, weather_data, forecast_data):
+        """執行基礎雲層分析（原有邏輯的重構版本）"""
+        try:
+            # 1. 基於天氣描述判斷雲層厚度
+            cloud_analysis = self._analyze_weather_description_for_thickness(forecast_data)
+            
+            # 2. 基於氣象數據推斷雲層密度  
+            density_analysis = self._analyze_meteorological_density(weather_data)
+            
+            # 3. 綜合評估
+            combined_score = (cloud_analysis['score'] + density_analysis['score']) / 2
+            
+            # 4. 確定雲層厚度等級（沿用原有邏輯）
+            if combined_score >= 80:
+                analysis.update({
+                    'cloud_thickness_level': 'clear_to_thin',
+                    'color_visibility_percentage': 90,
+                    'visibility_type': 'excellent_colors',
+                    'photography_type': 'color_focused',
+                    'color_expectations': ['金色', '橙色', '紅色', '紫色', '粉紅色'],
+                    'specific_recommendations': [
+                        '🎨 絕佳顏色燒天條件！',
+                        '📸 建議拍攝：全彩色漸變、雲彩細節、倒影效果',
+                        '⏰ 可預期：持續15-30分鐘的豐富色彩變化',
+                        '🌈 色溫變化：3000K → 2000K → 1800K'
+                    ]
+                })
+            elif combined_score >= 60:
+                analysis.update({
+                    'cloud_thickness_level': 'moderate',
+                    'color_visibility_percentage': 65,
+                    'visibility_type': 'good_colors',
+                    'photography_type': 'color_with_drama',
+                    'color_expectations': ['橙色', '紅色', '深紅色'],
+                    'specific_recommendations': [
+                        '🌅 良好顏色燒天條件',
+                        '📸 建議拍攝：主要色彩、雲層輪廓、剪影效果',
+                        '⏰ 可預期：10-20分鐘的明顯色彩',
+                        '🎭 適合：戲劇性構圖'
+                    ]
+                })
+            elif combined_score >= 40:
+                analysis.update({
+                    'cloud_thickness_level': 'thick',
+                    'color_visibility_percentage': 30,
+                    'visibility_type': 'limited_colors',
+                    'photography_type': 'contrast_focused',
+                    'color_expectations': ['淡橙色', '暗紅色'],
+                    'specific_recommendations': [
+                        '🌫️ 厚雲條件，以明暗對比為主',
+                        '📸 建議拍攝：剪影、雲層紋理、明暗層次',
+                        '⏰ 可預期：微弱色彩，強烈明暗變化',
+                        '🖤 適合：黑白攝影、情緒氛圍'
+                    ]
+                })
+            else:
+                analysis.update({
+                    'cloud_thickness_level': 'very_thick_overcast',
+                    'color_visibility_percentage': 10,
+                    'visibility_type': 'brightness_only',
+                    'photography_type': 'silhouette_only',
+                    'color_expectations': ['極微弱色彩'],
+                    'specific_recommendations': [
+                        '☁️ 密雲天氣，主要為明暗變化',
+                        '📸 建議拍攝：純剪影、雲層動態、光線穿透',
+                        '⏰ 可預期：5-10分鐘的亮度變化',
+                        '🌆 適合：極簡構圖、形狀表現'
+                    ]
+                })
+            
+            # 5. 技術細節
+            analysis['technical_details'] = {
+                'weather_score': cloud_analysis['score'],
+                'density_score': density_analysis['score'],
+                'combined_score': combined_score,
+                'factors': cloud_analysis['factors'] + density_analysis['factors'],
+                'analysis_method': 'basic_meteorological'
+            }
+            
+        except Exception as e:
+            analysis['error'] = f'基礎雲層分析失敗: {str(e)}'
+        
+        return analysis
+
+    def _analyze_weather_description_for_thickness(self, forecast_data):
+        """分析天氣描述以評估雲層厚度"""
+        analysis = {
+            'score': 50,  # 預設中等分數
+            'factors': [],
+            'keywords_found': []
+        }
+        
+        if not forecast_data or 'forecastDesc' not in forecast_data:
+            analysis['factors'].append('天氣描述資料不可用')
+            return analysis
+        
+        description = forecast_data['forecastDesc'].lower()
+        
+        # 雲層相關關鍵詞與分數
+        cloud_keywords = {
+            # 晴朗天氣 (高分數)
+            '晴朗': 95, '天晴': 90, '晴天': 88,
+            
+            # 部分雲層 (中高分數)
+            '部分時間有陽光': 75, '短暫時間有陽光': 65, '間中有陽光': 70,
+            
+            # 多雲 (中等分數)
+            '多雲': 45, '大致多雲': 35, '主要多雲': 30,
+            
+            # 密雲與惡劣天氣 (低分數)
+            '密雲': 15, '陰天': 20, '大致陰天': 25,
+            '雷暴': 10, '雨': 10, '大雨': 5, '暴雨': 5,
+            '薄霧': 30, '霧': 20, '濃霧': 10
+        }
+        
+        # 檢查關鍵詞
+        matched_scores = []
+        for keyword, score in cloud_keywords.items():
+            if keyword in description:
+                matched_scores.append(score)
+                analysis['keywords_found'].append(keyword)
+                analysis['factors'].append(f'檢測到: {keyword} (分數: {score})')
+        
+        # 計算最終分數
+        if matched_scores:
+            # 如果找到多個關鍵詞，取平均值但偏向較低分數（保守預測）
+            analysis['score'] = (min(matched_scores) * 0.6 + max(matched_scores) * 0.4)
+        else:
+            analysis['factors'].append('未檢測到明確雲層關鍵詞，使用預設分數')
+        
+        return analysis
+    
+    def _analyze_meteorological_density(self, weather_data):
+        """基於氣象數據分析雲層密度"""
+        analysis = {
+            'score': 50,  # 預設分數
+            'factors': [],
+            'measurements': {}
+        }
+        
+        factors_scores = []
+        
+        try:
+            # 1. UV指數分析 (反映雲層遮蔽)
+            if weather_data.get('uvindex') and weather_data['uvindex'].get('data'):
+                uv_data = weather_data['uvindex']['data']
+                if uv_data and len(uv_data) > 0:
+                    uv_value = uv_data[0].get('value', 0)
+                    # UV指數越高，雲層遮蔽越少
+                    uv_score = min(100, uv_value * 12)  # UV8+ = 96分
+                    factors_scores.append(uv_score)
+                    analysis['measurements']['uv_index'] = uv_value
+                    analysis['factors'].append(f'UV指數: {uv_value} (雲層透明度分數: {uv_score:.1f})')
+            
+            # 2. 濕度分析
+            if weather_data.get('humidity') and weather_data['humidity'].get('data'):
+                hko_humidity = next((h for h in weather_data['humidity']['data'] 
+                                   if h.get('place') == '香港天文台'), None)
+                if hko_humidity:
+                    humidity = hko_humidity.get('value', 70)
+                    # 濕度影響能見度與雲層形成
+                    humidity_score = max(10, 110 - humidity)  # 濕度越低分數越高
+                    factors_scores.append(humidity_score)
+                    analysis['measurements']['humidity'] = humidity
+                    analysis['factors'].append(f'濕度: {humidity}% (能見度分數: {humidity_score:.1f})')
+            
+            # 3. 降雨量分析
+            if weather_data.get('rainfall') and weather_data['rainfall'].get('data'):
+                total_rainfall = sum(r.get('value', 0) for r in weather_data['rainfall']['data'] 
+                                   if isinstance(r, dict))
+                if total_rainfall > 0:
+                    # 降雨表示有厚雲層
+                    rain_score = max(5, 60 - total_rainfall * 10)
+                    factors_scores.append(rain_score)
+                    analysis['measurements']['rainfall'] = total_rainfall
+                    analysis['factors'].append(f'降雨量: {total_rainfall}mm (雲層分數: {rain_score:.1f})')
+                else:
+                    # 無降雨是好徵象
+                    factors_scores.append(75)
+                    analysis['factors'].append('無降雨 (有利於燒天)')
+            
+            # 4. 計算綜合分數
+            if factors_scores:
+                analysis['score'] = sum(factors_scores) / len(factors_scores)
+            else:
+                analysis['factors'].append('氣象數據不完整，使用預設分數')
+                
+        except Exception as e:
+            analysis['factors'].append(f'氣象數據分析錯誤: {str(e)}')
+        
+        return analysis

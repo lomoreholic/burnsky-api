@@ -996,6 +996,76 @@
                 grid.appendChild(intensityCard);
             }
             
+            // 添加雲層厚度與顏色可見度分析卡片
+            if (details.cloud_visibility_analysis) {
+                const cloudVisibilityCard = document.createElement('div');
+                cloudVisibilityCard.className = 'factor-card';
+                cloudVisibilityCard.style.borderLeft = '4px solid #74b9ff';
+                const analysis = details.cloud_visibility_analysis;
+                
+                // 顏色可見度百分比圓環
+                const visibilityPercentage = analysis.color_visibility_percentage || 50;
+                const visibilityCircle = `
+                    <div style="display: inline-block; margin: 10px 0;">
+                        <svg width="60" height="60" style="transform: rotate(-90deg);">
+                            <circle cx="30" cy="30" r="25" fill="none" stroke="#e1e5e9" stroke-width="5"/>
+                            <circle cx="30" cy="30" r="25" fill="none" stroke="${visibilityPercentage >= 70 ? '#00b894' : visibilityPercentage >= 40 ? '#fdcb6e' : '#e17055'}" 
+                                stroke-width="5" stroke-dasharray="${visibilityPercentage * 1.57} 157" stroke-linecap="round"/>
+                        </svg>
+                        <div style="margin-top: 5px; text-align: center; font-size: 0.9rem; font-weight: bold;">
+                            ${visibilityPercentage}%<br><small>顏色可見度</small>
+                        </div>
+                    </div>
+                `;
+                
+                // 攝影建議圖示
+                const photographyIcon = analysis.photography_type === 'color_focused' ? '🌈' : 
+                                      analysis.photography_type === 'contrast_focused' ? '🌫️' : 
+                                      analysis.photography_type === 'silhouette_only' ? '🖤' : '📸';
+                
+                // 雲層等級描述
+                const cloudLevelDesc = analysis.cloud_thickness_level === 'clear_to_thin' ? '☀️ 清晰至薄雲' : 
+                                     analysis.cloud_thickness_level === 'moderate' ? '⛅ 中等雲量' : 
+                                     analysis.cloud_thickness_level === 'thick' ? '☁️ 厚雲' : 
+                                     analysis.cloud_thickness_level === 'very_thick_overcast' ? '🌫️ 密雲' : '❓ 未知';
+                
+                // 預期效果描述
+                const effectDesc = analysis.visibility_type === 'excellent_colors' ? '🌈 絕佳顏色燒天' : 
+                                 analysis.visibility_type === 'good_colors' ? '🌅 良好顏色燒天' : 
+                                 analysis.visibility_type === 'limited_colors' ? '🌤️ 有限顏色，主要明暗' : 
+                                 analysis.visibility_type === 'brightness_only' ? '🌆 純明暗變化' : '🔄 混合效果';
+                
+                // 攝影類型描述
+                const photoTypeDesc = analysis.photography_type === 'color_focused' ? '顏色為主' : 
+                                     analysis.photography_type === 'contrast_focused' ? '對比為主' : 
+                                     analysis.photography_type === 'silhouette_only' ? '剪影專用' : '標準拍攝';
+                
+                cloudVisibilityCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            ☁️ 雲層厚度分析 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                        </div>
+                        <div class="factor-score">${Math.round(analysis.technical_details?.combined_score || 50)}分</div>
+                    </div>
+                    <div class="factor-description">
+                        ${visibilityCircle}
+                        <strong>雲層等級:</strong> ${cloudLevelDesc}<br>
+                        <strong>預期效果:</strong> ${effectDesc}<br>
+                        <strong>攝影類型:</strong> ${photographyIcon} ${photoTypeDesc}<br>
+                        ${analysis.specific_recommendations && analysis.specific_recommendations.length > 0 ? 
+                          `<div style="margin-top: 10px; padding: 10px; background: rgba(116, 185, 255, 0.1); border-radius: 8px; font-size: 0.9rem;">
+                             <strong>專業建議:</strong><br>
+                             ${analysis.specific_recommendations.slice(0, 2).join('<br>')}
+                           </div>` : ''}
+                        ${analysis.score_adjustment ? 
+                          `<br><small style="color: #666; font-style: italic;">⚙️ ${analysis.score_adjustment}</small>` : ''}
+                        <br><small style="color: #888; font-style: italic;">☁️ 基於氣象數據分析雲層厚度，區分顏色燒天與明暗燒天效果</small>
+                    </div>
+                `;
+                addMobileToggle(cloudVisibilityCard);
+                grid.appendChild(cloudVisibilityCard);
+            }
+
             // 添加顏色預測卡片
             if (details.color_prediction) {
                 const colorCard = document.createElement('div');
