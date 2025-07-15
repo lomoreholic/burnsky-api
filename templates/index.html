@@ -971,6 +971,39 @@
                 grid.appendChild(mlCard);
             }
             
+            // 添加機器學習特徵重要性卡片
+            if (details.ml_prediction && details.ml_prediction.feature_importance) {
+                const featureCard = document.createElement('div');
+                featureCard.className = 'factor-card';
+                featureCard.style.borderLeft = '4px solid #6c5ce7';
+                const importance = details.ml_prediction.feature_importance;
+                
+                // 按重要性排序前5個特徵
+                const sortedFeatures = Object.entries(importance)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 5);
+                
+                const featureList = sortedFeatures.map(([feature, value]) => 
+                    `<small>• ${feature}: ${Math.round(value * 100)}%</small>`
+                ).join('<br>');
+                
+                featureCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            🎯 AI特徵重要性 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                        </div>
+                        <div class="factor-score">TOP 5</div>
+                    </div>
+                    <div class="factor-description">
+                        <strong>影響燒天機率的關鍵因子：</strong><br>
+                        ${featureList}
+                        <br><small style="color: #888; font-style: italic;">🎯 機器學習模型分析各氣象因子對燒天預測的貢獻程度</small>
+                    </div>
+                `;
+                addMobileToggle(featureCard);
+                grid.appendChild(featureCard);
+            }
+            
             // 添加燒天程度預測卡片
             if (details.intensity_prediction) {
                 const intensityCard = document.createElement('div');
@@ -1040,18 +1073,32 @@
                                      analysis.photography_type === 'contrast_focused' ? '對比為主' : 
                                      analysis.photography_type === 'silhouette_only' ? '剪影專用' : '標準拍攝';
                 
+                // 檢查是否有衛星分析數據
+                const satelliteInfo = analysis.satellite_analysis ? 
+                    `<div style="margin-top: 8px; padding: 8px; background: rgba(0, 255, 127, 0.1); border-radius: 6px; border-left: 3px solid #00ff7f;">
+                        <small style="color: #00aa55; font-weight: bold;">📡 衛星數據增強</small><br>
+                        <small style="color: #666;">可信度: ${analysis.satellite_analysis.data_confidence || 0}% | 
+                        雲覆蓋: ${analysis.satellite_analysis.cloud_analysis?.coverage_estimate || 'N/A'}%</small>
+                     </div>` : '';
+                
+                const analysisMethod = analysis.enhanced_accuracy ? 
+                    '<span style="color: #00aa55; font-weight: bold;">📡 衛星增強分析</span>' : 
+                    '<span style="color: #666;">📊 基礎氣象分析</span>';
+
                 cloudVisibilityCard.innerHTML = `
                     <div class="factor-header">
                         <div class="factor-name">
                             ☁️ 雲層厚度分析 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                         </div>
-                        <div class="factor-score">${Math.round(analysis.technical_details?.combined_score || 50)}分</div>
+                        <div class="factor-score">${Math.round(analysis.technical_details?.combined_score || 50)}/100分</div>
                     </div>
                     <div class="factor-description">
                         ${visibilityCircle}
                         <strong>雲層等級:</strong> ${cloudLevelDesc}<br>
                         <strong>預期效果:</strong> ${effectDesc}<br>
                         <strong>攝影類型:</strong> ${photographyIcon} ${photoTypeDesc}<br>
+                        <strong>分析方式:</strong> ${analysisMethod}<br>
+                        ${satelliteInfo}
                         ${analysis.specific_recommendations && analysis.specific_recommendations.length > 0 ? 
                           `<div style="margin-top: 10px; padding: 10px; background: rgba(116, 185, 255, 0.1); border-radius: 8px; font-size: 0.9rem;">
                              <strong>專業建議:</strong><br>
@@ -1064,6 +1111,182 @@
                 `;
                 addMobileToggle(cloudVisibilityCard);
                 grid.appendChild(cloudVisibilityCard);
+            }
+
+            // 添加衛星分析專用卡片（如果有衛星數據）
+            if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.satellite_analysis) {
+                const satelliteCard = document.createElement('div');
+                satelliteCard.className = 'factor-card';
+                satelliteCard.style.borderLeft = '4px solid #00ff7f';
+                
+                const satellite = details.cloud_thickness_analysis.satellite_analysis;
+                
+                // 可信度顏色
+                const confidenceColor = (satellite.data_confidence || 0) >= 80 ? '#00aa55' : 
+                                       (satellite.data_confidence || 0) >= 60 ? '#ffaa00' : '#ff5555';
+                
+                satelliteCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            📡 衛星雲圖分析 <span style="opacity: 0.6; font-size: 0.8em;">🛰️</span>
+                        </div>
+                        <div class="factor-score" style="color: ${confidenceColor};">${satellite.data_confidence || 0}%</div>
+                    </div>
+                    <div class="factor-description">
+                        <strong>數據可信度:</strong> <span style="color: ${confidenceColor}; font-weight: bold;">${satellite.data_confidence || 0}%</span><br>
+                        ${satellite.cloud_analysis ? `<strong>雲覆蓋率:</strong> ${satellite.cloud_analysis.coverage_estimate}%<br>` : ''}
+                        ${satellite.cloud_analysis ? `<strong>主要雲型:</strong> ${satellite.cloud_analysis.dominant_type}<br>` : ''}
+                        ${satellite.visibility_prediction ? `<strong>透明度:</strong> ${satellite.visibility_prediction.transparency_percentage}%<br>` : ''}
+                        ${satellite.burnsky_suitability ? `<strong>燒天適宜度:</strong> ${satellite.burnsky_suitability.suitability_level}<br>` : ''}
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(0, 255, 127, 0.05); border-radius: 6px;">
+                            <small style="color: #00aa55; font-weight: bold;">🛰️ 即時衛星數據增強預測準確度</small>
+                        </div>
+                        <br><small style="color: #888; font-style: italic;">🛰️ 結合即時衛星雲圖數據，提供更精確的雲層厚度與燒天預測</small>
+                    </div>
+                `;
+                addMobileToggle(satelliteCard);
+                grid.appendChild(satelliteCard);
+            }
+            
+            // 添加詳細攝影指導卡片
+            if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.photography_guidance) {
+                const photographyCard = document.createElement('div');
+                photographyCard.className = 'factor-card';
+                photographyCard.style.borderLeft = '4px solid #fd79a8';
+                
+                const guidance = details.cloud_thickness_analysis.photography_guidance;
+                
+                // 設備建議
+                const equipmentSuggestions = guidance.equipment_suggestions ? 
+                    guidance.equipment_suggestions.slice(0, 3).join('<br>') : '標準攝影設備';
+                
+                // 構圖提示
+                const compositionTips = guidance.composition_tips ? 
+                    guidance.composition_tips.slice(0, 3).join('<br>') : '基本構圖建議';
+                
+                // 拍攝設定
+                const settings = guidance.recommended_settings || {};
+                const settingsText = Object.entries(settings)
+                    .slice(0, 3)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join('<br>');
+                
+                photographyCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            📸 專業攝影指導 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                        </div>
+                        <div class="factor-score">PRO</div>
+                    </div>
+                    <div class="factor-description">
+                        <div style="margin-bottom: 8px;">
+                            <strong>📱 設備建議:</strong><br>
+                            <small>${equipmentSuggestions}</small>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>🎨 構圖技巧:</strong><br>
+                            <small>${compositionTips}</small>
+                        </div>
+                        ${settingsText ? `
+                        <div style="margin-bottom: 8px;">
+                            <strong>⚙️ 拍攝設定:</strong><br>
+                            <small>${settingsText}</small>
+                        </div>` : ''}
+                        <br><small style="color: #888; font-style: italic;">📸 基於當前氣象條件量身定制的專業攝影建議</small>
+                    </div>
+                `;
+                addMobileToggle(photographyCard);
+                grid.appendChild(photographyCard);
+            }
+            
+            // 添加燒天適宜度評估卡片
+            if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.burnsky_suitability) {
+                const suitabilityCard = document.createElement('div');
+                suitabilityCard.className = 'factor-card';
+                suitabilityCard.style.borderLeft = '4px solid #fdcb6e';
+                
+                const suitability = details.cloud_thickness_analysis.burnsky_suitability;
+                
+                // 適宜度等級顏色
+                const levelColor = suitability.suitability_level === 'excellent' ? '#00b894' :
+                                 suitability.suitability_level === 'very_good' ? '#00cec9' :
+                                 suitability.suitability_level === 'moderate' ? '#fdcb6e' :
+                                 suitability.suitability_level === 'limited' ? '#e17055' : '#d63031';
+                
+                // 適宜度等級文字
+                const levelText = suitability.suitability_level === 'excellent' ? '🔥 絕佳' :
+                                suitability.suitability_level === 'very_good' ? '🌅 優良' :
+                                suitability.suitability_level === 'moderate' ? '🌤️ 中等' :
+                                suitability.suitability_level === 'limited' ? '🌫️ 有限' : '❌ 不佳';
+                
+                suitabilityCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            🎯 燒天適宜度評估 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                        </div>
+                        <div class="factor-score" style="color: ${levelColor};">${levelText}</div>
+                    </div>
+                    <div class="factor-description">
+                        <strong>適宜度等級:</strong> <span style="color: ${levelColor}; font-weight: bold;">${levelText}</span><br>
+                        <strong>成功機率:</strong> ${suitability.probability || 'N/A'}<br>
+                        <strong>預期品質:</strong> ${suitability.expected_quality || 'N/A'}<br>
+                        <div style="margin-top: 10px; padding: 8px; background: rgba(253, 203, 110, 0.1); border-radius: 8px;">
+                            <strong>💡 建議:</strong><br>
+                            <small>${suitability.recommendation || '基於當前條件進行拍攝'}</small>
+                        </div>
+                        <br><small style="color: #888; font-style: italic;">🎯 綜合氣象與衛星數據，評估當前燒天拍攝的成功機率</small>
+                    </div>
+                `;
+                addMobileToggle(suitabilityCard);
+                grid.appendChild(suitabilityCard);
+            }
+            
+            // 添加技術詳情卡片
+            if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.technical_details) {
+                const technicalCard = document.createElement('div');
+                technicalCard.className = 'factor-card';
+                technicalCard.style.borderLeft = '4px solid #74b9ff';
+                
+                const technical = details.cloud_thickness_analysis.technical_details;
+                
+                // 顯示主要技術指標
+                const technicalMetrics = [];
+                if (technical.atmospheric_transparency) technicalMetrics.push(`大氣透明度: ${Math.round(technical.atmospheric_transparency)}%`);
+                if (technical.cloud_coverage_factor) technicalMetrics.push(`雲量影響: ${Math.round(technical.cloud_coverage_factor * 100)}%`);
+                if (technical.visibility_confidence) technicalMetrics.push(`可信度: ${Math.round(technical.visibility_confidence * 100)}%`);
+                if (technical.combined_score) technicalMetrics.push(`綜合評分: ${Math.round(technical.combined_score)}/100`);
+                
+                const metricsText = technicalMetrics.length > 0 ? 
+                    technicalMetrics.map(metric => `<small>• ${metric}</small>`).join('<br>') :
+                    '<small>• 基本技術分析</small>';
+                
+                // 分析方法說明
+                const analysisMethod = technical.analysis_method || '氣象數據分析';
+                const dataSource = technical.data_sources ? technical.data_sources.join(', ') : 'HKO天文台數據';
+                
+                technicalCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            🔬 技術詳情 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                        </div>
+                        <div class="factor-score">詳細</div>
+                    </div>
+                    <div class="factor-description">
+                        <strong>技術指標:</strong><br>
+                        ${metricsText}<br>
+                        <div style="margin-top: 8px;">
+                            <strong>分析方法:</strong> ${analysisMethod}<br>
+                            <strong>數據來源:</strong> ${dataSource}
+                        </div>
+                        ${technical.algorithm_version ? `
+                        <div style="margin-top: 8px; padding: 6px; background: rgba(116, 185, 255, 0.1); border-radius: 6px;">
+                            <small style="color: #0984e3;">🧬 算法版本: ${technical.algorithm_version}</small>
+                        </div>` : ''}
+                        <br><small style="color: #888; font-style: italic;">🔬 深度技術分析結果，供專業用戶參考</small>
+                    </div>
+                `;
+                addMobileToggle(technicalCard);
+                grid.appendChild(technicalCard);
             }
 
             // 添加顏色預測卡片
