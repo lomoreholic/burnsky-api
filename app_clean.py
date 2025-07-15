@@ -52,23 +52,17 @@ def predict_burnsky():
     forecast_data = fetch_forecast_data()
     ninday_data = fetch_ninday_forecast()
     
-    # 使用進階預測器獲取基本分數
-    score, details = calculate_burnsky_score(weather_data, forecast_data, ninday_data)
-    
-    # 獲取進階功能
-    from advanced_predictor import AdvancedBurnskyPredictor
-    advanced = AdvancedBurnskyPredictor()
-    
-    # 燒天強度預測
-    intensity = advanced.predict_burnsky_intensity(score)
-    
-    # 顏色預測
-    colors = advanced.predict_burnsky_colors(weather_data, forecast_data, score)
-    
-    # 雲層厚度與顏色可見度分析
-    cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
-        weather_data, forecast_data
-    )
+    # 使用新的進階預測功能
+    if prediction_type in ['sunrise', 'sunset'] and 0 <= advance_hours <= 24:
+        from predictor import calculate_burnsky_score_advanced
+        score, details, intensity, colors = calculate_burnsky_score_advanced(
+            weather_data, forecast_data, ninday_data, prediction_type, advance_hours
+        )
+    else:
+        # 回退到原始預測
+        score, details = calculate_burnsky_score(weather_data, forecast_data, ninday_data)
+        intensity = None
+        colors = None
 
     result = {
         "burnsky_score": score,
@@ -79,7 +73,6 @@ def predict_burnsky():
         "analysis_details": details,
         "intensity_prediction": intensity,
         "color_prediction": colors,
-        "cloud_thickness_analysis": cloud_thickness_analysis,
         "weather_data": weather_data,
         "forecast_data": forecast_data
     }
