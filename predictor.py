@@ -15,7 +15,41 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
     2. 雲層類型分析 (30%-70%)
     3. 高空雲（卷雲、卷層雲）出現
     4. 空氣清晰（能見度高）
-    5. 濕度適中（不太高）
+     # 只顯示最多 3 個關鍵因子
+    if key_factors:
+        summary.append(" | ".join(key_factors[:3]))
+    
+    # 燒天程度和拍攝建議
+    if 'intensity_prediction' in details:
+        intensity = details['intensity_prediction']
+        summary.append(f"🔥 燒天程度: {intensity['name']} | 📸 拍攝建議: {intensity['photography_advice']}")
+    
+    # 主要色彩和色彩強度
+    if 'color_prediction' in details:
+        colors = details['color_prediction']
+        color_info = []
+        
+        if colors.get('primary_colors') and len(colors['primary_colors']) > 0:
+            primary_colors = colors['primary_colors'][:2]  # 只顯示前兩個主要色彩
+            color_info.append(f"🎨 主要色彩: {' · '.join(primary_colors)}")
+        
+        if colors.get('color_intensity'):
+            color_info.append(f"💫 色彩強度: {colors['color_intensity']}")
+        
+        if color_info:
+            summary.append(" | ".join(color_info))
+    
+    # 簡潔的操作建議
+    if total_score >= 70:
+        summary.append("💡 建議：準備相機，前往拍攝地點")
+    elif total_score >= 50:
+        summary.append("💡 建議：密切關注天空變化")
+    elif total_score >= 30:
+        summary.append("💡 建議：等待下個時段或明天")
+    else:
+        summary.append("💡 建議：查看明日天氣預報")
+    
+    return summary
     6. 日照時間長（代表天氣好）
     7. 機器學習模型預測
     
@@ -31,37 +65,50 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
     score = 0
     details = {}
     
-    # 1. 進階時間因子 (0-25分) - 基於實際日出日落時間
+    # 1. 實時時間因子 (0-18分) - 降低比重，基於實際日出日落時間
     time_result = advanced_predictor.calculate_time_factor_advanced()
-    score += time_result['score']
+    # 調整時間因子分數 - 將25分調整為18分
+    adjusted_time_score = (time_result['score'] / 25) * 18
+    score += adjusted_time_score
+    time_result['score'] = round(adjusted_time_score)
     details['time_factor'] = time_result
     
-    # 2. 溫度因子 (0-15分)
+    # 2. 溫度因子 (0-18分) - 稍微提高重要性
     temp_result = calculate_temperature_factor(weather_data)
-    score += temp_result['score']
+    adjusted_temp_score = (temp_result['score'] / 15) * 18
+    score += adjusted_temp_score
+    temp_result['score'] = round(adjusted_temp_score)
     details['temperature_factor'] = temp_result
     
-    # 3. 濕度因子 (0-20分)
+    # 3. 濕度因子 (0-22分) - 稍微提高重要性
     humidity_result = calculate_humidity_factor(weather_data)
-    score += humidity_result['score']
+    adjusted_humidity_score = (humidity_result['score'] / 20) * 22
+    score += adjusted_humidity_score
+    humidity_result['score'] = round(adjusted_humidity_score)
     details['humidity_factor'] = humidity_result
     
-    # 4. 能見度/空氣品質因子 (0-15分)
+    # 4. 能見度/空氣品質因子 (0-18分) - 稍微提高重要性
     visibility_result = calculate_visibility_factor(weather_data)
-    score += visibility_result['score']
+    adjusted_visibility_score = (visibility_result['score'] / 15) * 18
+    score += adjusted_visibility_score
+    visibility_result['score'] = round(adjusted_visibility_score)
     details['visibility_factor'] = visibility_result
     
-    # 5. 進階天氣描述和雲層分析因子 (0-25分)
+    # 5. 進階天氣描述和雲層分析因子 (0-30分) - 提高重要性，最關鍵因子
     if forecast_data and 'forecastDesc' in forecast_data:
         cloud_result = advanced_predictor.analyze_cloud_types(forecast_data['forecastDesc'])
-        score += cloud_result['score']
+        adjusted_cloud_score = (cloud_result['score'] / 25) * 30
+        score += adjusted_cloud_score
+        cloud_result['score'] = round(adjusted_cloud_score)
         details['cloud_analysis_factor'] = cloud_result
     else:
         details['cloud_analysis_factor'] = {'score': 0, 'description': '無天氣預報數據'}
     
-    # 6. UV指數因子 (0-10分) - 高UV表示日照充足
+    # 6. UV指數因子 (0-12分) - 稍微提高重要性
     uv_result = calculate_uv_factor(weather_data)
-    score += uv_result['score']
+    adjusted_uv_score = (uv_result['score'] / 10) * 12
+    score += adjusted_uv_score
+    uv_result['score'] = round(adjusted_uv_score)
     details['uv_factor'] = uv_result
     
     # 7. 機器學習預測 (整合所有因子)
@@ -349,85 +396,66 @@ def generate_analysis_summary(details):
     return summary
 
 def generate_analysis_summary_advanced(details):
-    """生成進階分析摘要"""
+    """生成簡潔的智能分析摘要"""
     total_score = details['total_score']
-    
     summary = []
     
-    # 時間因子分析 - 基於實際日落時間
-    if 'time_factor' in details:
-        time_data = details['time_factor']
-        if time_data['score'] >= 20:
-            summary.append(f"🌅 完美時機！{time_data.get('description', '')}")
-        elif time_data['score'] >= 15:
-            summary.append(f"⏰ 良好時段，{time_data.get('description', '')}")
-        else:
-            summary.append(f"⏰ {time_data.get('description', '非最佳拍攝時間')}")
-    
-    # 濕度因子分析
-    if 'humidity_factor' in details and details['humidity_factor']['score'] >= 15:
-        summary.append("✅ 濕度條件理想")
-    elif 'humidity_factor' in details and details['humidity_factor']['score'] >= 10:
-        summary.append("⚠️ 濕度條件尚可")
-    else:
-        summary.append("❌ 濕度條件不佳")
-    
-    # 溫度因子分析
-    if 'temperature_factor' in details and details['temperature_factor']['score'] >= 10:
-        summary.append("✅ 溫度條件良好")
-    else:
-        summary.append("⚠️ 溫度條件一般")
-    
-    # 雲層分析
-    if 'cloud_analysis_factor' in details:
-        cloud_data = details['cloud_analysis_factor']
-        if cloud_data['score'] >= 18:
-            summary.append("☁️ 雲層條件極佳")
-        elif cloud_data['score'] >= 12:
-            summary.append("☁️ 雲層條件良好")
-        else:
-            summary.append("☁️ 雲層條件一般")
-        
-        # 添加具體的雲層類型信息
-        if 'favorable_conditions' in cloud_data and cloud_data['favorable_conditions']:
-            summary.append(f"🌤️ 有利條件: {', '.join(cloud_data['favorable_conditions'])}")
-    
-    # 機器學習預測結果
-    if 'ml_prediction' in details and 'ml_burnsky_score' in details['ml_prediction']:
-        ml_score = details['ml_prediction']['ml_burnsky_score']
-        ml_class = details['ml_prediction'].get('ml_class', 0)
-        
-        if ml_class == 2:
-            summary.append("🤖 AI預測: 高機率燒天")
-        elif ml_class == 1:
-            summary.append("🤖 AI預測: 中等機率燒天")
-        else:
-            summary.append("🤖 AI預測: 低機率燒天")
-    
-    # 綜合評分分析
-    if 'score_breakdown' in details:
-        breakdown = details['score_breakdown']
-        traditional = breakdown['traditional_score']
-        ml_score = breakdown['ml_score']
-        
-        if abs(traditional - ml_score) <= 10:
-            summary.append("⚖️ 傳統算法與AI預測一致")
-        elif traditional > ml_score:
-            summary.append("📊 傳統算法較樂觀")
-        else:
-            summary.append("🤖 AI模型較樂觀")
-    
-    # 總體建議
+    # 主要結論 - 根據總分給出核心建議
     if total_score >= 80:
-        summary.append("🔥 強烈建議立即外出拍攝燒天！")
+        summary.append("🔥 絕佳燒天機會！強烈建議立即拍攝")
     elif total_score >= 70:
-        summary.append("📸 高度推薦外出拍攝")
+        summary.append("🌅 良好燒天條件，高度推薦外出")
     elif total_score >= 50:
-        summary.append("📸 可以嘗試拍攝，有一定機會")
+        summary.append("📸 中等機會，可嘗試拍攝")
     elif total_score >= 30:
-        summary.append("🤔 建議等待更好的條件")
+        summary.append("🤔 條件一般，建議等待更佳時機")
     else:
-        summary.append("📱 建議在室內等待，條件不佳")
+        summary.append("📱 條件不佳，建議室內等待")
+    
+    # 關鍵影響因子 - 只突出最重要的 2-3 個
+    key_factors = []
+    
+    # 時間因子 (最重要)
+    if 'time_factor' in details:
+        time_score = details['time_factor']['score']
+        if time_score >= 20:
+            key_factors.append("⏰ 黃金時段")
+        elif time_score >= 15:
+            key_factors.append("⏰ 合適時間")
+        elif time_score < 10:
+            key_factors.append("⏰ 非最佳時間")
+    
+    # 雲層條件 (次重要)
+    if 'cloud_analysis_factor' in details:
+        cloud_score = details['cloud_analysis_factor']['score']
+        if cloud_score >= 18:
+            key_factors.append("☁️ 理想雲層")
+        elif cloud_score >= 12:
+            key_factors.append("☁️ 適合雲層")
+        elif cloud_score < 8:
+            key_factors.append("☁️ 雲層不利")
+    
+    # AI 預測 (第三重要)
+    if 'ml_prediction' in details and 'ml_class' in details['ml_prediction']:
+        ml_class = details['ml_prediction']['ml_class']
+        if ml_class == 2:
+            key_factors.append("🤖 AI高度看好")
+        elif ml_class == 0:
+            key_factors.append("🤖 AI不看好")
+    
+    # 只顯示最多 3 個關鍵因子
+    if key_factors:
+        summary.append(" | ".join(key_factors[:3]))
+    
+    # 簡潔的操作建議
+    if total_score >= 70:
+        summary.append("� 建議：準備相機，前往拍攝地點")
+    elif total_score >= 50:
+        summary.append("� 建議：密切關注天空變化")
+    elif total_score >= 30:
+        summary.append("💡 建議：等待下個時段或明天")
+    else:
+        summary.append("� 建議：查看明日天氣預報")
     
     return summary
 

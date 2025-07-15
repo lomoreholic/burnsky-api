@@ -290,7 +290,7 @@ class AdvancedBurnskyPredictor:
                 description += " (超級預測時段)"
         
         return {
-            'score': round(min(28, score)),  # 提升最高分數到28分
+            'score': round(min(18, score)),  # 限制最高分數為18分，符合前端設定
             'description': description,
             'target_time': time_str,
             'target_type': time_label,
@@ -301,13 +301,14 @@ class AdvancedBurnskyPredictor:
         }
     
     def analyze_cloud_types(self, weather_description):
-        """從天氣描述中分析雲層類型"""
+        """從天氣描述中分析雲層類型 - 增強版，考慮雲層厚度對燒天可見度的實際影響"""
         if not weather_description:
             return {'score': 0, 'description': '無天氣描述'}
         
         description = weather_description
         detected_types = []
         total_score = 0
+        cloud_thickness_penalty = 0  # 新增：雲層厚度懲罰
         
         # 檢測關鍵詞
         for keyword, info in self.cloud_types.items():
@@ -318,6 +319,11 @@ class AdvancedBurnskyPredictor:
                     'score': round(info['score'])  # 確保分數是整數
                 })
                 total_score += info['score']
+        
+        # 分析雲層厚度對燒天的實際影響
+        thickness_analysis = self._assess_cloud_thickness_impact(description)
+        cloud_thickness_penalty = thickness_analysis['penalty']
+        visibility_warning = thickness_analysis['warning']
         
         # 特殊燒天有利條件
         burnsky_favorable = []
@@ -343,13 +349,18 @@ class AdvancedBurnskyPredictor:
             unfavorable.append('雷暴天氣')
             total_score -= 5
         
+        # 應用雲層厚度懲罰
+        total_score -= cloud_thickness_penalty
+        if visibility_warning:
+            unfavorable.append(visibility_warning)
+        
         # 計算最終分數
         if detected_types:
             avg_score = total_score / len(detected_types)
         else:
             avg_score = 10  # 預設分數
         
-        final_score = max(0, min(25, avg_score))  # 限制在0-25分
+        final_score = max(0, min(30, avg_score))  # 限制在0-30分，符合前端設定
         
         analysis = f"檢測到雲層類型: {', '.join([t['type'] for t in detected_types])}"
         if burnsky_favorable:
@@ -362,8 +373,69 @@ class AdvancedBurnskyPredictor:
             'description': analysis,
             'detected_types': detected_types,
             'favorable_conditions': burnsky_favorable,
-            'unfavorable_conditions': unfavorable
+            'unfavorable_conditions': unfavorable,
+            'cloud_thickness_impact': thickness_analysis  # 新增：雲層厚度影響詳情
         }
+    
+    def _assess_cloud_thickness_impact(self, weather_description):
+        """評估雲層厚度對燒天可見度的實際影響"""
+        penalty = 0
+        warning = None
+        visibility_level = "good"  # good, limited, poor, blocked
+        
+        description = weather_description.lower()
+        
+        # 檢測厚雲層關鍵詞
+        thick_cloud_indicators = [
+            ('密雲', 8, "dense_overcast"),
+            ('陰天', 6, "overcast"), 
+            ('陰雲', 6, "overcast"),
+            ('大致多雲', 4, "mostly_cloudy"),
+            ('多雲', 2, "cloudy"),
+            ('雲層厚', 10, "thick_layers"),
+            ('低雲', 5, "low_clouds"),
+            ('霧', 12, "fog_mist"),
+            ('薄霧', 8, "light_fog")
+        ]
+        
+        detected_thickness = []
+        for indicator, penalty_value, cloud_type in thick_cloud_indicators:
+            if indicator in description:
+                penalty += penalty_value
+                detected_thickness.append(indicator)
+        
+        # 根據懲罰程度評估可見度和建議
+        if penalty >= 15:
+            visibility_level = "blocked"
+            warning = "厚雲層嚴重阻擋，燒天幾乎不可見"
+        elif penalty >= 10:
+            visibility_level = "poor"  
+            warning = "厚雲層阻擋，燒天色彩極微弱"
+        elif penalty >= 6:
+            visibility_level = "limited"
+            warning = "雲層較厚，燒天色彩受限"
+        elif penalty >= 3:
+            visibility_level = "reduced"
+            warning = "雲層影響，燒天強度減弱"
+        
+        return {
+            'penalty': penalty,
+            'warning': warning,
+            'visibility_level': visibility_level,
+            'detected_indicators': detected_thickness,
+            'recommendation': self._generate_thickness_recommendation(visibility_level)
+        }
+    
+    def _generate_thickness_recommendation(self, visibility_level):
+        """根據雲層厚度生成建議"""
+        recommendations = {
+            "good": "雲層條件良好，預期正常燒天效果",
+            "reduced": "建議調高相機曝光，捕捉微弱色彩",
+            "limited": "主要拍攝雲層輪廓和明暗對比",
+            "poor": "建議改拍剪影效果或等待天氣改善", 
+            "blocked": "不建議燒天攝影，考慮改期或其他拍攝主題"
+        }
+        return recommendations.get(visibility_level, "請根據實際情況判斷")
     
     def generate_training_data(self, num_samples=1000):
         """生成訓練數據（模擬歷史燒天數據）"""

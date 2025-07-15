@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory
 from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast
 from predictor import calculate_burnsky_score
+from forecast_extractor import forecast_extractor
 import numpy as np
 import os
 
@@ -92,13 +93,33 @@ def predict_sunrise():
     """專門的日出燒天預測端點"""
     advance_hours = int(request.args.get('advance_hours', 2))  # 預設提前2小時
     
+    # 獲取基本天氣數據
     weather_data = fetch_weather_data()
     forecast_data = fetch_forecast_data()
     ninday_data = fetch_ninday_forecast()
     
+    # 如果是提前預測，使用未來天氣數據
+    if advance_hours > 0:
+        future_weather_data = forecast_extractor.extract_future_weather_data(
+            weather_data, forecast_data, ninday_data, advance_hours
+        )
+        print(f"🔮 使用 {advance_hours} 小時後的推算天氣數據進行日出預測")
+    else:
+        future_weather_data = weather_data
+        print("🕐 使用即時天氣數據進行日出預測")
+    
     from predictor import calculate_burnsky_score_advanced
     score, details, intensity, colors = calculate_burnsky_score_advanced(
-        weather_data, forecast_data, ninday_data, 'sunrise', advance_hours
+        future_weather_data, forecast_data, ninday_data, 'sunrise', advance_hours
+    )
+
+    # 獲取進階功能
+    from advanced_predictor import AdvancedBurnskyPredictor
+    advanced = AdvancedBurnskyPredictor()
+    
+    # 雲層厚度與顏色可見度分析
+    cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
+        future_weather_data, forecast_data
     )
 
     result = {
@@ -110,7 +131,9 @@ def predict_sunrise():
         "analysis_details": details,
         "intensity_prediction": intensity,
         "color_prediction": colors,
-        "weather_data": weather_data,
+        "cloud_thickness_analysis": cloud_thickness_analysis,
+        "weather_data": future_weather_data,
+        "original_weather_data": weather_data if advance_hours > 0 else None,
         "forecast_data": forecast_data
     }
     
@@ -122,13 +145,33 @@ def predict_sunset():
     """專門的日落燒天預測端點"""
     advance_hours = int(request.args.get('advance_hours', 2))  # 預設提前2小時
     
+    # 獲取基本天氣數據
     weather_data = fetch_weather_data()
     forecast_data = fetch_forecast_data()
     ninday_data = fetch_ninday_forecast()
     
+    # 如果是提前預測，使用未來天氣數據
+    if advance_hours > 0:
+        future_weather_data = forecast_extractor.extract_future_weather_data(
+            weather_data, forecast_data, ninday_data, advance_hours
+        )
+        print(f"🔮 使用 {advance_hours} 小時後的推算天氣數據進行日落預測")
+    else:
+        future_weather_data = weather_data
+        print("🕐 使用即時天氣數據進行日落預測")
+    
     from predictor import calculate_burnsky_score_advanced
     score, details, intensity, colors = calculate_burnsky_score_advanced(
-        weather_data, forecast_data, ninday_data, 'sunset', advance_hours
+        future_weather_data, forecast_data, ninday_data, 'sunset', advance_hours
+    )
+
+    # 獲取進階功能
+    from advanced_predictor import AdvancedBurnskyPredictor
+    advanced = AdvancedBurnskyPredictor()
+    
+    # 雲層厚度與顏色可見度分析
+    cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
+        future_weather_data, forecast_data
     )
 
     result = {
@@ -140,7 +183,9 @@ def predict_sunset():
         "analysis_details": details,
         "intensity_prediction": intensity,
         "color_prediction": colors,
-        "weather_data": weather_data,
+        "cloud_thickness_analysis": cloud_thickness_analysis,
+        "weather_data": future_weather_data,
+        "original_weather_data": weather_data if advance_hours > 0 else None,
         "forecast_data": forecast_data
     }
     
