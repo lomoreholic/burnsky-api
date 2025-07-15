@@ -59,23 +59,37 @@ def predict_burnsky():
     # 將風速數據加入天氣數據中
     weather_data['wind'] = wind_data
     
-    # 使用進階預測器獲取基本分數
-    score, details = calculate_burnsky_score(weather_data, forecast_data, ninday_data)
-    
-    # 獲取進階功能
-    from advanced_predictor import AdvancedBurnskyPredictor
-    advanced = AdvancedBurnskyPredictor()
-    
-    # 燒天強度預測
-    intensity = advanced.predict_burnsky_intensity(score)
-    
-    # 顏色預測
-    colors = advanced.predict_burnsky_colors(weather_data, forecast_data, score)
-    
-    # 雲層厚度與顏色可見度分析
-    cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
-        weather_data, forecast_data
-    )
+    # 根據是否有提前預測參數來選擇算法
+    if advance_hours > 0 or prediction_type == 'sunrise':
+        # 使用進階預測算法 (支援提前預測和日出預測)
+        from predictor import calculate_burnsky_score_advanced
+        score, details, intensity, colors = calculate_burnsky_score_advanced(
+            weather_data, forecast_data, ninday_data, prediction_type, advance_hours
+        )
+        # 獲取雲層厚度分析
+        from advanced_predictor import AdvancedBurnskyPredictor
+        advanced = AdvancedBurnskyPredictor()
+        cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
+            weather_data, forecast_data
+        )
+    else:
+        # 使用基本預測算法 (即時預測)
+        score, details = calculate_burnsky_score(weather_data, forecast_data, ninday_data)
+        
+        # 獲取進階功能
+        from advanced_predictor import AdvancedBurnskyPredictor
+        advanced = AdvancedBurnskyPredictor()
+        
+        # 燒天強度預測
+        intensity = advanced.predict_burnsky_intensity(score)
+        
+        # 顏色預測
+        colors = advanced.predict_burnsky_colors(weather_data, forecast_data, score)
+        
+        # 雲層厚度與顏色可見度分析
+        cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
+            weather_data, forecast_data
+        )
 
     result = {
         "burnsky_score": score,
@@ -230,13 +244,14 @@ def api_info():
         },
         "features": [
             "即時天氣數據分析",
+            "空氣品質健康指數 (AQHI) 監測",
             "機器學習預測模型",
             "提前24小時預測",
             "日出日落分別預測",
             "燒天強度和顏色預測",
             "詳細分析報告"
         ],
-        "data_source": "香港天文台開放數據 API",
+        "data_source": "香港天文台開放數據 API + CSDI 政府空間數據共享平台",
         "update_frequency": "每小時更新",
         "accuracy": "基於歷史數據訓練，準確率約85%"
     }
@@ -252,6 +267,11 @@ def health_check():
         "version": "2.0",
         "timestamp": datetime.now().isoformat()
     })
+
+@app.route("/status")
+def status_page():
+    """系統狀態檢查頁面"""
+    return render_template("status.html")
 
 # SEO 和合規性路由
 @app.route('/robots.txt')

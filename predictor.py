@@ -2,9 +2,13 @@ import math
 from datetime import datetime, time
 import pytz
 from advanced_predictor import AdvancedBurnskyPredictor
+from air_quality_fetcher import AirQualityFetcher
 
 # 初始化進階預測器
 advanced_predictor = AdvancedBurnskyPredictor()
+
+# 初始化空氣品質獲取器
+air_quality_fetcher = AirQualityFetcher()
 
 def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
     """
@@ -118,7 +122,14 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
     wind_result['score'] = round(adjusted_wind_score)
     details['wind_factor'] = wind_result
     
-    # 8. 機器學習預測 (整合所有因子)
+    # 8. 空氣品質因子 (0-12分) - 新增
+    air_quality_result = calculate_air_quality_factor(weather_data)
+    adjusted_air_quality_score = (air_quality_result['score'] / 15) * 12
+    score += adjusted_air_quality_score
+    air_quality_result['score'] = round(adjusted_air_quality_score)
+    details['air_quality_factor'] = air_quality_result
+    
+    # 9. 機器學習預測 (整合所有因子)
     try:
         ml_result = advanced_predictor.predict_ml(weather_data, forecast_data)
         details['ml_prediction'] = ml_result
@@ -526,7 +537,12 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
     score += wind_result['score']
     details['wind_factor'] = wind_result
     
-    # 8. 機器學習預測
+    # 8. 空氣品質因子 (0-15分) - 新增
+    air_quality_result = calculate_air_quality_factor(weather_data)
+    score += air_quality_result['score']
+    details['air_quality_factor'] = air_quality_result
+    
+    # 9. 機器學習預測
     try:
         ml_result = advanced_predictor.predict_ml(weather_data, forecast_data)
         details['ml_prediction'] = ml_result
@@ -708,6 +724,18 @@ def generate_analysis_summary_enhanced(details):
         else:
             summary.append("❌ 風速不利燒天")
     
+    # 空氣品質條件評估
+    if 'air_quality_factor' in details:
+        air_data = details['air_quality_factor']
+        if air_data['score'] >= 12:
+            summary.append(f"✨ 空氣品質{air_data.get('impact', '極佳')}（AQHI {air_data.get('aqhi', 'N/A')}）")
+        elif air_data['score'] >= 8:
+            summary.append(f"🌫️ 空氣品質{air_data.get('impact', '良好')}（AQHI {air_data.get('aqhi', 'N/A')}）")
+        elif air_data['score'] >= 5:
+            summary.append(f"⚠️ 空氣污染影響燒天品質（AQHI {air_data.get('aqhi', 'N/A')}）")
+        else:
+            summary.append(f"❌ 嚴重空氣污染不利燒天（AQHI {air_data.get('aqhi', 'N/A')}）")
+    
     return summary
 
 def calculate_time_factor():
@@ -810,3 +838,87 @@ def calculate_wind_factor(weather_data):
         'wind_level': f"{min_beaufort}-{max_beaufort}級",
         'wind_impact': '有利' if score >= 10 else '中等' if score >= 6 else '不利'
     }
+
+def calculate_air_quality_factor(weather_data=None):
+    """
+    計算空氣品質因子對燒天的影響 (最高15分)
+    
+    空氣品質影響：
+    - AQHI 1-3 (低): 空氣清澈透明，極佳燒天條件 (13-15分)
+    - AQHI 4-6 (中): 空氣品質一般，良好燒天條件 (10-12分)  
+    - AQHI 7-9 (高): 空氣污染影響透明度和色彩 (6-9分)
+    - AQHI 10+ (嚴重): 嚴重污染大幅影響燒天品質 (2-5分)
+    
+    Args:
+        weather_data: 天氣數據 (可選，用於估算)
+        
+    Returns:
+        dict: 包含分數和描述的字典
+    """
+    try:
+        # 使用全局的空氣品質獲取器
+        air_quality_data = air_quality_fetcher.get_current_air_quality()
+        
+        if not air_quality_data:
+            raise Exception("無法獲取空氣品質數據")
+        
+        # 提取 AQHI 和 PM2.5 數據
+        aqhi = air_quality_data.get('aqhi', 4)
+        pm25 = air_quality_data.get('components', {}).get('pm2_5', 25)
+        level = air_quality_data.get('level', '中')
+        source = air_quality_data.get('source', '未知')
+        station_name = air_quality_data.get('station_name', '未知監測站')
+        
+        # 計算燒天影響分數 (滿分15分)
+        if aqhi <= 3:
+            score = 15  # 極佳條件
+            impact = "極佳"
+            description = f"空氣品質極佳 (AQHI: {aqhi})，透明度高，燒天效果極佳"
+        elif aqhi <= 6:
+            score = 12  # 良好條件
+            impact = "良好"
+            description = f"空氣品質良好 (AQHI: {aqhi})，對燒天影響輕微"
+        elif aqhi <= 9:
+            score = 7   # 一般條件
+            impact = "一般"
+            description = f"空氣品質一般 (AQHI: {aqhi})，可能輕微影響燒天色彩"
+        else:
+            score = 3   # 不佳條件
+            impact = "不佳"
+            description = f"空氣品質較差 (AQHI: {aqhi})，會影響燒天透明度和色彩"
+        
+        # PM2.5 額外調整
+        if pm25 <= 15:
+            pm25_bonus = 1
+        elif pm25 <= 35:
+            pm25_bonus = 0
+        else:
+            pm25_bonus = -2
+        
+        final_score = max(2, min(15, score + pm25_bonus))
+        
+        return {
+            'score': final_score,
+            'description': description,
+            'aqhi': aqhi,
+            'level': level,
+            'pm25': pm25,
+            'impact': impact,
+            'source': source,
+            'station': station_name,
+            'details': f"監測站: {station_name} | AQHI: {aqhi} ({level}) | PM2.5: {pm25} μg/m³"
+        }
+        
+    except Exception as e:
+        # 如果無法獲取空氣品質數據，返回中性分數
+        return {
+            'score': 10,
+            'description': f'無法獲取空氣品質數據，使用預設值: {str(e)}',
+            'aqhi': 4,
+            'level': '中',
+            'pm25': 25,
+            'impact': '未知',
+            'source': '預設值',
+            'station': '無',
+            'details': '使用預設空氣品質數值'
+        }

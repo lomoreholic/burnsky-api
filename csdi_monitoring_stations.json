@@ -1,0 +1,254 @@
+[
+  {
+    "id": 1,
+    "name_en": "Southern Air Quality Monitoring Station",
+    "name_tc": "南區空氣質素監測站",
+    "address_en": "No.1 Aberdeen Praya Road, Hong Kong.",
+    "address_tc": "香港香港仔海傍道1號",
+    "coordinates": [
+      114.16014,
+      22.247461
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=1",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=1",
+    "mid": "1"
+  },
+  {
+    "id": 2,
+    "name_en": "North Air Quality Monitoring Station",
+    "name_tc": "北區空氣質素監測站",
+    "address_en": "19 Pak Wo Road, Sheung Shui, New Territories.",
+    "address_tc": "新界上水百和路19號",
+    "coordinates": [
+      114.128244,
+      22.496697
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=13",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=13",
+    "mid": "13"
+  },
+  {
+    "id": 3,
+    "name_en": "Kwun Tong Air Quality Monitoring Station",
+    "name_tc": "觀塘空氣質素監測站",
+    "address_en": "Kwun Tong Police Station, 9 Lei Yue Mun Road, Kwun Tong, Kowloon",
+    "address_tc": "觀塘警署九龍觀塘鯉魚門道九號",
+    "coordinates": [
+      114.231174,
+      22.309625
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=3",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=3",
+    "mid": "3"
+  },
+  {
+    "id": 4,
+    "name_en": "Tseung Kwan O Air Quality Monitoring Station",
+    "name_tc": "將軍澳空氣質素監測站",
+    "address_en": "Tseung Kwan O Sports Centre, 9 Wan Lung Road, Tseung Kwan O, Sai Kung",
+    "address_tc": "西貢將軍澳運隆路9號將軍澳體育館",
+    "coordinates": [
+      114.259561,
+      22.317642
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=7",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=7",
+    "mid": "7"
+  },
+  {
+    "id": 5,
+    "name_en": "Tuen Mun Air Quality Monitoring Station",
+    "name_tc": "屯門空氣質素監測站",
+    "address_en": "Tuen Mun Public Library, 1 Tuen Hi Road, Tuen Mun, N.T.",
+    "address_tc": "新界屯門屯喜路1號屯門公共圖書館",
+    "coordinates": [
+      113.976728,
+      22.391143
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=9",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=9",
+    "mid": "9"
+  },
+  {
+    "id": 6,
+    "name_en": "Tung Chung Air Quality Monitoring Station",
+    "name_tc": "東涌空氣質素監測站",
+    "address_en": "Tung Chung Health Centre , 6 Fu Tung Street, Tung Chung, New Territories",
+    "address_tc": "新界東涌富東街6號東涌健康院",
+    "coordinates": [
+      113.943659,
+      22.288889
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=10",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=10",
+    "mid": "10"
+  },
+  {
+    "id": 7,
+    "name_en": "Eastern Air Quality Monitoring Station",
+    "name_tc": "東區空氣質素監測站",
+    "address_en": "Sai Wan Ho Fire Station, 20 Wai Hang Street, Eastern, Hong Kong",
+    "address_tc": "香港東區惠亨街20號西灣河消防局",
+    "coordinates": [
+      114.219372,
+      22.282886
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=2",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=2",
+    "mid": "2"
+  },
+  {
+    "id": 8,
+    "name_en": "Tap Mun Air Quality Monitoring Station",
+    "name_tc": "塔門空氣質素監測站",
+    "address_en": "Tap Mun Police Post",
+    "address_tc": "塔門警崗",
+    "coordinates": [
+      114.360719,
+      22.471317
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=14",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=14",
+    "mid": "14"
+  },
+  {
+    "id": 9,
+    "name_en": "Kwai Chung Air Quality Monitoring Station",
+    "name_tc": "葵涌空氣質素監測站",
+    "address_en": "Kwai Chung Police Station, 999 Kwai Chung Road, Kwai Chung, New Territories",
+    "address_tc": "新界葵涌葵涌道999號葵涌警署",
+    "coordinates": [
+      114.129601,
+      22.357104
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=5",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=5",
+    "mid": "5"
+  },
+  {
+    "id": 10,
+    "name_en": "Yuen Long Air Quality Monitoring Station",
+    "name_tc": "元朗空氣質素監測站",
+    "address_en": "Yuen Long District Office Building, 269 Castle Peak Road, Yuen Long, New Territories",
+    "address_tc": "新界元朗青山公路269號元朗民政事務處大廈",
+    "coordinates": [
+      114.022649,
+      22.445155
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=8",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=8",
+    "mid": "8"
+  },
+  {
+    "id": 11,
+    "name_en": "Sha Tin Air Quality Monitoring Station",
+    "name_tc": "沙田空氣質素監測站",
+    "address_en": "Sha Tin Government Secondary School, 11-17 Man Lai Road, Sha Tin, New Territories",
+    "address_tc": "新界沙田文禮路11-17號沙田官立中學",
+    "coordinates": [
+      114.184532,
+      22.376281
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=12",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=12",
+    "mid": "12"
+  },
+  {
+    "id": 12,
+    "name_en": "Sham Shui Po Air Quality Monitoring Station",
+    "name_tc": "深水埗空氣質素監測站",
+    "address_en": "Sham Shui Po Police Station, 37A Yen Chow Street, Sham Shui Po, Kowloon",
+    "address_tc": "九龍深水埗欽州街37號A深水埗警署",
+    "coordinates": [
+      114.159109,
+      22.330226
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=4",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=4",
+    "mid": "4"
+  },
+  {
+    "id": 13,
+    "name_en": "Tai Po Air Quality Monitoring Station",
+    "name_tc": "大埔空氣質素監測站",
+    "address_en": "Tai Po Government Offices Building, 1 Ting Kok Road, Tai Po, New Territories",
+    "address_tc": "新界大埔汀角路1號大埔政府合署",
+    "coordinates": [
+      114.16457,
+      22.45096
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=11",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=11",
+    "mid": "11"
+  },
+  {
+    "id": 14,
+    "name_en": "Mong Kok Air Quality Monitoring Station",
+    "name_tc": "旺角空氣質素監測站",
+    "address_en": "Junction of Nathan Road and Lai Chi Kok Road, Mong Kok, Kowloon",
+    "address_tc": "九龍旺角彌敦道與荔枝角道交界",
+    "coordinates": [
+      114.168272,
+      22.322611
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=17",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=17",
+    "mid": "17"
+  },
+  {
+    "id": 15,
+    "name_en": "Central/Western Air Quality Monitoring Station",
+    "name_tc": "中西區空氣質素監測站",
+    "address_en": "Sai Ying Pun Community Complex, 2 High Street, Central & Western, Hong Kong",
+    "address_tc": "香港中西區高街2號西營盤社區綜合大樓",
+    "coordinates": [
+      114.144421,
+      22.284891
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=0",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=0",
+    "mid": "0"
+  },
+  {
+    "id": 16,
+    "name_en": "Central Air Quality Monitoring Station",
+    "name_tc": "中環空氣質素監測站",
+    "address_en": "Junction of Chater Road and Des Voeux Road Central, Central, Hong Kong",
+    "address_tc": "香港中環遮打道與德輔道中交界",
+    "coordinates": [
+      114.158127,
+      22.281815
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=16",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=16",
+    "mid": "16"
+  },
+  {
+    "id": 17,
+    "name_en": "Causeway Bay Air Quality Monitoring Station",
+    "name_tc": "銅鑼灣空氣質素監測站",
+    "address_en": "1 Yee Wo Street, Causeway Bay, Hong Kong",
+    "address_tc": "香港銅鑼灣怡和街1號",
+    "coordinates": [
+      114.18509,
+      22.280133
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=15",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=15",
+    "mid": "15"
+  },
+  {
+    "id": 18,
+    "name_en": "Tsuen Wan Air Quality Monitoring Station",
+    "name_tc": "荃灣空氣質素監測站",
+    "address_en": "Princess Alexandra Community Centre, 60 Tai Ho Road, Tsuen Wan, New Territories",
+    "address_tc": "新界荃灣大河道60號雅麗珊社區中心",
+    "coordinates": [
+      114.114535,
+      22.371742
+    ],
+    "aqhi_website": "https://www.aqhi.gov.hk/en/aqhi/past-24-hours-aqhi.html?mid=6",
+    "station_website": "https://www.aqhi.gov.hk/en/monitoring-network/air-quality-monitoring-stations.html?mid=6",
+    "mid": "6"
+  }
+]

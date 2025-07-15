@@ -750,6 +750,10 @@ class AdvancedBurnskyPredictor:
         else:
             features['wind_speed'] = 3  # 預設值
         
+        # 注意：暫時不添加空氣品質特徵到ML模型，因為現有模型只支援7個特徵
+        # 空氣品質已在傳統算法中處理
+        # TODO: 未來重新訓練模型時可加入空氣品質特徵
+        
         # 時間因子
         time_result = self.calculate_time_factor_advanced()
         features['time_factor'] = time_result['score'] / 25  # 標準化到0-1

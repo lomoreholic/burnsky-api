@@ -821,6 +821,11 @@
                 // 更新天氣數據
                 updateWeatherData(data.weather_data);
                 
+                // 更新空氣品質數據
+                if (data.analysis_details && data.analysis_details.air_quality_factor) {
+                    updateAirQualityData(data.analysis_details.air_quality_factor);
+                }
+                
                 // 更新分析摘要
                 updateAnalysisSummary(data.analysis_details.analysis_summary);
                 
@@ -898,6 +903,12 @@
                     icon: '💨', 
                     maxScore: 15,
                     explanation: '風速對燒天影響：無風/輕風（15分）、微風（11分）、和風（8分）、強風（5分）、烈風（1分）。適度風速有助雲層形態變化，過強會吹散雲層'
+                },
+                'air_quality_factor': { 
+                    name: '空氣品質因子', 
+                    icon: '🌫️', 
+                    maxScore: 15,
+                    explanation: '空氣品質對燒天影響：AQHI 1-3（15分）空氣清澈透明、4-6（12分）一般品質、7-9（8分）污染影響色彩、10+（4分）嚴重污染大幅影響燒天品質'
                 }
             };
             
@@ -1602,6 +1613,50 @@
                         <div class="weather-icon">⚠️</div>
                         <div class="weather-value" style="font-size: 1.3rem;">${mainWarning}</div>
                         <div class="weather-label">天氣警告生效中<br><small>可能影響拍攝條件</small></div>
+                    </div>
+                `;
+            }
+        }
+        
+        function updateAirQualityData(airQualityData) {
+            const container = document.getElementById('weatherData');
+            
+            // 空氣品質數據
+            if (airQualityData) {
+                const aqhi = airQualityData.aqhi || 4;
+                const level = airQualityData.level || '中';
+                const pm25 = airQualityData.pm25 || 25;
+                const impact = airQualityData.impact || '一般';
+                const source = airQualityData.source || '未知';
+                
+                // 根據 AQHI 選擇圖標和顏色
+                let icon = '🌫️';
+                let borderColor = '#4CAF50';
+                let description = '空氣品質一般';
+                
+                if (aqhi <= 3) {
+                    icon = '✨';
+                    borderColor = '#4CAF50';
+                    description = `空氣清澈透明<br><small>極佳燒天條件</small>`;
+                } else if (aqhi <= 6) {
+                    icon = '🌫️';
+                    borderColor = '#FFC107';
+                    description = `空氣品質一般<br><small>良好燒天條件</small>`;
+                } else if (aqhi <= 9) {
+                    icon = '😷';
+                    borderColor = '#FF9800';
+                    description = `空氣品質欠佳<br><small>影響色彩飽和度</small>`;
+                } else {
+                    icon = '🚫';
+                    borderColor = '#F44336';
+                    description = `空氣污染嚴重<br><small>大幅影響燒天品質</small>`;
+                }
+                
+                container.innerHTML += `
+                    <div class="weather-card" style="border-left: 4px solid ${borderColor};">
+                        <div class="weather-icon">${icon}</div>
+                        <div class="weather-value">AQHI ${aqhi}</div>
+                        <div class="weather-label">${description}<br><small>PM2.5: ${pm25}μg/m³ | ${source}</small></div>
                     </div>
                 `;
             }

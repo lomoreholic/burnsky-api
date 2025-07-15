@@ -7,14 +7,22 @@
 
 ## ✨ 功能特色
 
-- � **智能預測**: 結合傳統氣象分析與 AI 機器學習
+- 🤖 **智能預測**: 結合傳統氣象分析與 AI 機器學習
 - ⏰ **提前預測**: 支援 1-12 小時提前預測  
 - 🌄 **日出日落**: 精確的日出/日落燒天分析
 - 🎨 **顏色預測**: 預測燒天色彩組合與強度
+- 🌬️ **空氣品質整合**: 即時 AQHI 和 PM2.5 數據分析
 - 📱 **響應式設計**: 完美支援手機、平板、桌面
-- **能見度因子 (0-15分)：** 基於降雨量判斷空氣清晰度
-- **天氣描述因子 (0-20分)：** 分析預報文字中的關鍵詞
+
+### 🧮 評分因子系統 (總分 100 分)
+- **時間因子 (0-5分)：** 日落前後30分鐘得分最高
+- **溫度因子 (0-18分)：** 理想溫度範圍 26-35°C
+- **濕度因子 (0-22分)：** 最佳濕度範圍 60-85%
+- **能見度因子 (0-18分)：** 基於降雨量判斷空氣清晰度
+- **雲層分析因子 (0-30分)：** 進階天氣描述和雲層類型分析
 - **UV指數因子 (0-10分)：** 高UV表示日照充足
+- **風速因子 (0-5分)：** 適中風速有利於燒天形成
+- **空氣品質因子 (0-12分)：** AQHI、PM2.5 對色彩透明度的影響
 
 ### 📊 預測等級分類
 - 🔥 **80分以上：** 極高機率燒天
@@ -100,6 +108,15 @@ python app.py
       "description": "目前濕度: 80% (良好濕度範圍)",
       "humidity": 80
     },
+    "air_quality_factor": {
+      "score": 10,
+      "description": "AQHI 4 (中)，空氣品質一般",
+      "aqhi": 4,
+      "level": "中",
+      "pm25": 25,
+      "impact": "良好",
+      "source": "環保署"
+    },
     // ... 其他分析因子
     "analysis_summary": [
       "⏰ 非最佳拍攝時間",
@@ -118,13 +135,29 @@ python app.py
 
 ```
 burnsky-api/
-├── app.py              # Flask 主應用
-├── hko_fetcher.py      # 香港天文台數據獲取
-├── predictor.py        # 燒天預測算法
+├── app.py                    # Flask 主應用
+├── hko_fetcher.py           # 香港天文台數據獲取
+├── air_quality_fetcher.py   # 空氣品質數據獲取 (AQHI/PM2.5)
+├── predictor.py             # 燒天預測算法
+├── advanced_predictor.py    # 進階預測功能 (機器學習/雲層分析)
+├── enhanced_prediction_system.py  # 增強預測系統
+├── satellite_cloud_analyzer.py    # 衛星雲圖分析
 ├── templates/
-│   └── index.html      # 前端介面
-├── requirements.txt    # Python 依賴
-└── README.md          # 說明文件
+│   ├── index.html           # 主頁前端介面
+│   ├── status.html          # 系統狀態頁面
+│   ├── privacy.html         # 隱私政策
+│   └── terms.html           # 使用條款
+├── static/
+│   ├── robots.txt           # SEO 優化
+│   └── sitemap.xml          # 網站地圖
+├── models/                  # 機器學習模型
+│   ├── classification_model.pkl
+│   ├── regression_model.pkl
+│   └── scaler.pkl
+├── requirements.txt         # Python 依賴
+├── runtime.txt             # Python 版本
+├── Procfile               # 部署配置
+└── README.md             # 說明文件
 ```
 
 ## 🔧 核心模組
@@ -136,17 +169,36 @@ burnsky-api/
 - 九天預報 (`fnd`)
 - 天氣警告 (`warningInfo`)
 
+### `air_quality_fetcher.py` 🌬️
+**新增功能**：空氣品質數據整合系統
+- 香港環保署 AQHI 數據獲取
+- PM2.5、PM10 等污染物監測
+- 多數據源自動切換與 fallback
+- 空氣品質對燒天影響評估
+- 支援：環保署官方 API、第三方 API、天氣估算、預設值
+
 ### `predictor.py`
 實現燒天預測算法：
-- 多因子權重計算
+- 多因子權重計算 (8個主要因子)
+- 空氣品質因子整合
 - 智能分析邏輯
 - 預測等級判定
+- 機器學習與傳統算法結合
+
+### `advanced_predictor.py`
+進階預測功能：
+- 機器學習模型預測
+- 雲層厚度與顏色可見度分析
+- 燒天強度與色彩預測
+- 衛星雲圖分析整合
+- 進階氣象數據分析
 
 ### `app.py`
 Flask Web 應用：
 - RESTful API 端點
 - 前端頁面服務
-- 錯誤處理
+- 系統狀態監控
+- 錯誤處理與日誌
 
 ## 🌟 功能特點
 
