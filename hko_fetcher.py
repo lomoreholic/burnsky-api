@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 from datetime import datetime
+import re
 
 # 香港天文台 API URL
 WEATHER_API_URL = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc"
@@ -147,6 +148,106 @@ def fetch_warning_data():
         print(f"警告數據請求錯誤：{err}")
         return {}
 
+def parse_wind_info(wind_text):
+    """
+    解析香港天文台的風速文字描述
+    
+    Args:
+        wind_text: 風速描述文字，例如 "西南風3至4級"
+    
+    Returns:
+        dict: 包含風向、風級等資訊
+    """
+    wind_info = {
+        'direction': '',
+        'speed_beaufort_min': 0,
+        'speed_beaufort_max': 0,
+        'speed_kmh_min': 0,
+        'speed_kmh_max': 0,
+        'description': wind_text
+    }
+    
+    if not wind_text:
+        return wind_info
+    
+    # 風向對照表
+    direction_map = {
+        '北': 'N', '東北': 'NE', '東': 'E', '東南': 'SE',
+        '南': 'S', '西南': 'SW', '西': 'W', '西北': 'NW',
+        '偏北': 'N', '偏東北': 'NE', '偏東': 'E', '偏東南': 'SE',
+        '偏南': 'S', '偏西南': 'SW', '偏西': 'W', '偏西北': 'NW'
+    }
+    
+    # 蒲福風級對應風速（公里/小時）
+    beaufort_to_kmh = {
+        0: (0, 1), 1: (1, 5), 2: (6, 11), 3: (12, 19), 4: (20, 28),
+        5: (29, 38), 6: (39, 49), 7: (50, 61), 8: (62, 74), 9: (75, 88),
+        10: (89, 102), 11: (103, 117), 12: (118, 133)
+    }
+    
+    # 提取風向 - 按長度排序，優先匹配較長的風向詞（如"西南"優先於"南"）
+    sorted_directions = sorted(direction_map.items(), key=lambda x: len(x[0]), reverse=True)
+    for cn_dir, en_dir in sorted_directions:
+        if cn_dir in wind_text:
+            wind_info['direction'] = en_dir
+            break
+    
+    # 提取風級範圍（例如："3至4級" 或 "4級"）
+    wind_level_pattern = r'(\d+)(?:至(\d+))?級'
+    match = re.search(wind_level_pattern, wind_text)
+    
+    if match:
+        min_level = int(match.group(1))
+        max_level = int(match.group(2)) if match.group(2) else min_level
+        
+        wind_info['speed_beaufort_min'] = min_level
+        wind_info['speed_beaufort_max'] = max_level
+        
+        # 轉換為公里/小時
+        if min_level in beaufort_to_kmh:
+            wind_info['speed_kmh_min'] = beaufort_to_kmh[min_level][0]
+        if max_level in beaufort_to_kmh:
+            wind_info['speed_kmh_max'] = beaufort_to_kmh[max_level][1]
+    
+    return wind_info
+
+def get_current_wind_data():
+    """
+    從九天天氣預報中獲取今日風速資訊
+    
+    Returns:
+        dict: 風速資訊
+    """
+    try:
+        forecast_data = fetch_ninday_forecast()
+        
+        if forecast_data and 'weatherForecast' in forecast_data:
+            # 獲取今日或最近的預報
+            today_forecast = forecast_data['weatherForecast'][0]
+            
+            if 'forecastWind' in today_forecast:
+                wind_text = today_forecast['forecastWind']
+                return parse_wind_info(wind_text)
+        
+        return {
+            'direction': '',
+            'speed_beaufort_min': 0,
+            'speed_beaufort_max': 0,
+            'speed_kmh_min': 0,
+            'speed_kmh_max': 0,
+            'description': ''
+        }
+    except Exception as e:
+        print(f"獲取風速數據錯誤：{e}")
+        return {
+            'direction': '',
+            'speed_beaufort_min': 0,
+            'speed_beaufort_max': 0,
+            'speed_kmh_min': 0,
+            'speed_kmh_max': 0,
+            'description': ''
+        }
+
 def test_apis():
     """測試 API 連接"""
     print("正在測試香港天文台 API 連接...")
@@ -192,6 +293,16 @@ def test_apis():
         print(f"數據鍵值: {list(warning_data.keys())}")
     else:
         print("❌ 天氣警告數據獲取失敗")
+    
+    # 測試風速數據
+    print("\n--- 測試風速數據 ---")
+    wind_data = get_current_wind_data()
+    if wind_data:
+        print("✅ 風速數據獲取成功")
+        print(f"數據鍵值: {list(wind_data.keys())}")
+        print(f"風向: {wind_data['direction']}, 風速: {wind_data['speed_kmh_min']} - {wind_data['speed_kmh_max']} 公里/小時")
+    else:
+        print("❌ 風速數據獲取失敗")
 
 if __name__ == "__main__":
     test_apis()

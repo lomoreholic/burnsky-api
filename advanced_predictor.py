@@ -739,8 +739,16 @@ class AdvancedBurnskyPredictor:
         else:
             features['rainfall'] = 0  # 預設值
         
-        # 風速特徵（暫時使用預設值）
-        features['wind_speed'] = 3  # 預設值
+        # 風速特徵
+        if weather_data and 'wind' in weather_data:
+            wind_info = weather_data['wind']
+            # 使用平均風級作為風速特徵
+            min_beaufort = wind_info.get('speed_beaufort_min', 0)
+            max_beaufort = wind_info.get('speed_beaufort_max', 0)
+            avg_beaufort = (min_beaufort + max_beaufort) / 2
+            features['wind_speed'] = avg_beaufort
+        else:
+            features['wind_speed'] = 3  # 預設值
         
         # 時間因子
         time_result = self.calculate_time_factor_advanced()

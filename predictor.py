@@ -111,7 +111,14 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
     uv_result['score'] = round(adjusted_uv_score)
     details['uv_factor'] = uv_result
     
-    # 7. 機器學習預測 (整合所有因子)
+    # 7. 風速因子 (0-10分) - 新增
+    wind_result = calculate_wind_factor(weather_data)
+    adjusted_wind_score = (wind_result['score'] / 15) * 10
+    score += adjusted_wind_score
+    wind_result['score'] = round(adjusted_wind_score)
+    details['wind_factor'] = wind_result
+    
+    # 8. 機器學習預測 (整合所有因子)
     try:
         ml_result = advanced_predictor.predict_ml(weather_data, forecast_data)
         details['ml_prediction'] = ml_result
@@ -514,7 +521,12 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
     score += uv_result['score']
     details['uv_factor'] = uv_result
     
-    # 7. 機器學習預測
+    # 7. 風速因子 (0-15分) - 新增
+    wind_result = calculate_wind_factor(weather_data)
+    score += wind_result['score']
+    details['wind_factor'] = wind_result
+    
+    # 8. 機器學習預測
     try:
         ml_result = advanced_predictor.predict_ml(weather_data, forecast_data)
         details['ml_prediction'] = ml_result
@@ -684,8 +696,117 @@ def generate_analysis_summary_enhanced(details):
     else:
         summary.append("📱 建議等待更好時機")
     
+    # 風速條件評估
+    if 'wind_factor' in details:
+        wind_data = details['wind_factor']
+        if wind_data['score'] >= 10:
+            wind_impact = wind_data.get('wind_impact', '未知')
+            wind_level = wind_data.get('wind_level', '未知')
+            summary.append(f"💨 風速條件{wind_impact}（{wind_level}）")
+        elif wind_data['score'] >= 5:
+            summary.append("⚠️ 風速條件一般")
+        else:
+            summary.append("❌ 風速不利燒天")
+    
     return summary
 
 def calculate_time_factor():
     """簡化版時間因子計算 - 保持向後兼容性"""
     return advanced_predictor.calculate_time_factor_advanced()['score']
+
+def calculate_wind_factor(weather_data):
+    """
+    計算風速因子對燒天的影響 (最高15分)
+    
+    風速影響：
+    - 輕微風速 (0-2級): 有利於燒天現象持續，評分較高
+    - 適中風速 (3-4級): 適度的風有助於雲層形態變化，評分中等偏高
+    - 強風 (5級以上): 會快速吹散雲層，不利於燒天，評分較低
+    - 風向也會影響雲層移動和形態
+    
+    Args:
+        weather_data: 包含風速資訊的天氣數據
+        
+    Returns:
+        dict: 包含分數和描述的字典
+    """
+    if not weather_data or 'wind' not in weather_data:
+        return {'score': 0, 'description': '無風速數據'}
+    
+    wind_info = weather_data['wind']
+    
+    if not wind_info or not wind_info.get('description'):
+        return {'score': 0, 'description': '無風速數據'}
+    
+    # 獲取風級範圍
+    min_beaufort = wind_info.get('speed_beaufort_min', 0)
+    max_beaufort = wind_info.get('speed_beaufort_max', 0)
+    avg_beaufort = (min_beaufort + max_beaufort) / 2
+    
+    # 風向資訊
+    wind_direction = wind_info.get('direction', '')
+    wind_description = wind_info.get('description', '')
+    
+    score = 0
+    description_parts = [f"風速: {wind_description}"]
+    
+    # 基於平均風級評分
+    if avg_beaufort <= 1:  # 0-1級 (無風至軟風)
+        score = 15  # 最佳，燒天現象能持續較久
+        description_parts.append("(無風/軟風，極佳燒天條件)")
+    elif avg_beaufort <= 2:  # 2級 (輕風)
+        score = 13  # 優秀，輕微風有助於雲層微調
+        description_parts.append("(輕風，優秀燒天條件)")
+    elif avg_beaufort <= 3:  # 3級 (微風)
+        score = 11  # 良好，適度風速有助於雲層動態
+        description_parts.append("(微風，良好燒天條件)")
+    elif avg_beaufort <= 4:  # 4級 (和風)
+        score = 8   # 中等，適中風速可能加速雲層變化
+        description_parts.append("(和風，中等燒天條件)")
+    elif avg_beaufort <= 5:  # 5級 (清勁風)
+        score = 5   # 較差，風速開始影響雲層穩定性
+        description_parts.append("(清勁風，雲層較不穩定)")
+    elif avg_beaufort <= 6:  # 6級 (強風)
+        score = 3   # 差，強風會快速吹散雲層
+        description_parts.append("(強風，雲層易被吹散)")
+    else:  # 7級以上 (疾風以上)
+        score = 1   # 極差，烈風會完全破壞燒天條件
+        description_parts.append("(烈風，燒天條件極差)")
+    
+    # 風向加成/減分
+    if wind_direction:
+        description_parts.append(f"風向: {wind_direction}")
+        
+        # 西南風和西北風在日落時較有利（從陸地吹向海洋）
+        # 東南風和東北風在日出時較有利（從海洋吹向陸地）
+        if wind_direction in ['SW', 'W', 'NW']:
+            # 日落時的有利風向，輕微加分
+            if avg_beaufort <= 3:
+                score = min(15, score + 1)
+                description_parts.append("(有利日落風向)")
+        elif wind_direction in ['SE', 'E', 'NE']:
+            # 日出時的有利風向，輕微加分  
+            if avg_beaufort <= 3:
+                score = min(15, score + 1)
+                description_parts.append("(有利日出風向)")
+    
+    # 風速穩定性評估
+    wind_range = max_beaufort - min_beaufort
+    if wind_range <= 1:
+        description_parts.append("風速穩定")
+    elif wind_range <= 2:
+        description_parts.append("風速較穩定")
+        score = max(0, score - 1)  # 輕微減分
+    else:
+        description_parts.append("風速變化較大")
+        score = max(0, score - 2)  # 減分較多
+    
+    description = " | ".join(description_parts)
+    
+    return {
+        'score': score,
+        'description': description,
+        'wind_direction': wind_direction,
+        'wind_level': f"{min_beaufort}-{max_beaufort}級",
+        'wind_impact': '有利' if score >= 10 else '中等' if score >= 6 else '不利'
+    }

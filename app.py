@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory
-from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast
+from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast, get_current_wind_data
 from predictor import calculate_burnsky_score
 from forecast_extractor import forecast_extractor
 import numpy as np
@@ -54,6 +54,10 @@ def predict_burnsky():
     weather_data = fetch_weather_data()
     forecast_data = fetch_forecast_data()
     ninday_data = fetch_ninday_forecast()
+    wind_data = get_current_wind_data()
+    
+    # 將風速數據加入天氣數據中
+    weather_data['wind'] = wind_data
     
     # 使用進階預測器獲取基本分數
     score, details = calculate_burnsky_score(weather_data, forecast_data, ninday_data)
@@ -99,12 +103,18 @@ def predict_sunrise():
     weather_data = fetch_weather_data()
     forecast_data = fetch_forecast_data()
     ninday_data = fetch_ninday_forecast()
+    wind_data = get_current_wind_data()
+    
+    # 將風速數據加入天氣數據中
+    weather_data['wind'] = wind_data
     
     # 如果是提前預測，使用未來天氣數據
     if advance_hours > 0:
         future_weather_data = forecast_extractor.extract_future_weather_data(
             weather_data, forecast_data, ninday_data, advance_hours
         )
+        # 將風速數據加入未來天氣數據中
+        future_weather_data['wind'] = wind_data
         print(f"🔮 使用 {advance_hours} 小時後的推算天氣數據進行日出預測")
     else:
         future_weather_data = weather_data
@@ -151,12 +161,18 @@ def predict_sunset():
     weather_data = fetch_weather_data()
     forecast_data = fetch_forecast_data()
     ninday_data = fetch_ninday_forecast()
+    wind_data = get_current_wind_data()
+    
+    # 將風速數據加入天氣數據中
+    weather_data['wind'] = wind_data
     
     # 如果是提前預測，使用未來天氣數據
     if advance_hours > 0:
         future_weather_data = forecast_extractor.extract_future_weather_data(
             weather_data, forecast_data, ninday_data, advance_hours
         )
+        # 將風速數據加入未來天氣數據中
+        future_weather_data['wind'] = wind_data
         print(f"🔮 使用 {advance_hours} 小時後的推算天氣數據進行日落預測")
     else:
         future_weather_data = weather_data

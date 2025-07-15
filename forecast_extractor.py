@@ -41,7 +41,8 @@ class ForecastExtractor:
             'humidity': weather_data.get('humidity', {}),
             'rainfall': weather_data.get('rainfall', {}),
             'uvindex': weather_data.get('uvindex', {}),
-            'icon': weather_data.get('icon', [])
+            'icon': weather_data.get('icon', []),
+            'wind': weather_data.get('wind', {})  # 保留風速數據
         }
         
         # 1. 從九天預報獲取對應日期的天氣資訊
