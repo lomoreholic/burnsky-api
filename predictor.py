@@ -138,13 +138,19 @@ def calculate_burnsky_score(weather_data, forecast_data, ninday_data):
         traditional_score = score
         ml_score = ml_result['ml_burnsky_score']
         
-        # 加權平均 - 優化提前1-2小時預測準確率 (傳統算法 35%, 機器學習 65%)
-        final_score = traditional_score * 0.35 + ml_score * 0.65
+        # 標準化傳統算法分數到100分制 (總分上限140分)
+        TRADITIONAL_MAX_SCORE = 140  # 18+18+22+18+30+12+10+12
+        traditional_score_normalized = (traditional_score / TRADITIONAL_MAX_SCORE) * 100
+        
+        # 加權平均 - 使用標準化後的分數確保公平比較 (傳統算法 35%, 機器學習 65%)
+        final_score = traditional_score_normalized * 0.35 + ml_score * 0.65
         
         details['score_breakdown'] = {
             'traditional_score': traditional_score,
+            'traditional_score_normalized': traditional_score_normalized,
             'ml_score': ml_score,
-            'final_weighted_score': final_score
+            'final_weighted_score': final_score,
+            'normalization_note': f'傳統算法從{traditional_score:.1f}/140標準化為{traditional_score_normalized:.1f}/100'
         }
         
     except Exception as e:
@@ -551,27 +557,33 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
         traditional_score = score
         ml_score = ml_result['ml_burnsky_score']
         
-        # 動態權重調整 - 基於預測時間優化準確率
+        # 標準化傳統算法分數到100分制 (總分上限140分)
+        TRADITIONAL_MAX_SCORE = 140  # 18+18+22+18+30+12+10+12
+        traditional_score_normalized = (traditional_score / TRADITIONAL_MAX_SCORE) * 100
+        
+        # 動態權重調整 - 基於預測時間優化準確率，使用標準化後的分數
         if advance_hours >= 1 and advance_hours <= 2:
             # 提前1-2小時預測時更依賴機器學習 (黃金預測時段)
-            final_score = traditional_score * 0.35 + ml_score * 0.65
+            final_score = traditional_score_normalized * 0.35 + ml_score * 0.65
             weight_note = "黃金預測時段，AI權重65%"
         elif advance_hours > 0:
             # 其他提前預測時段，機器學習權重60%
-            final_score = traditional_score * 0.4 + ml_score * 0.6
+            final_score = traditional_score_normalized * 0.4 + ml_score * 0.6
             weight_note = "提前預測時段，AI權重60%"
         else:
             # 即時預測，減少AI權重讓傳統算法有更大發言權
-            final_score = traditional_score * 0.45 + ml_score * 0.55
+            final_score = traditional_score_normalized * 0.45 + ml_score * 0.55
             weight_note = "即時預測時段，AI權重55%"
         
         details['score_breakdown'] = {
             'traditional_score': traditional_score,
+            'traditional_score_normalized': traditional_score_normalized,
             'ml_score': ml_score,
             'final_weighted_score': final_score,
             'prediction_type': prediction_type,
             'advance_hours': advance_hours,
-            'weight_explanation': weight_note
+            'weight_explanation': weight_note,
+            'normalization_note': f'傳統算法從{traditional_score:.1f}/140標準化為{traditional_score_normalized:.1f}/100'
         }
         
     except Exception as e:
