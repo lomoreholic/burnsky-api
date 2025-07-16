@@ -529,6 +529,65 @@
             margin-top: 20px;
         }
 
+        /* 燒天指數對照表動畫 */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 6px 20px rgba(255,255,255,0.3), 0 0 0 3px rgba(255,255,255,0.5);
+            }
+            50% {
+                box-shadow: 0 8px 25px rgba(255,255,255,0.4), 0 0 0 5px rgba(255,255,255,0.7);
+            }
+            100% {
+                box-shadow: 0 6px 20px rgba(255,255,255,0.3), 0 0 0 3px rgba(255,255,255,0.5);
+            }
+        }
+
+        .score-reference-header:hover {
+            background: linear-gradient(45deg, #7c8ff0, #8b5aa8) !important;
+        }
+
+        .score-reference-header:hover div {
+            left: 100% !important;
+        }
+
+        /* 手機版調整 */
+        @media (max-width: 768px) {
+            .score-range-item {
+                font-size: 0.85rem !important;
+            }
+            
+            .score-range-item div {
+                min-width: 50px !important;
+            }
+            
+            .score-reference-card {
+                max-width: 100% !important;
+                margin: 15px auto !important;
+            }
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2.5rem;
@@ -623,6 +682,47 @@
                     
                     <div class="prediction-level" id="predictionLevel" aria-live="polite">載入中...</div>
                     <div class="probability" id="probability" aria-live="polite">計算中...</div>
+                    
+                    <!-- 燒天指數對照表 -->
+                    <div class="score-reference-card" style="margin: 20px auto; max-width: 500px;">
+                        <div class="score-reference-header" onclick="toggleScoreReference()" style="cursor: pointer; padding: 12px 20px; background: linear-gradient(45deg, #667eea, #764ba2); color: white; border-radius: 12px 12px 0 0; text-align: center; user-select: none; transition: all 0.3s ease; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent); transition: left 0.6s ease;"></div>
+                            <span style="font-weight: 600; font-size: 1rem; position: relative; z-index: 1;">📊 燒天指數對照表</span>
+                            <span id="scoreReferenceToggleIcon" style="float: right; transition: transform 0.3s ease; position: relative; z-index: 1;">🔽</span>
+                        </div>
+                        <div id="scoreReferenceContent" style="display: none; background: white; border: 2px solid #667eea; border-top: none; border-radius: 0 0 12px 12px; padding: 15px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1); animation: slideDown 0.3s ease;">
+                            <div class="score-ranges" style="display: grid; gap: 8px; font-size: 0.9rem;">
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: linear-gradient(45deg, #ff6b6b, #ee5a52); color: white; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(255,107,107,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                                    <div style="font-weight: bold; min-width: 60px;">80-100</div>
+                                    <div style="flex: 1; margin: 0 10px;">🔥 極高機率</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">必拍級別</div>
+                                </div>
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: linear-gradient(45deg, #fd9644, #e55a4e); color: white; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(253,150,68,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                                    <div style="font-weight: bold; min-width: 60px;">65-79</div>
+                                    <div style="flex: 1; margin: 0 10px;">🌅 高機率</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">推薦拍攝</div>
+                                </div>
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: linear-gradient(45deg, #feca57, #ff9ff3); color: white; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(254,202,87,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                                    <div style="font-weight: bold; min-width: 60px;">50-64</div>
+                                    <div style="flex: 1; margin: 0 10px;">⛅ 中等機率</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">可以嘗試</div>
+                                </div>
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: linear-gradient(45deg, #48dbfb, #0abde3); color: white; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(72,219,251,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                                    <div style="font-weight: bold; min-width: 60px;">30-49</div>
+                                    <div style="flex: 1; margin: 0 10px;">🌤️ 較低機率</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">碰運氣</div>
+                                </div>
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 8px 12px; border-radius: 8px; background: linear-gradient(45deg, #74b9ff, #0984e3); color: white; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(116,185,255,0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                                    <div style="font-weight: bold; min-width: 60px;">0-29</div>
+                                    <div style="flex: 1; margin: 0 10px;">❄️ 機率極低</div>
+                                    <div style="font-size: 0.8rem; opacity: 0.9;">不建議</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 12px; padding: 10px; background: rgba(102, 126, 234, 0.05); border-radius: 8px; font-size: 0.85rem; color: #666; text-align: center; border-left: 3px solid #667eea;">
+                                💡 分數越高，燒天機率越大。結合天氣觀察做最終判斷！
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- 預測控制項 -->
                     <div class="prediction-controls" style="margin: 20px 0; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap;">
@@ -799,6 +899,14 @@
                 
                 // 更新燒天指數
                 document.getElementById('scoreNumber').textContent = Math.round(data.burnsky_score);
+                
+                // 如果對照表已展開，更新高亮
+                const scoreReferenceContent = document.getElementById('scoreReferenceContent');
+                if (scoreReferenceContent && scoreReferenceContent.style.display === 'block') {
+                    setTimeout(() => {
+                        highlightCurrentScoreRange();
+                    }, 100);
+                }
                 
                 // 更新預測等級
                 const levelElement = document.getElementById('predictionLevel');
@@ -2180,6 +2288,92 @@
             }
         }
 
+        // 切換燒天指數對照表
+        function toggleScoreReference() {
+            const content = document.getElementById('scoreReferenceContent');
+            const icon = document.getElementById('scoreReferenceToggleIcon');
+            
+            if (content.style.display === 'none' || content.style.display === '') {
+                // 收起狀態 -> 展開
+                content.style.display = 'block';
+                content.style.animation = 'slideDown 0.3s ease';
+                icon.style.transform = 'rotate(180deg)';
+                icon.textContent = '🔼';
+                
+                // 高亮當前分數範圍
+                highlightCurrentScoreRange();
+                
+                // 儲存用戶偏好
+                localStorage.setItem('scoreReferenceExpanded', 'true');
+            } else {
+                // 展開狀態 -> 收起
+                content.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => {
+                    content.style.display = 'none';
+                }, 280);
+                icon.style.transform = 'rotate(0deg)';
+                icon.textContent = '🔽';
+                
+                // 儲存用戶偏好
+                localStorage.setItem('scoreReferenceExpanded', 'false');
+            }
+        }
+
+        // 高亮當前燒天分數對應的範圍
+        function highlightCurrentScoreRange() {
+            const scoreElement = document.getElementById('scoreNumber');
+            const currentScore = parseInt(scoreElement.textContent) || 0;
+            const scoreItems = document.querySelectorAll('.score-range-item');
+            
+            // 清除所有高亮
+            scoreItems.forEach(item => {
+                item.style.transform = 'scale(1)';
+                item.style.boxShadow = 'none';
+                item.style.border = 'none';
+            });
+            
+            // 根據分數高亮對應範圍
+            let targetItem = null;
+            if (currentScore >= 80) {
+                targetItem = scoreItems[0]; // 80-100
+            } else if (currentScore >= 65) {
+                targetItem = scoreItems[1]; // 65-79
+            } else if (currentScore >= 50) {
+                targetItem = scoreItems[2]; // 50-64
+            } else if (currentScore >= 30) {
+                targetItem = scoreItems[3]; // 30-49
+            } else {
+                targetItem = scoreItems[4]; // 0-29
+            }
+            
+            if (targetItem) {
+                targetItem.style.transform = 'scale(1.05)';
+                targetItem.style.boxShadow = '0 6px 20px rgba(255,255,255,0.3), 0 0 0 3px rgba(255,255,255,0.5)';
+                targetItem.style.border = '2px solid rgba(255,255,255,0.8)';
+                
+                // 添加脈衝動畫
+                targetItem.style.animation = 'pulse 2s infinite';
+            }
+        }
+
+        // 初始化燒天指數對照表狀態
+        function initializeScoreReferenceSection() {
+            const content = document.getElementById('scoreReferenceContent');
+            const icon = document.getElementById('scoreReferenceToggleIcon');
+            const expanded = localStorage.getItem('scoreReferenceExpanded');
+            
+            // 預設收起，用戶點擊後才展開
+            if (expanded === 'true') {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+                icon.textContent = '🔼';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+                icon.textContent = '🔽';
+            }
+        }
+
         // 每秒更新時間
         setInterval(updateCurrentTime, 1000);
         
@@ -2190,6 +2384,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeFactorsSection();
             initializeViewingGuideSection();
+            initializeScoreReferenceSection();
             loadPrediction();
         });
         
