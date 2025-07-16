@@ -317,8 +317,9 @@
             
             .factor-card:hover .factor-description {
                 opacity: 1;
-                max-height: 200px;
+                max-height: 600px; /* 進一步增加高度 */
                 transform: translateY(0);
+                padding-top: 10px; /* 增加頂部間距 */
             }
         }
 
@@ -373,6 +374,18 @@
             font-size: 0.9rem;
         }
 
+        /* 雲層厚度分析卡片特殊樣式 */
+        .cloud-analysis-card .factor-description {
+            font-size: 0.9rem; /* 稍微縮小字體 */
+            line-height: 1.5; /* 緊湊行距 */
+        }
+        
+        @media (hover: hover) and (pointer: fine) {
+            .cloud-analysis-card:hover .factor-description {
+                max-height: 800px; /* 雲層分析卡片專用的更大高度 */
+            }
+        }
+
         .factor-description {
             color: #666;
             line-height: 1.6;
@@ -380,7 +393,7 @@
             opacity: 0;
             max-height: 0;
             transform: translateY(-10px);
-            transition: opacity 0.3s ease, max-height 0.3s ease, transform 0.3s ease;
+            transition: opacity 0.4s ease, max-height 0.4s ease, transform 0.4s ease; /* 增加過渡時間 */
             overflow: hidden;
         }
 
@@ -1183,7 +1196,7 @@
             // 添加衛星分析專用卡片（如果有衛星數據）
             if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.satellite_analysis) {
                 const satelliteCard = document.createElement('div');
-                satelliteCard.className = 'factor-card';
+                satelliteCard.className = 'factor-card cloud-analysis-card'; // 添加特殊類
                 satelliteCard.style.borderLeft = '4px solid #00ff7f';
                 
                 const satellite = details.cloud_thickness_analysis.satellite_analysis;
@@ -1218,7 +1231,7 @@
             // 添加詳細攝影指導卡片
             if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.photography_guidance) {
                 const photographyCard = document.createElement('div');
-                photographyCard.className = 'factor-card';
+                photographyCard.className = 'factor-card cloud-analysis-card'; // 添加特殊類
                 photographyCard.style.borderLeft = '4px solid #fd79a8';
                 
                 const guidance = details.cloud_thickness_analysis.photography_guidance;
@@ -1269,7 +1282,7 @@
             // 添加燒天適宜度評估卡片
             if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.burnsky_suitability) {
                 const suitabilityCard = document.createElement('div');
-                suitabilityCard.className = 'factor-card';
+                suitabilityCard.className = 'factor-card cloud-analysis-card'; // 添加特殊類
                 suitabilityCard.style.borderLeft = '4px solid #fdcb6e';
                 
                 const suitability = details.cloud_thickness_analysis.burnsky_suitability;
@@ -1311,7 +1324,7 @@
             // 添加技術詳情卡片
             if (details.cloud_thickness_analysis && details.cloud_thickness_analysis.technical_details) {
                 const technicalCard = document.createElement('div');
-                technicalCard.className = 'factor-card';
+                technicalCard.className = 'factor-card cloud-analysis-card'; // 添加特殊類
                 technicalCard.style.borderLeft = '4px solid #74b9ff';
                 
                 const technical = details.cloud_thickness_analysis.technical_details;
