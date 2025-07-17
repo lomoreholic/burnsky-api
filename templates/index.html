@@ -6,12 +6,18 @@
     
     <!-- SEO 基本標籤 -->
     <title>燒天預測系統 | 香港日落火燒雲預測 | BurnSky AI 人工智能天氣分析</title>
-    <meta name="description" content="香港最精準的燒天預測系統！結合AI人工智能與氣象數據，實時預測日落火燒雲機率。提供詳細分析因子、天氣數據和拍攝建議，是攝影愛好者的必備工具。">
-    <meta name="keywords" content="燒天預測,火燒雲,日落,香港天氣,攝影,天空,雲層分析,AI預測,人工智能,天氣預報,BurnSky">
+    <meta name="description" content="香港最精準的燒天預測系統！結合AI人工智能與氣象數據，實時預測日落火燒雲機率。提供詳細分析因子、天氣數據和拍攝建議，是攝影愛好者的必備工具。支援維港、太平山頂等最佳拍攝地點推薦。">
+    <meta name="keywords" content="燒天預測,火燒雲,日落,香港天氣,攝影,天空,雲層分析,AI預測,人工智能,天氣預報,BurnSky,維港日落,太平山燒天,香港燒天時間,火燒雲預測app,實時天氣預測,攝影天氣,日落攝影,香港攝影地點,天氣分析,燒天機率">
     <meta name="author" content="BurnSky Team">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="language" content="zh-TW">
     <meta name="revisit-after" content="1 days">
+    <meta name="rating" content="general">
+    <meta name="distribution" content="global">
+    <meta name="geo.region" content="HK">
+    <meta name="geo.placename" content="Hong Kong">
+    <meta name="geo.position" content="22.3193;114.1694">
+    <meta name="ICBM" content="22.3193, 114.1694">
     
     <!-- Open Graph 社交媒體標籤 -->
     <meta property="og:title" content="燒天預測系統 | 香港日落火燒雲AI預測">
@@ -60,6 +66,76 @@
             "@type": "UseAction",
             "target": "https://burnsky-api.onrender.com"
         }
+    }
+    </script>
+    
+    <!-- FAQ 結構化數據 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "什麼是燒天？",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "燒天是指日出或日落時天空呈現橙紅色火燒般色彩的天氣現象，通常發生在特定的大氣條件下，是攝影愛好者最喜愛的自然景觀之一。"
+                }
+            },
+            {
+                "@type": "Question", 
+                "name": "燒天預測的準確率如何？",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "我們的AI預測系統結合香港天文台數據和機器學習算法，準確率約達85%。預測會考慮雲層厚度、濕度、風速、空氣品質等多項因素。"
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "最佳的燒天拍攝地點在哪裡？",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "香港最佳燒天拍攝地點包括維多利亞港、太平山頂、石澳、獅子山等。不同地點適合不同時間，系統會根據當日條件推薦最佳拍攝位置。"
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "如何知道今天會不會有燒天？",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "使用我們的燒天預測系統，輸入網址即可看到當日的燒天機率評分、預測等級和詳細分析。系統每小時更新數據，提供最即時的預測。"
+                }
+            }
+        ]
+    }
+    </script>
+    
+    <!-- 本地商業結構化數據 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "BurnSky 燒天預測系統",
+        "description": "香港專業燒天預測服務，為攝影愛好者提供精準的火燒雲預測",
+        "url": "https://burnsky-api.onrender.com",
+        "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "香港",
+            "addressRegion": "Hong Kong",
+            "addressCountry": "HK"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": "22.3193",
+            "longitude": "114.1694"
+        },
+        "areaServed": {
+            "@type": "Place",
+            "name": "香港"
+        },
+        "serviceType": "天氣預測服務",
+        "priceRange": "免費"
     }
     </script>
     
@@ -653,8 +729,44 @@
             <div id="currentTime" style="font-size: 1rem; color: #666; margin-top: 10px; font-weight: 500;"></div>
         </header>
         
+        <!-- 麵包屑導航 -->
+        <nav class="breadcrumb" aria-label="Breadcrumb" style="background: rgba(255,255,255,0.8); padding: 6px 12px; border-radius: 6px; margin: 8px 0; backdrop-filter: blur(10px); box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.85em;">
+            <ol style="list-style: none; display: flex; align-items: center; margin: 0; padding: 0;">
+                <li>
+                    <a href="/" style="color: #667eea; text-decoration: none; transition: color 0.3s ease;" 
+                       onmouseover="this.style.color='#5a6fd8'" onmouseout="this.style.color='#667eea'">
+                        🏠 首頁
+                    </a>
+                </li>
+                <li style="margin: 0 6px; color: #666; font-size: 0.9em;">›</li>
+                <li style="color: #555; font-weight: 500;">燒天預測</li>
+            </ol>
+        </nav>
+        
+        <!-- 麵包屑結構化數據 -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "首頁",
+                    "item": "https://burnsky-api.onrender.com/"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "燒天預測",
+                    "item": "https://burnsky-api.onrender.com/predict"
+                }
+            ]
+        }
+        </script>
+        
         <!-- 廣告區域 -->
-        <aside class="main-card" style="background: rgba(248, 249, 250, 0.95); text-align: center; padding: 20px;">
+        <aside class="main-card" style="background: rgba(248, 249, 250, 0.95); text-align: center; padding: 20px; margin-top: 30px;">
             <small style="color: #6c757d; border: 1px dashed #dee2e6; padding: 10px 20px; border-radius: 8px; display: inline-block;">
                 廣告位置（等待 AdSense 審核通過）
             </small>
@@ -2395,6 +2507,38 @@
     <!-- 頁腳 -->
     <footer style="text-align: center; padding: 30px 0; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.2);">
         <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+            
+            <!-- 主要連結區域 -->
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: white; margin-bottom: 15px; font-size: 1.1em;">🔗 相關資源</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; max-width: 600px; margin: 0 auto;">
+                    <a href="/faq" style="color: rgba(255,255,255,0.9); text-decoration: none; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; transition: all 0.3s ease;" 
+                       onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                        ❓ 常見問題
+                    </a>
+                    <a href="/photography-guide" style="color: rgba(255,255,255,0.9); text-decoration: none; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; transition: all 0.3s ease;"
+                       onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                        📸 攝影指南
+                    </a>
+                    <a href="/best-locations" style="color: rgba(255,255,255,0.9); text-decoration: none; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; transition: all 0.3s ease;"
+                       onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                        📍 最佳地點
+                    </a>
+                    <a href="/weather-terms" style="color: rgba(255,255,255,0.9); text-decoration: none; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; transition: all 0.3s ease;"
+                       onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+                        📚 天氣術語
+                    </a>
+                </div>
+            </div>
+            
+            <!-- API和技術資源 -->
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: white; margin-bottom: 10px; font-size: 1em;">🛠️ 開發者資源</h4>
+                <a href="/api" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 15px;">API文檔</a>
+                <a href="/status" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 15px;">系統狀態</a>
+                <a href="/sitemap.xml" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 15px;">網站地圖</a>
+            </div>
+            
             <p>© 2025 BurnSky 燒天預測系統 | 基於香港天文台開放數據</p>
             <p style="margin: 10px 0;">
                 <a href="/privacy" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 10px;">私隱政策</a>

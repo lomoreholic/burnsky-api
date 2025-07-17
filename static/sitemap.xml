@@ -36,6 +36,35 @@
         <priority>0.8</priority>
     </url>
     
+    <!-- SEO內容頁面 -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/faq</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <url>
+        <loc>https://burnsky-api.onrender.com/photography-guide</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://burnsky-api.onrender.com/best-locations</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://burnsky-api.onrender.com/weather-terms</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
     <!-- API資訊頁面 -->
     <url>
         <loc>https://burnsky-api.onrender.com/api</loc>
@@ -60,7 +89,7 @@
         <priority>0.3</priority>
     </url>
     
-    <!-- 法律頁面 -->
+    <!-- 合規性頁面 -->
     <url>
         <loc>https://burnsky-api.onrender.com/privacy</loc>
         <lastmod>2025-07-17</lastmod>
