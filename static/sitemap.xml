@@ -1,33 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        
+    <!-- 主頁 - 最高優先級 -->
     <url>
         <loc>https://burnsky-api.onrender.com/</loc>
-        <lastmod>2025-07-12</lastmod>
+        <lastmod>2025-07-17</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
+    
+    <!-- 預測API端點 - 核心功能 -->
     <url>
-        <loc>https://burnsky-api.onrender.com/privacy</loc>
-        <lastmod>2025-07-12</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.5</priority>
+        <loc>https://burnsky-api.onrender.com/predict</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>hourly</changefreq>
+        <priority>0.9</priority>
     </url>
-    <url>
-        <loc>https://burnsky-api.onrender.com/terms</loc>
-        <lastmod>2025-07-12</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.5</priority>
-    </url>
+    
+    <!-- 日落預測 - 主要功能 -->
     <url>
         <loc>https://burnsky-api.onrender.com/predict/sunset</loc>
-        <lastmod>2025-07-12</lastmod>
+        <lastmod>2025-07-17</lastmod>
         <changefreq>hourly</changefreq>
         <priority>0.8</priority>
     </url>
+    
+    <!-- 日出預測 - 主要功能 -->
     <url>
         <loc>https://burnsky-api.onrender.com/predict/sunrise</loc>
-        <lastmod>2025-07-12</lastmod>
+        <lastmod>2025-07-17</lastmod>
         <changefreq>hourly</changefreq>
         <priority>0.8</priority>
     </url>
+    
+    <!-- API資訊頁面 -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/api</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+    <!-- 系統狀態頁面 -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/status</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.4</priority>
+    </url>
+    
+    <!-- 健康檢查頁面 -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/health</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.3</priority>
+    </url>
+    
+    <!-- 法律頁面 -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/privacy</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    
+    <url>
+        <loc>https://burnsky-api.onrender.com/terms</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    
+    <!-- 廣告相關文件 -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/ads.txt</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.2</priority>
+    </url>
+    
+    <!-- Robots.txt -->
+    <url>
+        <loc>https://burnsky-api.onrender.com/robots.txt</loc>
+        <lastmod>2025-07-17</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.1</priority>
+    </url>
+    
 </urlset>
