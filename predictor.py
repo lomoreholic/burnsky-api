@@ -558,7 +558,8 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
         ml_score = ml_result['ml_burnsky_score']
         
         # 標準化傳統算法分數到100分制 (總分上限140分)
-        TRADITIONAL_MAX_SCORE = 140  # 18+18+22+18+30+12+10+12
+        # 分數構成：時間(25) + 溫度(15) + 濕度(20) + 能見度(15) + 雲層(25) + UV(10) + 風速(15) + 空氣品質(15) = 140分
+        TRADITIONAL_MAX_SCORE = 140  # 25+15+20+15+25+10+15+15
         traditional_score_normalized = (traditional_score / TRADITIONAL_MAX_SCORE) * 100
         
         # 動態權重調整 - 基於預測時間優化準確率，使用標準化後的分數
@@ -607,12 +608,15 @@ def calculate_burnsky_score_advanced(weather_data, forecast_data, ninday_data,
     # 根據雲層厚度調整分數
     if cloud_visibility_result['color_visibility_percentage'] < 30:
         # 厚雲天氣，降低整體分數但提供替代價值
-        score = score * 0.8  # 輕微降分
+        final_score = final_score * 0.8  # 輕微降分
         details['cloud_visibility_analysis']['score_adjustment'] = '厚雲天氣調整：專注明暗變化'
     elif cloud_visibility_result['color_visibility_percentage'] > 80:
         # 極佳顏色條件，輕微加分
-        score = score * 1.1
+        final_score = final_score * 1.1
         details['cloud_visibility_analysis']['score_adjustment'] = '極佳顏色條件加分'
+    
+    # 確保調整後分數仍在0-100範圍內
+    final_score = max(0, min(100, final_score))
     
     # 9. 燒天程度預測
     intensity_prediction = advanced_predictor.predict_burnsky_intensity(final_score)
@@ -749,10 +753,6 @@ def generate_analysis_summary_enhanced(details):
             summary.append(f"❌ 嚴重空氣污染不利燒天（AQHI {air_data.get('aqhi', 'N/A')}）")
     
     return summary
-
-def calculate_time_factor():
-    """簡化版時間因子計算 - 保持向後兼容性"""
-    return advanced_predictor.calculate_time_factor_advanced()['score']
 
 def calculate_wind_factor(weather_data):
     """
