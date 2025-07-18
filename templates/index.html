@@ -1191,7 +1191,7 @@
                                 <div class="factor-name">
                                     ${factorNames[key].icon} ${factorNames[key].name} <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                                 </div>
-                                <div class="factor-score">${value.score}/${factorNames[key].maxScore}分</div>
+                                <div class="factor-score">${value.score}/${value.max_score || factorNames[key].maxScore}分</div>
                             </div>
                             <div class="factor-description">
                                 ${value.description}<br>
@@ -1219,7 +1219,7 @@
                                 <div class="factor-name">
                                     ${factorNames[key].icon} ${factorNames[key].name} <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                                 </div>
-                                <div class="factor-score">${value.score}/${factorNames[key].maxScore}分</div>
+                                <div class="factor-score">${value.score}/${value.max_score || factorNames[key].maxScore}分</div>
                             </div>
                             <div class="factor-description">
                                 ${value.description}${cloudInfo}
@@ -1233,7 +1233,7 @@
                                 <div class="factor-name">
                                     ${factorNames[key].icon} ${factorNames[key].name} <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                                 </div>
-                                <div class="factor-score">${value.score}/${factorNames[key].maxScore}分</div>
+                                <div class="factor-score">${value.score}/${value.max_score || factorNames[key].maxScore}分</div>
                             </div>
                             <div class="factor-description">
                                 ${value.description}

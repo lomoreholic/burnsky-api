@@ -1,10 +1,9 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory
 from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast, get_current_wind_data
-from predictor import calculate_burnsky_score
+from unified_scorer import calculate_burnsky_score_unified
 from forecast_extractor import forecast_extractor
 import numpy as np
 import os
-from datetime import datetime
 from datetime import datetime
 
 app = Flask(__name__)
@@ -72,18 +71,82 @@ def predict_burnsky():
         future_weather_data = weather_data
         print(f"🕐 使用即時天氣數據進行{prediction_type}預測")
     
-    # 統一使用進階預測算法 (支援所有情況)
-    from predictor import calculate_burnsky_score_advanced
-    score, details, intensity, colors = calculate_burnsky_score_advanced(
+    # 使用統一計分系統 (整合所有計分方式)
+    unified_result = calculate_burnsky_score_unified(
         future_weather_data, forecast_data, ninday_data, prediction_type, advance_hours
     )
     
-    # 獲取雲層厚度分析
-    from advanced_predictor import AdvancedBurnskyPredictor
-    advanced = AdvancedBurnskyPredictor()
-    cloud_thickness_analysis = advanced.analyze_cloud_thickness_and_color_visibility(
-        future_weather_data, forecast_data
-    )
+    # 從統一結果中提取分數和詳情
+    score = unified_result['final_score']
+    
+    # 復用統一計分器中的雲層厚度分析結果，避免重複計算
+    cloud_thickness_analysis = unified_result.get('cloud_thickness_analysis', {})
+
+    # 構建前端兼容的分析詳情格式
+    factor_scores = unified_result.get('factor_scores', {})
+    
+    # 構建詳細的因子信息，包含前端期望的格式
+    def build_factor_info(factor_name, score, max_score=None):
+        """構建因子詳情"""
+        if max_score is None:
+            max_score = {'time': 25, 'temperature': 15, 'humidity': 20, 'visibility': 15, 
+                        'cloud': 25, 'uv': 10, 'wind': 15, 'air_quality': 15}.get(factor_name, 100)
+        
+        factor_data = {
+            'score': round(score, 1),
+            'max_score': max_score,
+            'description': f'{factor_name.title()}因子評分: {round(score, 1)}/{max_score}分'
+        }
+        
+        # 添加特定因子的額外信息
+        if factor_name == 'time':
+            factor_data.update({
+                'current_time': datetime.now().strftime('%H:%M'),
+                'target_time': '18:30' if prediction_type == 'sunset' else '06:30',
+                'target_type': prediction_type,
+                'advance_hours': advance_hours
+            })
+        elif factor_name == 'temperature' and 'temperature' in future_weather_data:
+            factor_data['current_temp'] = future_weather_data['temperature']
+        elif factor_name == 'humidity' and 'humidity' in future_weather_data:
+            factor_data['current_humidity'] = future_weather_data['humidity']
+        elif factor_name == 'wind' and 'wind' in future_weather_data:
+            wind_data = future_weather_data['wind']
+            if isinstance(wind_data, dict) and 'speed' in wind_data:
+                factor_data['wind_speed'] = wind_data['speed']
+        
+        return factor_data
+    
+    analysis_details = {
+        "confidence": unified_result['analysis'].get('confidence', 'medium'),
+        "recommendation": unified_result['analysis'].get('recommendation', ''),
+        "score_breakdown": {
+            "final_score": unified_result['final_score'],
+            "final_weighted_score": unified_result['final_score'],
+            "ml_score": unified_result['ml_score'],
+            "traditional_normalized": unified_result['traditional_normalized'],
+            "traditional_raw": unified_result['traditional_score'],
+            "traditional_score": unified_result['traditional_score'],
+            "weighted_score": unified_result['weighted_score'],
+            "weight_explanation": f"智能權重分配: AI模型 {unified_result['weights_used'].get('ml', 0.5)*100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5)*100:.0f}%"
+        },
+        "top_factors": unified_result['analysis'].get('top_factors', []),
+        # 添加前端期望的因子數據 - 將字串摘要轉換為陣列格式
+        "analysis_summary": [part.strip() for part in unified_result['analysis'].get('summary', '基於統一計分系統的綜合分析').split('|')],
+        "intensity_prediction": unified_result['intensity_prediction'],
+        "cloud_visibility_analysis": cloud_thickness_analysis,
+        # 構建各個因子的詳細信息
+        "time_factor": build_factor_info('time', factor_scores.get('time', 0), 25),
+        "temperature_factor": build_factor_info('temperature', factor_scores.get('temperature', 0), 15),
+        "humidity_factor": build_factor_info('humidity', factor_scores.get('humidity', 0), 20),
+        "visibility_factor": build_factor_info('visibility', factor_scores.get('visibility', 0), 15),
+        "cloud_analysis_factor": build_factor_info('cloud', factor_scores.get('cloud', 0), 25),
+        "uv_factor": build_factor_info('uv', factor_scores.get('uv', 0), 10),
+        "wind_factor": build_factor_info('wind', factor_scores.get('wind', 0), 15),
+        "air_quality_factor": build_factor_info('air_quality', factor_scores.get('air_quality', 0), 15),
+        # 添加機器學習特徵分析
+        "ml_feature_analysis": unified_result.get('ml_feature_analysis', {}),
+    }
 
     result = {
         "burnsky_score": score,
@@ -91,13 +154,15 @@ def predict_burnsky():
         "prediction_level": get_prediction_level(score),
         "prediction_type": prediction_type,
         "advance_hours": advance_hours,
-        "analysis_details": details,
-        "intensity_prediction": intensity,
-        "color_prediction": colors,
+        "unified_analysis": unified_result,  # 完整的統一分析結果
+        "analysis_details": analysis_details,  # 前端兼容格式
+        "intensity_prediction": unified_result['intensity_prediction'],
+        "color_prediction": unified_result['color_prediction'],
         "cloud_thickness_analysis": cloud_thickness_analysis,
         "weather_data": future_weather_data,
         "original_weather_data": weather_data if advance_hours > 0 else None,
-        "forecast_data": forecast_data
+        "forecast_data": forecast_data,
+        "scoring_method": "unified_v1.0"  # 標示使用統一計分系統
     }
     
     result = convert_numpy_types(result)
@@ -126,8 +191,8 @@ def api_info():
     """API 資訊和文檔"""
     api_docs = {
         "service": "燒天預測 API",
-        "version": "2.1",
-        "description": "香港燒天預測服務 - 統一的機器學習預測 API",
+        "version": "3.0",
+        "description": "香港燒天預測服務 - 統一整合計分系統",
         "endpoints": {
             "/": "主頁 - 網頁界面",
             "/predict": "統一燒天預測 API (支援所有預測類型)",
@@ -152,24 +217,28 @@ def api_info():
             }
         },
         "features": [
-            "統一預測算法 - 自動選擇最佳權重",
-            "即時天氣數據分析",
-            "空氣品質健康指數 (AQHI) 監測",
-            "機器學習預測模型",
+            "統一計分系統 - 整合所有計分方式",
+            "8因子綜合評估 - 科學權重分配",
+            "動態權重調整 - 根據預測時段優化",
+            "機器學習增強 - 傳統算法+AI預測",
+            "實時天氣數據分析",
+            "空氣品質健康指數 (AQHI) 監測", 
             "提前24小時預測",
             "日出日落分別預測",
             "燒天強度和顏色預測",
-            "詳細分析報告",
-            "分數標準化和公平加權"
+            "季節性和環境調整",
+            "詳細因子分析報告"
         ],
         "data_source": "香港天文台開放數據 API + CSDI 政府空間數據共享平台",
         "update_frequency": "每小時更新",
         "accuracy": "基於歷史數據訓練，準確率約85%",
-        "improvements_v2.1": [
-            "統一預測算法，消除代碼重複",
-            "修正傳統算法分數標準化問題",
-            "優化權重分配和公平比較",
-            "簡化 API 結構，保持向後兼容"
+        "improvements_v3.0": [
+            "統一計分系統，整合所有現有算法",
+            "標準化因子權重和評分邏輯",
+            "增強錯誤處理和容錯機制",
+            "詳細的分析報告和建議",
+            "模組化設計，便於維護和擴展",
+            "完整的計分透明度和可追溯性"
         ]
     }
     
