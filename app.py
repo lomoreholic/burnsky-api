@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory
-from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast, get_current_wind_data
+from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast, get_current_wind_data, fetch_warning_data
 from unified_scorer import calculate_burnsky_score_unified
 from forecast_extractor import forecast_extractor
 import numpy as np
@@ -22,6 +22,68 @@ def convert_numpy_types(obj):
         return [convert_numpy_types(item) for item in obj]
     else:
         return obj
+
+def get_warning_impact_score(warning_data):
+    """計算天氣警告對燒天預測的影響分數"""
+    if not warning_data or 'details' not in warning_data:
+        return 0, []  # 無警告時不影響分數
+    
+    warning_details = warning_data.get('details', [])
+    if not warning_details:
+        return 0, []
+    
+    total_impact = 0
+    active_warnings = []
+    severe_warnings = []  # 記錄嚴重警告
+    
+    for warning in warning_details:
+        warning_text = warning.lower() if isinstance(warning, str) else str(warning).lower()
+        active_warnings.append(warning)
+        
+        # 更細緻的警告類型計算影響 - 調整為更合理的數值
+        if any(keyword in warning_text for keyword in ['黑雨', '黑色暴雨']):
+            impact = 35  # 黑雨最嚴重
+            severe_warnings.append("黑色暴雨")
+        elif any(keyword in warning_text for keyword in ['紅雨', '紅色暴雨']):
+            impact = 20  # 紅雨嚴重 (降低影響)
+            severe_warnings.append("紅色暴雨")
+        elif any(keyword in warning_text for keyword in ['黃雨', '黃色暴雨']):
+            impact = 12  # 黃雨中等
+        elif any(keyword in warning_text for keyword in ['水浸', '特別報告']):
+            impact = 15  # 水浸警告
+        elif any(keyword in warning_text for keyword in ['十號', '颶風', '十號風球']):
+            impact = 40  # 十號風球極嚴重
+            severe_warnings.append("十號颶風信號")
+        elif any(keyword in warning_text for keyword in ['九號', '暴風信號']):
+            impact = 25  # 九號風球嚴重
+            severe_warnings.append("九號暴風信號")
+        elif any(keyword in warning_text for keyword in ['八號', '烈風信號', '烈風或暴風信號']):
+            impact = 18  # 八號風球中等嚴重 (降低影響)
+            severe_warnings.append("八號烈風信號")
+        elif any(keyword in warning_text for keyword in ['熱帶氣旋', 'wtcsgnl']):
+            impact = 15  # 一般熱帶氣旋警報
+        elif any(keyword in warning_text for keyword in ['雷暴', '閃電']):
+            impact = 8   # 雷暴警告 (大幅降低影響)
+        elif any(keyword in warning_text for keyword in ['霧', '能見度']):
+            impact = 15  # 霧警告影響能見度
+        elif any(keyword in warning_text for keyword in ['空氣污染', 'pm2.5', '臭氧']):
+            impact = 5   # 空氣污染輕微影響
+        else:
+            impact = 3   # 其他警告輕微影響
+            
+        total_impact += impact
+    
+    # 動態調整最大扣分上限 - 更寬鬆的限制
+    if len(severe_warnings) >= 2:
+        max_impact = 40  # 多個嚴重警告 (降低上限)
+    elif len(severe_warnings) >= 1:
+        max_impact = 30  # 單個嚴重警告 (降低上限)
+    else:
+        max_impact = 25  # 一般警告 (降低上限)
+    
+    print(f"🚨 警告影響詳情: 總影響{total_impact}分, 上限{max_impact}分, 嚴重警告: {severe_warnings}")
+    
+    return min(total_impact, max_impact), active_warnings
 
 def get_prediction_level(score):
     """根據燒天分數返回預測等級"""
@@ -56,8 +118,15 @@ def predict_burnsky():
     ninday_data = fetch_ninday_forecast()
     wind_data = get_current_wind_data()
     
+    # 🚨 獲取天氣警告數據（新增）
+    warning_data = fetch_warning_data()
+    print(f"🚨 獲取天氣警告數據: {len(warning_data.get('details', [])) if warning_data else 0} 個警告")
+    
     # 將風速數據加入天氣數據中
     weather_data['wind'] = wind_data
+    
+    # 🚨 將警告數據加入天氣數據（新增）
+    weather_data['warnings'] = warning_data
     
     # 如果是提前預測，使用未來天氣數據
     if advance_hours > 0:
@@ -66,7 +135,10 @@ def predict_burnsky():
         )
         # 將風速數據加入未來天氣數據中
         future_weather_data['wind'] = wind_data
+        # 🚨 提前預測時無法預知未來警告，使用當前警告作參考
+        future_weather_data['warnings'] = warning_data
         print(f"🔮 使用 {advance_hours} 小時後的推算天氣數據進行{prediction_type}預測")
+        print(f"⚠️ 提前預測無法預知未來警告狀態，使用當前警告作參考")
     else:
         future_weather_data = weather_data
         print(f"🕐 使用即時天氣數據進行{prediction_type}預測")
@@ -78,6 +150,13 @@ def predict_burnsky():
     
     # 從統一結果中提取分數和詳情
     score = unified_result['final_score']
+    
+    # 🚨 計算警告影響並調整最終分數（新增）
+    warning_impact, active_warnings = get_warning_impact_score(warning_data)
+    if warning_impact > 0:
+        adjusted_score = max(0, score - warning_impact)
+        print(f"🚨 天氣警告影響: -{warning_impact}分，調整後分數: {adjusted_score}")
+        score = adjusted_score
     
     # 復用統一計分器中的雲層厚度分析結果，避免重複計算
     cloud_thickness_analysis = unified_result.get('cloud_thickness_analysis', {})
@@ -121,13 +200,14 @@ def predict_burnsky():
         "confidence": unified_result['analysis'].get('confidence', 'medium'),
         "recommendation": unified_result['analysis'].get('recommendation', ''),
         "score_breakdown": {
-            "final_score": unified_result['final_score'],
-            "final_weighted_score": unified_result['final_score'],
+            "final_score": score,  # 使用警告調整後的分數
+            "final_weighted_score": score,
             "ml_score": unified_result['ml_score'],
             "traditional_normalized": unified_result['traditional_normalized'],
             "traditional_raw": unified_result['traditional_score'],
             "traditional_score": unified_result['traditional_score'],
             "weighted_score": unified_result['weighted_score'],
+            "warning_impact": warning_impact,  # 🚨 新增警告影響
             "weight_explanation": f"智能權重分配: AI模型 {unified_result['weights_used'].get('ml', 0.5)*100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5)*100:.0f}%"
         },
         "top_factors": unified_result['analysis'].get('top_factors', []),
@@ -135,6 +215,13 @@ def predict_burnsky():
         "analysis_summary": [part.strip() for part in unified_result['analysis'].get('summary', '基於統一計分系統的綜合分析').split('|')],
         "intensity_prediction": unified_result['intensity_prediction'],
         "cloud_visibility_analysis": cloud_thickness_analysis,
+        # 🚨 新增警告相關信息
+        "weather_warnings": {
+            "active_warnings": active_warnings,
+            "warning_count": len(active_warnings),
+            "warning_impact_score": warning_impact,
+            "has_severe_warnings": warning_impact >= 25
+        },
         # 構建各個因子的詳細信息
         "time_factor": build_factor_info('time', factor_scores.get('time', 0), 25),
         "temperature_factor": build_factor_info('temperature', factor_scores.get('temperature', 0), 15),
@@ -162,7 +249,14 @@ def predict_burnsky():
         "weather_data": future_weather_data,
         "original_weather_data": weather_data if advance_hours > 0 else None,
         "forecast_data": forecast_data,
-        "scoring_method": "unified_v1.0"  # 標示使用統一計分系統
+        # 🚨 新增警告數據到回應中
+        "warning_data": warning_data,
+        "warning_analysis": {
+            "active_warnings": active_warnings,
+            "warning_impact": warning_impact,
+            "warning_adjusted": warning_impact > 0
+        },
+        "scoring_method": "unified_v1.1_with_warnings"  # 🚨 更新版本號標示警告整合
     }
     
     result = convert_numpy_types(result)
