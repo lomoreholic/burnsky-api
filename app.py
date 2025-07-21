@@ -721,18 +721,18 @@ def predict_sunrise():
     """專門的日出燒天預測端點 - 重定向到統一 API"""
     advance_hours = request.args.get('advance_hours', '2')  # 預設提前2小時
     
-    # 重定向到統一的預測 API
-    from flask import redirect, url_for
-    return redirect(url_for('predict_burnsky', type='sunrise', advance=advance_hours))
+    # 重定向到統一的預測 API - 修正參數名稱
+    from flask import redirect
+    return redirect(f'/predict?type=sunrise&advance={advance_hours}')
 
 @app.route("/predict/sunset", methods=["GET"])
 def predict_sunset():
     """專門的日落燒天預測端點 - 重定向到統一 API"""
     advance_hours = request.args.get('advance_hours', '2')  # 預設提前2小時
     
-    # 重定向到統一的預測 API
-    from flask import redirect, url_for
-    return redirect(url_for('predict_burnsky', type='sunset', advance=advance_hours))
+    # 重定向到統一的預測 API - 修正參數名稱
+    from flask import redirect
+    return redirect(f'/predict?type=sunset&advance={advance_hours}')
 
 @app.route("/api")
 def api_info():
