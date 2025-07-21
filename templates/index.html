@@ -3063,8 +3063,16 @@
 
         async function loadWarningOverview() {
             try {
-                // 載入警告歷史數據
-                const response = await fetch('/api/warnings/history');
+                // 強制刷新：添加緩存破壞參數
+                const timestamp = Date.now();
+                const response = await fetch(`/api/warnings/history?_refresh=${timestamp}`, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);

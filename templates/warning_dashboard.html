@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>警告歷史分析儀表板 | 燒天預測系統</title>
+    <!-- Chart.js 圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -16,88 +18,112 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
+            line-height: 1.6;  /* 增加行高 */
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 30px 20px;  /* 增加上下內邊距 */
         }
         
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
+            margin-bottom: 40px;  /* 增加底部間距 */
+            padding: 20px 0;     /* 增加內邊距 */
         }
         
         .header h1 {
             font-size: 2.5rem;
-            margin-bottom: 10px;
+            margin-bottom: 15px;  /* 增加底部間距 */
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);  /* 增加文字陰影 */
         }
         
         .header p {
             font-size: 1.2rem;
             opacity: 0.9;
+            margin-bottom: 25px;  /* 增加底部間距 */
         }
         
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
+            gap: 35px;  /* 進一步增加卡片間距 */
+            margin-top: 50px;  /* 增加頂部間距 */
+            margin-bottom: 50px;  /* 增加底部間距 */
         }
         
         .card {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;  /* 增加圓角 */
+            padding: 30px;  /* 增加內邊距 */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);  /* 增強陰影 */
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;  /* 增加過渡效果 */
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);  /* 懸停上升效果 */
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);  /* 懸停陰影加深 */
         }
         
         .card-title {
             font-size: 1.4rem;
             font-weight: bold;
-            margin-bottom: 15px;
+            margin-bottom: 20px;  /* 增加底部間距 */
             color: #4a5568;
             border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 10px;
+            padding-bottom: 15px;  /* 增加內邊距 */
         }
         
         .metric {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 10px 0;
-            padding: 10px;
+            margin: 15px 0;  /* 增加上下間距 */
+            padding: 15px;  /* 增加內邊距 */
             background: #f7fafc;
-            border-radius: 8px;
+            border-radius: 12px;  /* 增加圓角 */
+            transition: background 0.3s ease;  /* 增加過渡效果 */
+        }
+        
+        .metric:hover {
+            background: #edf2f7;  /* 懸停背景變化 */
         }
         
         .metric-label {
             font-weight: 500;
             color: #2d3748;
+            font-size: 1rem;  /* 明確字體大小 */
         }
         
         .metric-value {
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1.2rem;  /* 增加字體大小 */
             color: #3182ce;
         }
         
         .warning-list {
             list-style: none;
-            margin: 10px 0;
+            margin: 15px 0;  /* 增加上下間距 */
         }
         
         .warning-item {
-            padding: 8px 12px;
-            margin: 5px 0;
+            padding: 12px 16px;  /* 增加內邊距 */
+            margin: 8px 0;  /* 增加上下間距 */
             background: #edf2f7;
-            border-radius: 6px;
+            border-radius: 10px;  /* 增加圓角 */
             border-left: 4px solid #3182ce;
-            font-size: 0.9rem;
+            font-size: 0.95rem;  /* 稍微增加字體 */
+            line-height: 1.5;  /* 增加行高 */
+            transition: all 0.3s ease;  /* 增加過渡效果 */
+        }
+        
+        .warning-item:hover {
+            background: #e2e8f0;  /* 懸停背景變化 */
+            transform: translateX(5px);  /* 懸停向右移動 */
         }
         
         .severity-extreme { border-left-color: #e53e3e; }
@@ -109,52 +135,163 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
+            padding: 15px 30px;  /* 增加內邊距 */
+            border-radius: 30px;  /* 增加圓角 */
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 1.1rem;  /* 增加字體大小 */
             font-weight: 500;
-            transition: transform 0.2s;
-            margin: 20px auto;
+            transition: all 0.3s ease;  /* 改善過渡效果 */
+            margin: 30px auto 40px auto;  /* 增加上下間距 */
             display: block;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);  /* 增加陰影 */
         }
         
         .refresh-btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);  /* 增加懸停效果 */
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);  /* 懸停陰影加深 */
+        }
+        
+        /* 圖表容器樣式 */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .chart-container:hover {
+            border-color: #3182ce;
+            box-shadow: 0 4px 12px rgba(49, 130, 206, 0.1);
+        }
+        
+        .chart-container canvas {
+            border-radius: 8px;
+        }
+        
+        /* 圖表載入狀態 */
+        .chart-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* 圖表錯誤狀態 */
+        .chart-error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #e53e3e;
+            margin-top: 10px;
+        }
+        
+        /* 總覽圖表網格 */
+        .overview-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        /* 全寬卡片 */
+        .card.full-width {
+            grid-column: 1 / -1;
         }
         
         .loading {
             text-align: center;
             color: #666;
             font-style: italic;
-            padding: 20px;
+            padding: 30px 20px;  /* 增加內邊距 */
+            background: #f8f9fa;  /* 增加背景色 */
+            border-radius: 10px;  /* 增加圓角 */
+            margin: 10px 0;  /* 增加外邊距 */
+            border: 2px dashed #dee2e6;  /* 增加虛線邊框 */
         }
         
         .error {
             color: #e53e3e;
             background: #fed7d7;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
+            padding: 15px 20px;  /* 增加內邊距 */
+            border-radius: 10px;  /* 增加圓角 */
+            margin: 15px 0;  /* 增加外邊距 */
+            border-left: 4px solid #e53e3e;  /* 增加左邊框 */
+            font-weight: 500;  /* 增加字重 */
         }
         
         .nav {
             text-align: center;
-            margin-bottom: 20px;
+            margin: 25px 0 40px 0;  /* 進一步增加上下間距 */
         }
         
         .nav a {
             color: white;
             text-decoration: none;
-            margin: 0 15px;
-            padding: 8px 16px;
+            margin: 0 25px;  /* 增加左右間距 */
+            padding: 12px 25px;  /* 增加內邊距 */
             background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            transition: background 0.3s;
+            border-radius: 25px;  /* 增加圓角 */
+            transition: all 0.3s ease;  /* 改善過渡效果 */
+            display: inline-block;  /* 確保間距正確 */
+            font-weight: 500;  /* 增加字重 */
         }
         
         .nav a:hover {
             background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);  /* 增加懸停效果 */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);  /* 增加陰影 */
+        }
+        
+        /* 響應式設計 - 手機版間距調整 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+                margin-bottom: 10px;
+            }
+            
+            .header p {
+                font-size: 1rem;
+                margin-bottom: 20px;
+            }
+            
+            .nav a {
+                margin: 5px 10px;
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin-top: 30px;
+            }
+            
+            .card {
+                padding: 20px;
+                border-radius: 15px;
+            }
+            
+            .card-title {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            
+            .refresh-btn {
+                padding: 12px 24px;
+                font-size: 1rem;
+                margin: 20px auto 30px auto;
+            }
         }
     </style>
 </head>
@@ -165,7 +302,7 @@
             <p>燒天預測系統 - 警告數據深度分析</p>
             <div class="nav">
                 <a href="/">← 返回主頁</a>
-                <a href="/predict">燒天預測</a>
+                <a href="/">燒天預測</a>
                 <a href="/api">API 文檔</a>
             </div>
         </div>
@@ -174,15 +311,45 @@
 
         <div class="dashboard-grid">
             <!-- 總覽統計 -->
-            <div class="card">
+            <div class="card" style="grid-column: 1 / -1;">
                 <div class="card-title">📊 總覽統計</div>
                 <div id="overview-stats" class="loading">載入中...</div>
+                
+                <!-- 總覽圖表區域 -->
+                <div class="overview-charts-grid" style="display: none; margin-top: 30px; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+                    <!-- 警告類別統計圖 -->
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="overviewCategoryChart"></canvas>
+                    </div>
+                    
+                    <!-- 嚴重度分布圖 -->
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="overviewSeverityChart"></canvas>
+                    </div>
+                    
+                    <!-- 時段模式雷達圖 -->
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="overviewHourlyChart"></canvas>
+                    </div>
+                </div>
             </div>
 
             <!-- 警告類別分佈 -->
             <div class="card">
                 <div class="card-title">🏷️ 警告類別分佈</div>
                 <div id="category-distribution" class="loading">載入中...</div>
+                <div class="chart-container" style="margin-top: 20px; height: 300px; display: none;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 警告時間軸 -->
+            <div class="card">
+                <div class="card-title">📈 警告時間軸</div>
+                <div id="warning-timeline" class="loading">載入中...</div>
+                <div class="chart-container" style="margin-top: 20px; height: 300px; display: none;">
+                    <canvas id="timelineChart"></canvas>
+                </div>
             </div>
 
             <!-- 嚴重程度分析 -->
@@ -221,6 +388,22 @@
                 <div id="prediction-accuracy" class="loading">載入中...</div>
             </div>
         </div>
+        
+        <!-- 頁腳 -->
+        <footer style="text-align: center; padding: 40px 20px; margin-top: 60px; border-top: 1px solid rgba(255,255,255,0.2);">
+            <div style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+                <p style="margin-bottom: 10px;">© 2025 BurnSky 燒天預測系統 | 警告歷史分析儀表板</p>
+                <p style="margin-bottom: 15px;">基於香港天文台開放數據進行深度分析</p>
+                <div style="margin-top: 20px;">
+                    <a href="/privacy" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 15px;">私隱政策</a>
+                    <a href="/terms" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 15px;">使用條款</a>
+                    <a href="mailto:contact@burnsky.hk" style="color: rgba(255,255,255,0.8); text-decoration: none; margin: 0 15px;">聯絡我們</a>
+                </div>
+                <p style="font-size: 0.8rem; margin-top: 20px; opacity: 0.7;">
+                    📊 讓數據驅動更準確的燒天預測 | Made with ❤️ in Hong Kong
+                </p>
+            </div>
+        </footer>
     </div>
 
     <script>
@@ -433,19 +616,214 @@
             element.innerHTML = html;
         }
 
+        // 全局圖表變量
+        let categoryChart = null;
+        let timelineChart = null;
+        let overviewCategoryChart = null;
+        let overviewSeverityChart = null;
+        let overviewHourlyChart = null;
+
+        async function loadOverviewCharts() {
+            try {
+                const data = await fetchAPI('/api/warnings/overview-charts');
+                const chartsGrid = document.querySelector('.overview-charts-grid');
+                
+                if (data.status === 'error') {
+                    console.error('總覽圖表載入失敗:', data.message);
+                    return;
+                }
+
+                // 顯示圖表容器
+                chartsGrid.style.display = 'grid';
+                
+                const charts = data.charts;
+                
+                // 1. 載入警告類別統計圖 (柱狀圖)
+                if (charts.warning_trends) {
+                    if (overviewCategoryChart) overviewCategoryChart.destroy();
+                    
+                    const ctx1 = document.getElementById('overviewCategoryChart').getContext('2d');
+                    overviewCategoryChart = new Chart(ctx1, {
+                        type: charts.warning_trends.chart_type,
+                        data: charts.warning_trends.chart_data,
+                        options: {
+                            ...charts.warning_trends.chart_options,
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+                
+                // 2. 載入嚴重度分布圖 (極座標圖)
+                if (charts.severity_distribution) {
+                    if (overviewSeverityChart) overviewSeverityChart.destroy();
+                    
+                    const ctx2 = document.getElementById('overviewSeverityChart').getContext('2d');
+                    overviewSeverityChart = new Chart(ctx2, {
+                        type: charts.severity_distribution.chart_type,
+                        data: charts.severity_distribution.chart_data,
+                        options: {
+                            ...charts.severity_distribution.chart_options,
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+                
+                // 3. 載入時段模式雷達圖
+                if (charts.hourly_pattern) {
+                    if (overviewHourlyChart) overviewHourlyChart.destroy();
+                    
+                    const ctx3 = document.getElementById('overviewHourlyChart').getContext('2d');
+                    overviewHourlyChart = new Chart(ctx3, {
+                        type: charts.hourly_pattern.chart_type,
+                        data: charts.hourly_pattern.chart_data,
+                        options: {
+                            ...charts.hourly_pattern.chart_options,
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+
+                console.log('✅ 總覽圖表載入成功');
+            } catch (error) {
+                console.error('❌ 總覽圖表載入失敗:', error);
+                document.querySelector('.overview-charts-grid').style.display = 'none';
+            }
+        }
+
+        async function loadCategoryDistributionChart() {
+            try {
+                const data = await fetchAPI('/api/warnings/category-distribution');
+                const container = document.querySelector('#categoryChart').parentElement;
+                
+                if (data.status === 'error') {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'block';
+                
+                // 銷毀現有圖表
+                if (categoryChart) {
+                    categoryChart.destroy();
+                }
+
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+                categoryChart = new Chart(ctx, {
+                    type: data.chart_type,
+                    data: data.chart_data,
+                    options: {
+                        ...data.chart_options,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            ...data.chart_options.plugins,
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return context.label + ': ' + context.parsed + ' 次 (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                console.log('✅ 類別分布圖表載入成功');
+            } catch (error) {
+                console.error('❌ 類別分布圖表載入失敗:', error);
+                document.querySelector('#categoryChart').parentElement.style.display = 'none';
+            }
+        }
+
+        async function loadTimelineChart() {
+            try {
+                const data = await fetchAPI('/api/warnings/timeline');
+                const container = document.querySelector('#timelineChart').parentElement;
+                const textElement = document.getElementById('warning-timeline');
+                
+                if (data.status === 'error') {
+                    container.style.display = 'none';
+                    textElement.innerHTML = `<div class="warning-item">時間軸載入失敗: ${data.message}</div>`;
+                    return;
+                }
+
+                container.style.display = 'block';
+                textElement.innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">分析期間</span>
+                        <span class="metric-value">${data.period}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">總警告數</span>
+                        <span class="metric-value">${data.total_warnings || 0}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">數據來源</span>
+                        <span class="metric-value">${data.data_source === 'example_data' ? '示例數據' : '實際數據'}</span>
+                    </div>
+                `;
+
+                // 銷毀現有圖表
+                if (timelineChart) {
+                    timelineChart.destroy();
+                }
+
+                const ctx = document.getElementById('timelineChart').getContext('2d');
+                timelineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: data.chart_data,
+                    options: {
+                        ...data.chart_options,
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            ...data.chart_options.scales,
+                            y: {
+                                ...data.chart_options.scales.y,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            x: {
+                                ...data.chart_options.scales.x,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                console.log('✅ 時間軸圖表載入成功');
+            } catch (error) {
+                console.error('❌ 時間軸圖表載入失敗:', error);
+                document.querySelector('#timelineChart').parentElement.style.display = 'none';
+                document.getElementById('warning-timeline').innerHTML = `<div class="warning-item">時間軸載入失敗</div>`;
+            }
+        }
+
         async function loadDashboard() {
             console.log('載入儀表板數據...');
             
             // 並行載入所有數據
             await Promise.all([
                 loadOverviewStats(),
+                loadOverviewCharts(),  // 新增：載入總覽圖表
                 loadCategoryDistribution(),
                 loadSeverityAnalysis(),
                 loadTemporalPatterns(),
                 loadSeasonalTrends(),
                 loadInsights(),
                 loadHighImpactWarnings(),
-                loadPredictionAccuracy()
+                loadPredictionAccuracy(),
+                // 原有圖表載入
+                loadCategoryDistributionChart(),
+                loadTimelineChart()
             ]);
             
             console.log('儀表板載入完成');

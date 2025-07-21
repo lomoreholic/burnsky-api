@@ -620,8 +620,12 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         
         # 添加特定因子的額外信息
         if factor_name == 'time':
+            # 使用香港時間
+            from datetime import datetime, timezone, timedelta
+            hk_tz = timezone(timedelta(hours=8))
+            hk_now = datetime.now(hk_tz)
             factor_data.update({
-                'current_time': datetime.now().strftime('%H:%M'),
+                'current_time': hk_now.strftime('%H:%M'),
                 'target_time': '18:30' if prediction_type == 'sunset' else '06:30',
                 'target_type': prediction_type,
                 'advance_hours': advance_hours
