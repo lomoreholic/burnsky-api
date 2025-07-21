@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>警告歷史分析儀表板 | 燒天預測系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            font-weight: 500;
+            color: #2d3748;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #3182ce;
+        }
+        
+        .warning-list {
+            list-style: none;
+            margin: 10px 0;
+        }
+        
+        .warning-item {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #edf2f7;
+            border-radius: 6px;
+            border-left: 4px solid #3182ce;
+            font-size: 0.9rem;
+        }
+        
+        .severity-extreme { border-left-color: #e53e3e; }
+        .severity-severe { border-left-color: #dd6b20; }
+        .severity-moderate { border-left-color: #d69e2e; }
+        .severity-low { border-left-color: #38a169; }
+        
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: transform 0.2s;
+            margin: 20px auto;
+            display: block;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .error {
+            color: #e53e3e;
+            background: #fed7d7;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .nav {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+        
+        .nav a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 警告歷史分析儀表板</h1>
+            <p>燒天預測系統 - 警告數據深度分析</p>
+            <div class="nav">
+                <a href="/">← 返回主頁</a>
+                <a href="/predict">燒天預測</a>
+                <a href="/api">API 文檔</a>
+            </div>
+        </div>
+
+        <button class="refresh-btn" onclick="loadDashboard()">🔄 重新載入數據</button>
+
+        <div class="dashboard-grid">
+            <!-- 總覽統計 -->
+            <div class="card">
+                <div class="card-title">📊 總覽統計</div>
+                <div id="overview-stats" class="loading">載入中...</div>
+            </div>
+
+            <!-- 警告類別分佈 -->
+            <div class="card">
+                <div class="card-title">🏷️ 警告類別分佈</div>
+                <div id="category-distribution" class="loading">載入中...</div>
+            </div>
+
+            <!-- 嚴重程度分析 -->
+            <div class="card">
+                <div class="card-title">⚠️ 嚴重程度分析</div>
+                <div id="severity-analysis" class="loading">載入中...</div>
+            </div>
+
+            <!-- 時間模式分析 -->
+            <div class="card">
+                <div class="card-title">🕐 時間模式分析</div>
+                <div id="temporal-patterns" class="loading">載入中...</div>
+            </div>
+
+            <!-- 季節性趨勢 -->
+            <div class="card">
+                <div class="card-title">🌱 季節性趨勢</div>
+                <div id="seasonal-trends" class="loading">載入中...</div>
+            </div>
+
+            <!-- 數據洞察與建議 -->
+            <div class="card">
+                <div class="card-title">💡 數據洞察與建議</div>
+                <div id="insights" class="loading">載入中...</div>
+            </div>
+
+            <!-- 高影響警告 -->
+            <div class="card">
+                <div class="card-title">🔥 高影響警告</div>
+                <div id="high-impact-warnings" class="loading">載入中...</div>
+            </div>
+
+            <!-- 預測準確性 -->
+            <div class="card">
+                <div class="card-title">🎯 預測準確性評估</div>
+                <div id="prediction-accuracy" class="loading">載入中...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(endpoint);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                return { status: 'error', message: error.message };
+            }
+        }
+
+        function displayError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+
+        function displayMetric(label, value, unit = '') {
+            return `<div class="metric">
+                <span class="metric-label">${label}</span>
+                <span class="metric-value">${value}${unit}</span>
+            </div>`;
+        }
+
+        async function loadOverviewStats() {
+            const data = await fetchAPI('/api/warnings/history');
+            const element = document.getElementById('overview-stats');
+            
+            if (data.status === 'error') {
+                displayError('overview-stats', data.message);
+                return;
+            }
+
+            const stats = data.data;
+            element.innerHTML = `
+                ${displayMetric('總警告數量', stats.total_warnings, '個')}
+                ${displayMetric('分析期間', stats.analysis_period)}
+                ${displayMetric('平均影響分數', stats.impact_score_statistics?.mean?.toFixed(1) || 'N/A')}
+                ${displayMetric('最高影響分數', stats.impact_score_statistics?.max || 'N/A')}
+                ${displayMetric('高影響警告比例', stats.high_impact_warnings?.percentage?.toFixed(1) || 'N/A', '%')}
+            `;
+        }
+
+        async function loadCategoryDistribution() {
+            const data = await fetchAPI('/api/warnings/history');
+            const element = document.getElementById('category-distribution');
+            
+            if (data.status === 'error') {
+                displayError('category-distribution', data.message);
+                return;
+            }
+
+            const categories = data.data.category_distribution || {};
+            let html = '';
+            
+            Object.entries(categories).forEach(([category, count]) => {
+                const percentage = ((count / data.data.total_warnings) * 100).toFixed(1);
+                html += displayMetric(category, `${count} (${percentage}%)`);
+            });
+
+            element.innerHTML = html || '暫無數據';
+        }
+
+        async function loadSeverityAnalysis() {
+            const data = await fetchAPI('/api/warnings/history');
+            const element = document.getElementById('severity-analysis');
+            
+            if (data.status === 'error') {
+                displayError('severity-analysis', data.message);
+                return;
+            }
+
+            const severity = data.data.severity_distribution || {};
+            let html = '';
+            
+            Object.entries(severity).forEach(([level, count]) => {
+                const percentage = ((count / data.data.total_warnings) * 100).toFixed(1);
+                html += `<div class="metric">
+                    <span class="metric-label severity-${level}">${level}</span>
+                    <span class="metric-value">${count} (${percentage}%)</span>
+                </div>`;
+            });
+
+            element.innerHTML = html || '暫無數據';
+        }
+
+        async function loadTemporalPatterns() {
+            const data = await fetchAPI('/api/warnings/history');
+            const element = document.getElementById('temporal-patterns');
+            
+            if (data.status === 'error') {
+                displayError('temporal-patterns', data.message);
+                return;
+            }
+
+            const temporal = data.data.temporal_patterns || {};
+            let html = '<h4>每週分佈</h4>';
+            
+            Object.entries(temporal.day_of_week_distribution || {}).forEach(([day, count]) => {
+                html += displayMetric(day, count);
+            });
+
+            html += '<h4>每小時分佈</h4>';
+            Object.entries(temporal.hourly_distribution || {}).forEach(([hour, count]) => {
+                html += displayMetric(`${hour}:00`, count);
+            });
+
+            element.innerHTML = html || '暫無數據';
+        }
+
+        async function loadSeasonalTrends() {
+            const data = await fetchAPI('/api/warnings/seasonal');
+            const element = document.getElementById('seasonal-trends');
+            
+            if (data.status === 'error') {
+                displayError('seasonal-trends', data.message);
+                return;
+            }
+
+            const seasonal = data.data.seasonal_breakdown || {};
+            let html = '';
+            
+            Object.entries(seasonal).forEach(([season, info]) => {
+                html += `<h4>${season} 季節</h4>`;
+                html += displayMetric('警告總數', info.total_warnings);
+                
+                const mostCommon = Object.entries(info.most_common_categories || {})[0];
+                if (mostCommon) {
+                    html += displayMetric('最常見類型', `${mostCommon[0]} (${mostCommon[1]})`);
+                }
+            });
+
+            element.innerHTML = html || '暫無數據';
+        }
+
+        async function loadInsights() {
+            const data = await fetchAPI('/api/warnings/insights');
+            const element = document.getElementById('insights');
+            
+            if (data.status === 'error') {
+                displayError('insights', data.message);
+                return;
+            }
+
+            const insights = data.data;
+            let html = '<h4>關鍵洞察</h4>';
+            
+            if (insights.summary) {
+                const summary = insights.summary;
+                if (summary.most_common_warning) {
+                    html += displayMetric('最常見警告', `${summary.most_common_warning[0]} (${summary.most_common_warning[1]}次)`);
+                }
+                html += displayMetric('季節趨勢', summary.seasonal_trend || 'N/A');
+                html += displayMetric('30天警告總數', summary.total_warnings_30d || 'N/A');
+            }
+
+            html += '<h4>建議</h4><ul class="warning-list">';
+            (insights.recommendations || []).forEach(rec => {
+                html += `<li class="warning-item">${rec}</li>`;
+            });
+            html += '</ul>';
+
+            element.innerHTML = html;
+        }
+
+        async function loadHighImpactWarnings() {
+            const data = await fetchAPI('/api/warnings/history');
+            const element = document.getElementById('high-impact-warnings');
+            
+            if (data.status === 'error') {
+                displayError('high-impact-warnings', data.message);
+                return;
+            }
+
+            const highImpact = data.data.high_impact_warnings || {};
+            let html = '';
+            
+            html += displayMetric('高影響警告數量', highImpact.count || 0);
+            html += displayMetric('佔總數比例', `${(highImpact.percentage || 0).toFixed(1)}%`);
+            html += displayMetric('影響閾值', highImpact.threshold || 'N/A');
+
+            html += '<h4>高影響警告類型</h4>';
+            Object.entries(highImpact.most_common_categories || {}).forEach(([category, count]) => {
+                html += displayMetric(category, count);
+            });
+
+            element.innerHTML = html;
+        }
+
+        async function loadPredictionAccuracy() {
+            const data = await fetchAPI('/api/warnings/accuracy');
+            const element = document.getElementById('prediction-accuracy');
+            
+            if (data.status === 'error') {
+                displayError('prediction-accuracy', data.message);
+                return;
+            }
+
+            const accuracy = data.data;
+            let html = '';
+            
+            if (accuracy.message) {
+                html = `<div class="warning-item">${accuracy.message}</div>`;
+            } else {
+                // 如果有準確性數據，顯示相關統計
+                html += displayMetric('評估期間', data.evaluation_period || 'N/A');
+                // 這裡可以添加更多準確性相關的指標
+            }
+
+            element.innerHTML = html;
+        }
+
+        async function loadDashboard() {
+            console.log('載入儀表板數據...');
+            
+            // 並行載入所有數據
+            await Promise.all([
+                loadOverviewStats(),
+                loadCategoryDistribution(),
+                loadSeverityAnalysis(),
+                loadTemporalPatterns(),
+                loadSeasonalTrends(),
+                loadInsights(),
+                loadHighImpactWarnings(),
+                loadPredictionAccuracy()
+            ]);
+            
+            console.log('儀表板載入完成');
+        }
+
+        // 頁面載入時自動載入數據
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+
+        // 每5分鐘自動更新一次
+        setInterval(loadDashboard, 5 * 60 * 1000);
+    </script>
+</body>
+</html>

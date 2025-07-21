@@ -32,6 +32,7 @@ class UnifiedBurnskyScorer:
                 'humidity': 20,       # 濕度因子
                 'visibility': 15,     # 能見度因子
                 'cloud': 25,          # 雲層因子 (最重要)
+                'pressure': 10,       # 氣壓因子
                 'uv': 10,             # UV指數因子
                 'wind': 15,           # 風速因子
                 'air_quality': 15     # 空氣品質因子
@@ -44,17 +45,17 @@ class UnifiedBurnskyScorer:
                 'advance': {'traditional': 0.40, 'ml': 0.60}         # 其他提前預測
             },
             
-            # 調整係數
+            # 調整係數 - 改為加減分數而非乘數
             'adjustment_factors': {
-                'cloud_visibility_low': 0.8,    # 厚雲降分
-                'cloud_visibility_high': 1.1,   # 極佳條件加分
-                'seasonal_summer': 1.05,        # 夏季加分
-                'seasonal_winter': 0.95         # 冬季輕微降分
+                'cloud_visibility_low': -10,    # 厚雲扣10分
+                'cloud_visibility_high': +8,    # 極佳條件加8分
+                'seasonal_summer': +3,          # 夏季加3分
+                'seasonal_winter': -2           # 冬季扣2分
             }
         }
         
         # 總分上限
-        self.MAX_TRADITIONAL_SCORE = sum(self.SCORING_CONFIG['factor_max_scores'].values())  # 140分
+        self.MAX_TRADITIONAL_SCORE = sum(self.SCORING_CONFIG['factor_max_scores'].values())  # 150分
     
     def calculate_unified_score(self, weather_data, forecast_data, ninday_data, 
                               prediction_type='sunset', advance_hours=0, 
@@ -99,7 +100,7 @@ class UnifiedBurnskyScorer:
             traditional_total = sum(factor_scores.values())
             result['traditional_score'] = traditional_total
             
-            # 3. 標準化傳統算法分數 (140分 → 100分)
+            # 3. 標準化傳統算法分數 (150分 → 100分)
             traditional_normalized = (traditional_total / self.MAX_TRADITIONAL_SCORE) * 100
             result['traditional_normalized'] = traditional_normalized
             
@@ -157,16 +158,19 @@ class UnifiedBurnskyScorer:
         # 4. 能見度因子
         factors['visibility'] = self._calculate_visibility_factor(weather_data)
         
-        # 5. 雲層因子
+        # 5. 氣壓因子
+        factors['pressure'] = self._calculate_pressure_factor(weather_data)
+        
+        # 6. 雲層因子
         factors['cloud'] = self._calculate_cloud_factor(forecast_data)
         
-        # 6. UV指數因子
+        # 7. UV指數因子
         factors['uv'] = self._calculate_uv_factor(weather_data)
         
-        # 7. 風速因子
+        # 8. 風速因子
         factors['wind'] = self._calculate_wind_factor(weather_data)
         
-        # 8. 空氣品質因子
+        # 9. 空氣品質因子
         factors['air_quality'] = self._calculate_air_quality_factor(weather_data)
         
         return factors
@@ -256,6 +260,36 @@ class UnifiedBurnskyScorer:
             
         except:
             return 5
+    
+    def _calculate_pressure_factor(self, weather_data):
+        """計算氣壓因子 (0-10分)"""
+        if not weather_data:
+            return 5  # 預設值
+        
+        try:
+            # 檢查簡化數據格式
+            if 'pressure' in weather_data and isinstance(weather_data['pressure'], (int, float)):
+                pressure_value = float(weather_data['pressure'])
+            else:
+                # 檢查複雜數據格式
+                return 5  # 暫時返回預設值，因為HKO API沒有提供氣壓數據
+            
+            # 氣壓評分邏輯 (hPa)
+            if pressure_value >= 1020:
+                score = 10  # 高氣壓，天氣穩定，有利燒天
+            elif pressure_value >= 1013:
+                score = 8   # 正常氣壓
+            elif pressure_value >= 1000:
+                score = 6   # 稍低氣壓
+            elif pressure_value >= 990:
+                score = 4   # 低氣壓，天氣不穩定
+            else:
+                score = 2   # 極低氣壓，風暴天氣
+                
+            return score
+            
+        except:
+            return 5  # 錯誤時返回預設值
     
     def _calculate_cloud_factor(self, forecast_data):
         """計算雲層因子 (0-25分) - 最重要因子"""
@@ -376,9 +410,10 @@ class UnifiedBurnskyScorer:
             return self.SCORING_CONFIG['ml_weights']['immediate']
     
     def _apply_adjustments(self, score, weather_data, forecast_data, use_seasonal, result):
-        """應用各種調整係數"""
+        """應用各種調整係數 - 使用加減分數避免疊加效應"""
         adjusted_score = score
         adjustments = {}
+        total_adjustment = 0  # 記錄總調整分數
         
         # 1. 雲層厚度調整
         cloud_analysis = None
@@ -389,13 +424,13 @@ class UnifiedBurnskyScorer:
             color_visibility = cloud_analysis.get('color_visibility_percentage', 50)
             
             if color_visibility < 30:
-                factor = self.SCORING_CONFIG['adjustment_factors']['cloud_visibility_low']
-                adjusted_score *= factor
-                adjustments['cloud_thickness'] = f'厚雲調整 x{factor}'
+                adjustment = self.SCORING_CONFIG['adjustment_factors']['cloud_visibility_low']
+                total_adjustment += adjustment
+                adjustments['cloud_thickness'] = f'厚雲調整 {adjustment:+.0f}分'
             elif color_visibility > 80:
-                factor = self.SCORING_CONFIG['adjustment_factors']['cloud_visibility_high']
-                adjusted_score *= factor
-                adjustments['cloud_thickness'] = f'極佳條件加分 x{factor}'
+                adjustment = self.SCORING_CONFIG['adjustment_factors']['cloud_visibility_high']
+                total_adjustment += adjustment
+                adjustments['cloud_thickness'] = f'極佳條件加分 {adjustment:+.0f}分'
                 
         except:
             pass
@@ -408,13 +443,17 @@ class UnifiedBurnskyScorer:
         if use_seasonal:
             month = datetime.now().month
             if month in [6, 7, 8]:  # 夏季
-                factor = self.SCORING_CONFIG['adjustment_factors']['seasonal_summer']
-                adjusted_score *= factor
-                adjustments['seasonal'] = f'夏季加分 x{factor}'
+                adjustment = self.SCORING_CONFIG['adjustment_factors']['seasonal_summer']
+                total_adjustment += adjustment
+                adjustments['seasonal'] = f'夏季加分 {adjustment:+.0f}分'
             elif month in [12, 1, 2]:  # 冬季
-                factor = self.SCORING_CONFIG['adjustment_factors']['seasonal_winter']
-                adjusted_score *= factor
-                adjustments['seasonal'] = f'冬季調整 x{factor}'
+                adjustment = self.SCORING_CONFIG['adjustment_factors']['seasonal_winter']
+                total_adjustment += adjustment
+                adjustments['seasonal'] = f'冬季調整 {adjustment:+.0f}分'
+        
+        # 應用總調整分數
+        adjusted_score = score + total_adjustment
+        adjustments['total_adjustment'] = f'總調整: {total_adjustment:+.0f}分'
         
         result['adjustments'] = adjustments
         return adjusted_score

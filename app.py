@@ -6,7 +6,40 @@ import numpy as np
 import os
 from datetime import datetime
 
+# 警告歷史分析系統
+try:
+    from warning_history_analyzer import WarningHistoryAnalyzer
+    from warning_data_collector import WarningDataCollector
+    warning_analysis_available = True
+    print("✅ 警告歷史分析系統已載入")
+except ImportError as e:
+    warning_analysis_available = False
+    print(f"⚠️ 警告歷史分析系統未可用: {e}")
+
 app = Flask(__name__)
+
+# 全局警告分析器實例
+warning_analyzer = None
+warning_collector = None
+
+def init_warning_analysis():
+    """初始化警告分析系統"""
+    global warning_analyzer, warning_collector
+    if warning_analysis_available:
+        try:
+            warning_analyzer = WarningHistoryAnalyzer()
+            warning_collector = WarningDataCollector(collection_interval=60)  # 60分鐘收集一次
+            # 在生產環境中可啟動自動收集
+            # warning_collector.start_automated_collection()
+            print("✅ 警告分析系統初始化成功")
+            return True
+        except Exception as e:
+            print(f"❌ 警告分析系統初始化失敗: {e}")
+            return False
+    return False
+
+# 初始化警告分析系統
+init_warning_analysis()
 
 def convert_numpy_types(obj):
     """遞歸轉換 numpy 類型為 Python 原生類型以支援 JSON 序列化"""
@@ -23,67 +56,436 @@ def convert_numpy_types(obj):
     else:
         return obj
 
+def parse_warning_details(warning_text):
+    """解析警告詳細信息，提取警告類型、等級和具體內容"""
+    warning_info = {
+        'category': 'unknown',
+        'subcategory': '',
+        'level': 0,
+        'severity': 'low',
+        'impact_factors': [],
+        'duration_hint': '',
+        'area_specific': False,
+        'original_text': warning_text
+    }
+    
+    text_lower = warning_text.lower()
+    
+    # 1. 雨量警告細分
+    if any(keyword in text_lower for keyword in ['雨', 'rain', '降雨', '暴雨']):
+        warning_info['category'] = 'rainfall'
+        if any(keyword in text_lower for keyword in ['黑雨', '黑色暴雨', 'black rain']):
+            warning_info['subcategory'] = 'black_rain'
+            warning_info['level'] = 4
+            warning_info['severity'] = 'extreme'
+            warning_info['impact_factors'] = ['能見度極差', '道路積水', '山洪風險']
+        elif any(keyword in text_lower for keyword in ['紅雨', '紅色暴雨', 'red rain']):
+            warning_info['subcategory'] = 'red_rain'
+            warning_info['level'] = 3
+            warning_info['severity'] = 'severe'
+            warning_info['impact_factors'] = ['能見度差', '交通阻塞', '戶外風險']
+        elif any(keyword in text_lower for keyword in ['黃雨', '黃色暴雨', 'amber rain']):
+            warning_info['subcategory'] = 'amber_rain'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['能見度下降', '交通延誤']
+        elif any(keyword in text_lower for keyword in ['水浸', '特別報告', '山洪']):
+            warning_info['subcategory'] = 'flood_warning'
+            warning_info['level'] = 3
+            warning_info['severity'] = 'severe'
+            warning_info['impact_factors'] = ['道路水浸', '山洪風險', '地下通道危險']
+    
+    # 2. 風暴/颱風警告細分
+    elif any(keyword in text_lower for keyword in ['風球', '颱風', '熱帶氣旋', 'typhoon', 'wtcsgnl']):
+        warning_info['category'] = 'wind_storm'
+        if any(keyword in text_lower for keyword in ['十號', '10號', '颶風', 'hurricane']):
+            warning_info['subcategory'] = 'hurricane_10'
+            warning_info['level'] = 5
+            warning_info['severity'] = 'extreme'
+            warning_info['impact_factors'] = ['極強風暴', '全面停工', '建築物危險', '海浪翻騰']
+        elif any(keyword in text_lower for keyword in ['九號', '9號', '暴風']):
+            warning_info['subcategory'] = 'gale_9'
+            warning_info['level'] = 4
+            warning_info['severity'] = 'severe'
+            warning_info['impact_factors'] = ['強烈風暴', '戶外危險', '海上風浪']
+        elif any(keyword in text_lower for keyword in ['八號', '8號', '烈風']):
+            warning_info['subcategory'] = 'strong_wind_8'
+            warning_info['level'] = 3
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['強風影響', '戶外活動限制', '海上風浪']
+        elif any(keyword in text_lower for keyword in ['三號', '3號', '強風']):
+            warning_info['subcategory'] = 'strong_wind_3'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['風力增強', '戶外謹慎']
+        elif any(keyword in text_lower for keyword in ['一號', '1號', '戒備']):
+            warning_info['subcategory'] = 'standby_1'
+            warning_info['level'] = 1
+            warning_info['severity'] = 'low'
+            warning_info['impact_factors'] = ['風暴戒備', '準備措施']
+    
+    # 3. 雷暴警告細分
+    elif any(keyword in text_lower for keyword in ['雷暴', '閃電', 'thunderstorm', 'lightning']):
+        warning_info['category'] = 'thunderstorm'
+        if any(keyword in text_lower for keyword in ['嚴重', '強烈', 'severe']):
+            warning_info['subcategory'] = 'severe_thunderstorm'
+            warning_info['level'] = 3
+            warning_info['severity'] = 'severe'
+            warning_info['impact_factors'] = ['強烈雷電', '局部大雨', '強陣風']
+        else:
+            warning_info['subcategory'] = 'general_thunderstorm'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['雷電活動', '局部雨水']
+    
+    # 4. 能見度警告細分
+    elif any(keyword in text_lower for keyword in ['霧', '能見度', 'fog', 'mist', '視野']):
+        warning_info['category'] = 'visibility'
+        if any(keyword in text_lower for keyword in ['濃霧', '極差', 'dense fog']):
+            warning_info['subcategory'] = 'dense_fog'
+            warning_info['level'] = 3
+            warning_info['severity'] = 'severe'
+            warning_info['impact_factors'] = ['能見度極差', '交通嚴重影響', '航班延誤']
+        else:
+            warning_info['subcategory'] = 'general_fog'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['能見度下降', '交通影響']
+    
+    # 5. 空氣品質警告細分
+    elif any(keyword in text_lower for keyword in ['空氣污染', 'pm2.5', 'pm10', '臭氧', 'air quality']):
+        warning_info['category'] = 'air_quality'
+        if any(keyword in text_lower for keyword in ['嚴重', '非常高', 'very high', 'serious']):
+            warning_info['subcategory'] = 'severe_pollution'
+            warning_info['level'] = 3
+            warning_info['severity'] = 'severe'
+            warning_info['impact_factors'] = ['空氣極差', '健康風險', '減少戶外活動']
+        else:
+            warning_info['subcategory'] = 'moderate_pollution'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['空氣質量差', '敏感人群注意']
+    
+    # 6. 溫度相關警告
+    elif any(keyword in text_lower for keyword in ['酷熱', '寒冷', '高溫', '低溫', 'heat', 'cold']):
+        warning_info['category'] = 'temperature'
+        if any(keyword in text_lower for keyword in ['酷熱', '極熱', 'very hot', 'heat wave']):
+            warning_info['subcategory'] = 'extreme_heat'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['高溫影響', '中暑風險', '紫外線強']
+        elif any(keyword in text_lower for keyword in ['寒冷', '極冷', 'very cold']):
+            warning_info['subcategory'] = 'extreme_cold'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['低溫影響', '保暖需要']
+    
+    # 7. 海事警告
+    elif any(keyword in text_lower for keyword in ['海事', '大浪', '海浪', '小艇', 'marine', 'wave']):
+        warning_info['category'] = 'marine'
+        warning_info['subcategory'] = 'marine_warning'
+        warning_info['level'] = 2
+        warning_info['severity'] = 'moderate'
+        warning_info['impact_factors'] = ['海上風浪', '小艇危險']
+    
+    # 8. 檢查地區特定警告
+    if any(region in text_lower for region in ['新界', '港島', '九龍', '離島', '北區', '東區']):
+        warning_info['area_specific'] = True
+    
+    # 9. 檢查時間相關提示
+    if any(time_word in text_lower for time_word in ['持續', '預計', '未來', '即將', '稍後']):
+        warning_info['duration_hint'] = '持續性警告'
+    elif any(time_word in text_lower for time_word in ['短暫', '間歇', '局部']):
+        warning_info['duration_hint'] = '間歇性警告'
+    
+    return warning_info
+
+def calculate_warning_impact_advanced(warning_info, time_of_day='day', season='summer'):
+    """根據警告詳細信息計算精確的影響分數"""
+    base_impact = 0
+    multipliers = []
+    
+    # 基礎影響分數
+    severity_base = {
+        'extreme': 35,
+        'severe': 25,
+        'moderate': 15,
+        'low': 8
+    }
+    base_impact = severity_base.get(warning_info['severity'], 5)
+    
+    # 警告類型特殊調整
+    category_adjustments = {
+        'rainfall': {
+            'black_rain': 0,      # 保持基礎分數
+            'red_rain': -3,       # 稍微降低
+            'amber_rain': -2,     # 輕微降低
+            'flood_warning': +2   # 水浸額外嚴重
+        },
+        'wind_storm': {
+            'hurricane_10': +5,   # 十號風球額外嚴重
+            'gale_9': +2,         # 九號稍微增加
+            'strong_wind_8': -2,  # 八號降低
+            'strong_wind_3': -3,  # 三號大幅降低
+            'standby_1': -5       # 一號最低影響
+        },
+        'thunderstorm': {
+            'severe_thunderstorm': +2,
+            'general_thunderstorm': -5  # 一般雷暴大幅降低影響
+        },
+        'visibility': {
+            'dense_fog': +1,
+            'general_fog': -2
+        },
+        'air_quality': {
+            'severe_pollution': -8,     # 空氣污染對燒天影響較小
+            'moderate_pollution': -10
+        },
+        'temperature': {
+            'extreme_heat': -5,         # 高溫可能有助燒天
+            'extreme_cold': +2
+        },
+        'marine': {
+            'marine_warning': -3        # 海事警告影響較小
+        }
+    }
+    
+    subcategory_adj = category_adjustments.get(warning_info['category'], {}).get(warning_info['subcategory'], 0)
+    base_impact += subcategory_adj
+    
+    # 時間因子調整
+    if time_of_day in ['sunset', 'sunrise']:  # 燒天時段
+        if warning_info['category'] == 'visibility':
+            multipliers.append(('能見度在燒天時段更重要', 1.3))
+        elif warning_info['category'] == 'air_quality':
+            multipliers.append(('空氣品質影響燒天效果', 0.7))
+    
+    # 季節性調整
+    if season == 'summer':
+        if warning_info['category'] == 'thunderstorm':
+            multipliers.append(('夏季雷暴頻繁', 0.8))
+        elif warning_info['category'] == 'temperature' and warning_info['subcategory'] == 'extreme_heat':
+            multipliers.append(('夏季高溫常見', 0.6))
+    elif season == 'winter':
+        if warning_info['category'] == 'visibility':
+            multipliers.append(('冬季霧霾常見', 1.2))
+        elif warning_info['category'] == 'air_quality':
+            multipliers.append(('冬季空氣品質較差', 1.1))
+    
+    # 地區特定調整
+    if warning_info['area_specific']:
+        multipliers.append(('地區性警告影響較小', 0.9))
+    
+    # 持續性調整
+    if warning_info['duration_hint'] == '間歇性警告':
+        multipliers.append(('間歇性警告影響較小', 0.8))
+    elif warning_info['duration_hint'] == '持續性警告':
+        multipliers.append(('持續性警告影響較大', 1.1))
+    
+    # 應用乘數
+    final_impact = base_impact
+    for description, multiplier in multipliers:
+        final_impact *= multiplier
+    
+    return round(final_impact, 1), multipliers
+
 def get_warning_impact_score(warning_data):
-    """計算天氣警告對燒天預測的影響分數"""
+    """計算天氣警告對燒天預測的影響分數 - 增強版"""
     if not warning_data or 'details' not in warning_data:
-        return 0, []  # 無警告時不影響分數
+        return 0, [], []  # 無警告時不影響分數
     
     warning_details = warning_data.get('details', [])
     if not warning_details:
-        return 0, []
+        return 0, [], []
     
     total_impact = 0
     active_warnings = []
-    severe_warnings = []  # 記錄嚴重警告
+    warning_analysis = []
+    severe_warnings = []
+    
+    # 獲取當前時間和季節信息
+    current_hour = datetime.now().hour
+    current_month = datetime.now().month
+    
+    time_of_day = 'day'
+    if 17 <= current_hour <= 19:
+        time_of_day = 'sunset'
+    elif 5 <= current_hour <= 7:
+        time_of_day = 'sunrise'
+    
+    season = 'summer'
+    if current_month in [12, 1, 2]:
+        season = 'winter'
+    elif current_month in [3, 4, 5]:
+        season = 'spring'
+    elif current_month in [9, 10, 11]:
+        season = 'autumn'
+    
+    print(f"🚨 警告分析環境: {time_of_day}時段, {season}季節")
     
     for warning in warning_details:
-        warning_text = warning.lower() if isinstance(warning, str) else str(warning).lower()
-        active_warnings.append(warning)
+        warning_text = warning if isinstance(warning, str) else str(warning)
+        active_warnings.append(warning_text)
         
-        # 更細緻的警告類型計算影響 - 調整為更合理的數值
-        if any(keyword in warning_text for keyword in ['黑雨', '黑色暴雨']):
-            impact = 35  # 黑雨最嚴重
-            severe_warnings.append("黑色暴雨")
-        elif any(keyword in warning_text for keyword in ['紅雨', '紅色暴雨']):
-            impact = 20  # 紅雨嚴重 (降低影響)
-            severe_warnings.append("紅色暴雨")
-        elif any(keyword in warning_text for keyword in ['黃雨', '黃色暴雨']):
-            impact = 12  # 黃雨中等
-        elif any(keyword in warning_text for keyword in ['水浸', '特別報告']):
-            impact = 15  # 水浸警告
-        elif any(keyword in warning_text for keyword in ['十號', '颶風', '十號風球']):
-            impact = 40  # 十號風球極嚴重
-            severe_warnings.append("十號颶風信號")
-        elif any(keyword in warning_text for keyword in ['九號', '暴風信號']):
-            impact = 25  # 九號風球嚴重
-            severe_warnings.append("九號暴風信號")
-        elif any(keyword in warning_text for keyword in ['八號', '烈風信號', '烈風或暴風信號']):
-            impact = 18  # 八號風球中等嚴重 (降低影響)
-            severe_warnings.append("八號烈風信號")
-        elif any(keyword in warning_text for keyword in ['熱帶氣旋', 'wtcsgnl']):
-            impact = 15  # 一般熱帶氣旋警報
-        elif any(keyword in warning_text for keyword in ['雷暴', '閃電']):
-            impact = 8   # 雷暴警告 (大幅降低影響)
-        elif any(keyword in warning_text for keyword in ['霧', '能見度']):
-            impact = 15  # 霧警告影響能見度
-        elif any(keyword in warning_text for keyword in ['空氣污染', 'pm2.5', '臭氧']):
-            impact = 5   # 空氣污染輕微影響
-        else:
-            impact = 3   # 其他警告輕微影響
-            
+        # 解析警告詳細信息
+        warning_info = parse_warning_details(warning_text)
+        
+        # 計算精確影響分數
+        impact, multipliers = calculate_warning_impact_advanced(warning_info, time_of_day, season)
+        
+        # 記錄分析詳情
+        analysis_detail = {
+            'warning_text': warning_text,
+            'category': warning_info['category'],
+            'subcategory': warning_info['subcategory'],
+            'severity': warning_info['severity'],
+            'level': warning_info['level'],
+            'impact_score': impact,
+            'impact_factors': warning_info['impact_factors'],
+            'adjustments': multipliers,
+            'area_specific': warning_info['area_specific']
+        }
+        warning_analysis.append(analysis_detail)
+        
+        # 標記嚴重警告
+        if warning_info['severity'] in ['extreme', 'severe']:
+            severe_warnings.append(f"{warning_info['category']}-{warning_info['severity']}")
+        
         total_impact += impact
+        
+        print(f"   📋 {warning_info['category'].upper()} | {warning_info['severity']} | 影響: {impact}分")
+        if multipliers:
+            for desc, mult in multipliers:
+                print(f"      🔧 {desc}: x{mult:.1f}")
     
-    # 動態調整最大扣分上限 - 更寬鬆的限制
-    if len(severe_warnings) >= 2:
-        max_impact = 40  # 多個嚴重警告 (降低上限)
-    elif len(severe_warnings) >= 1:
-        max_impact = 30  # 單個嚴重警告 (降低上限)
+    # 動態調整最大扣分上限 - 基於警告嚴重程度
+    extreme_count = sum(1 for w in warning_analysis if w['severity'] == 'extreme')
+    severe_count = sum(1 for w in warning_analysis if w['severity'] == 'severe')
+    
+    if extreme_count >= 2:
+        max_impact = 45  # 多個極端警告
+    elif extreme_count >= 1:
+        max_impact = 35  # 單個極端警告
+    elif severe_count >= 2:
+        max_impact = 30  # 多個嚴重警告
+    elif severe_count >= 1:
+        max_impact = 25  # 單個嚴重警告
     else:
-        max_impact = 25  # 一般警告 (降低上限)
+        max_impact = 20  # 一般警告
     
-    print(f"🚨 警告影響詳情: 總影響{total_impact}分, 上限{max_impact}分, 嚴重警告: {severe_warnings}")
+    final_impact = min(total_impact, max_impact)
     
-    return min(total_impact, max_impact), active_warnings
+    print(f"🚨 警告影響總結:")
+    print(f"   📊 原始總影響: {total_impact:.1f}分")
+    print(f"   🔒 影響上限: {max_impact}分")
+    print(f"   ✅ 最終影響: {final_impact:.1f}分")
+    print(f"   ⚠️ 嚴重警告: {len(severe_warnings)}個 ({severe_warnings})")
+    
+    return final_impact, active_warnings, warning_analysis
+
+def assess_future_warning_risk(weather_data, forecast_data, ninday_data, advance_hours):
+    """評估提前預測時段的警告風險"""
+    if advance_hours <= 0:
+        return 0, []  # 即時預測不需要風險評估
+    
+    risk_score = 0
+    risk_warnings = []
+    
+    try:
+        # 獲取未來天氣數據 - 安全調用
+        future_weather = forecast_extractor.extract_future_weather_data(
+            weather_data, forecast_data, ninday_data, advance_hours
+        )
+    except Exception as e:
+        print(f"🔮 警告: 無法提取未來天氣數據: {e}")
+        future_weather = {}
+    
+    # 1. 雨量風險評估 - 基於九天預報
+    rainfall_risk = 0
+    if ninday_data and 'weatherForecast' in ninday_data:
+        # 獲取對應日期的降雨概率
+        for ninday in ninday_data.get('weatherForecast', []):
+            if advance_hours <= 48:  # 兩天內的預測
+                psr = ninday.get('PSR', 'Low')  # 降雨概率
+                if psr in ['High', '高']:
+                    rainfall_risk = 15
+                    risk_warnings.append("高降雨概率 - 可能發出雨量警告")
+                elif psr in ['Medium High', '中高']:
+                    rainfall_risk = 10
+                    risk_warnings.append("中高降雨概率 - 有雨量警告風險")
+                elif psr in ['Medium', '中等']:
+                    rainfall_risk = 5
+                    risk_warnings.append("中等降雨概率 - 輕微雨量警告風險")
+                break
+    
+    # 2. 風速風險評估 - 基於未來天氣數據
+    wind_risk = 0
+    if future_weather and 'wind' in future_weather:
+        wind_data = future_weather['wind']
+        if isinstance(wind_data, dict) and 'speed' in wind_data:
+            try:
+                wind_speed = float(wind_data.get('speed', 0))
+                if wind_speed >= 88:  # 烈風程度
+                    wind_risk = 12
+                    risk_warnings.append("預測強風 - 可能發出烈風警告")
+                elif wind_speed >= 62:  # 強風程度
+                    wind_risk = 8
+                    risk_warnings.append("預測中等風力 - 有強風警告風險")
+            except (ValueError, TypeError):
+                pass  # 忽略無效的風速數據
+    
+    # 3. 能見度風險評估 - 基於濕度
+    visibility_risk = 0
+    if future_weather and 'humidity' in future_weather:
+        humidity_data = future_weather['humidity']
+        if isinstance(humidity_data, dict):
+            try:
+                humidity_value = float(humidity_data.get('value', 50))
+                if humidity_value >= 95:  # 極高濕度可能導致霧
+                    visibility_risk = 8
+                    risk_warnings.append("極高濕度 - 可能出現霧患")
+                elif humidity_value >= 85:
+                    visibility_risk = 4
+                    risk_warnings.append("高濕度 - 有能見度下降風險")
+            except (ValueError, TypeError):
+                pass  # 忽略無效的濕度數據
+    
+    # 4. 季節性和天氣模式風險
+    seasonal_risk = 0
+    try:
+        from datetime import datetime
+        current_month = datetime.now().month
+        if current_month in [6, 7, 8, 9]:  # 夏秋季（雷暴季節）
+            if advance_hours >= 2:  # 夏季午後雷暴風險
+                seasonal_risk = 6
+                risk_warnings.append("雷暴季節 - 雷暴發展風險")
+        elif current_month in [12, 1, 2]:  # 冬季
+            seasonal_risk = 3
+            risk_warnings.append("冬季 - 霧霾風險較高")
+        elif current_month in [3, 4, 5]:  # 春季
+            seasonal_risk = 4
+            risk_warnings.append("春季 - 天氣變化較大")
+        else:  # 其他月份
+            seasonal_risk = 2
+    except Exception:
+        seasonal_risk = 2  # 默認季節風險
+    
+    # 5. 提前時間不確定性修正
+    time_uncertainty = min(advance_hours * 0.5, 8)  # 時間越長風險越高，最多8分
+    
+    total_risk = rainfall_risk + wind_risk + visibility_risk + seasonal_risk + time_uncertainty
+    
+    # 風險上限控制 - 避免過度懲罰
+    max_risk = min(20, advance_hours * 2)  # 最多20分，且隨提前時間增加
+    final_risk = min(total_risk, max_risk)
+    
+    print(f"🔮 提前{advance_hours}小時警告風險評估: {final_risk:.1f}分")
+    print(f"   風險因子: 雨量{rainfall_risk} + 風速{wind_risk} + 能見度{visibility_risk} + 季節{seasonal_risk} + 時間不確定性{time_uncertainty:.1f}")
+    if risk_warnings:
+        for warning in risk_warnings:
+            print(f"   ⚠️ {warning}")
+    
+    return final_risk, risk_warnings
 
 def get_prediction_level(score):
     """根據燒天分數返回預測等級"""
@@ -151,12 +553,53 @@ def predict_burnsky():
     # 從統一結果中提取分數和詳情
     score = unified_result['final_score']
     
-    # 🚨 計算警告影響並調整最終分數（新增）
-    warning_impact, active_warnings = get_warning_impact_score(warning_data)
-    if warning_impact > 0:
-        adjusted_score = max(0, score - warning_impact)
-        print(f"🚨 天氣警告影響: -{warning_impact}分，調整後分數: {adjusted_score}")
+    # 🚨 計算警告影響並調整最終分數（增強版）
+    warning_impact, active_warnings, warning_analysis = get_warning_impact_score(warning_data)
+    
+    # 🔮 新增：提前預測警告風險評估
+    warning_risk_score = 0
+    warning_risk_warnings = []
+    if advance_hours > 0:
+        warning_risk_score, warning_risk_warnings = assess_future_warning_risk(
+            weather_data, forecast_data, ninday_data, advance_hours
+        )
+    
+    # 最終分數計算：傳統警告影響 + 未來風險評估
+    total_warning_impact = warning_impact + warning_risk_score
+    
+    if total_warning_impact > 0:
+        adjusted_score = max(0, score - total_warning_impact)
+        print(f"🚨 警告影響詳情: -{warning_impact:.1f}分即時警告 + {warning_risk_score:.1f}分風險評估 = -{total_warning_impact:.1f}分總影響")
+        print(f"🚨 調整後分數: {adjusted_score:.1f} (原分數: {score:.1f})")
         score = adjusted_score
+    
+    # 🆕 記錄預測和警告數據到歷史分析系統
+    if warning_analysis_available and warning_analyzer:
+        try:
+            # 記錄預測數據
+            prediction_record = {
+                "prediction_type": prediction_type,
+                "advance_hours": advance_hours,
+                "original_score": unified_result['final_score'],
+                "warning_impact": warning_impact,
+                "warning_risk_impact": warning_risk_score,
+                "final_score": score,
+                "warnings_active": active_warnings
+            }
+            warning_analyzer.record_prediction(prediction_record)
+            
+            # 記錄當前警告
+            if active_warnings:
+                for warning in active_warnings:
+                    warning_record = {
+                        "warning_text": warning,
+                        "source": "HKO_API",
+                        "prediction_context": prediction_record
+                    }
+                    warning_analyzer.record_warning(warning_record)
+                    
+        except Exception as e:
+            print(f"⚠️ 警告數據記錄失敗: {e}")
     
     # 復用統一計分器中的雲層厚度分析結果，避免重複計算
     cloud_thickness_analysis = unified_result.get('cloud_thickness_analysis', {})
@@ -169,7 +612,7 @@ def predict_burnsky():
         """構建因子詳情"""
         if max_score is None:
             max_score = {'time': 25, 'temperature': 15, 'humidity': 20, 'visibility': 15, 
-                        'cloud': 25, 'uv': 10, 'wind': 15, 'air_quality': 15}.get(factor_name, 100)
+                        'pressure': 10, 'cloud': 25, 'uv': 10, 'wind': 15, 'air_quality': 15}.get(factor_name, 100)
         
         factor_data = {
             'score': round(score, 1),
@@ -207,7 +650,9 @@ def predict_burnsky():
             "traditional_raw": unified_result['traditional_score'],
             "traditional_score": unified_result['traditional_score'],
             "weighted_score": unified_result['weighted_score'],
-            "warning_impact": warning_impact,  # 🚨 新增警告影響
+            "warning_impact": warning_impact,  # 🚨 即時警告影響
+            "warning_risk_impact": warning_risk_score,  # 🔮 新增：未來警告風險影響
+            "total_warning_impact": total_warning_impact,  # 🔮 新增：總警告影響
             "weight_explanation": f"智能權重分配: AI模型 {unified_result['weights_used'].get('ml', 0.5)*100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5)*100:.0f}%"
         },
         "top_factors": unified_result['analysis'].get('top_factors', []),
@@ -215,18 +660,24 @@ def predict_burnsky():
         "analysis_summary": [part.strip() for part in unified_result['analysis'].get('summary', '基於統一計分系統的綜合分析').split('|')],
         "intensity_prediction": unified_result['intensity_prediction'],
         "cloud_visibility_analysis": cloud_thickness_analysis,
-        # 🚨 新增警告相關信息
+        # 🚨 增強版警告相關信息
         "weather_warnings": {
             "active_warnings": active_warnings,
             "warning_count": len(active_warnings),
             "warning_impact_score": warning_impact,
-            "has_severe_warnings": warning_impact >= 25
+            "warning_risk_score": warning_risk_score,  # 🔮 新增：風險評估分數
+            "warning_risk_warnings": warning_risk_warnings,  # 🔮 新增：風險警告列表
+            "total_warning_impact": total_warning_impact,  # 🔮 新增：總警告影響
+            "has_severe_warnings": warning_impact >= 25,
+            "has_future_risks": warning_risk_score > 0,  # 🔮 新增：是否有未來風險
+            "detailed_analysis": warning_analysis  # 🆕 新增：詳細警告分析
         },
         # 構建各個因子的詳細信息
         "time_factor": build_factor_info('time', factor_scores.get('time', 0), 25),
         "temperature_factor": build_factor_info('temperature', factor_scores.get('temperature', 0), 15),
         "humidity_factor": build_factor_info('humidity', factor_scores.get('humidity', 0), 20),
         "visibility_factor": build_factor_info('visibility', factor_scores.get('visibility', 0), 15),
+        "pressure_factor": build_factor_info('pressure', factor_scores.get('pressure', 0), 10),
         "cloud_analysis_factor": build_factor_info('cloud', factor_scores.get('cloud', 0), 25),
         "uv_factor": build_factor_info('uv', factor_scores.get('uv', 0), 10),
         "wind_factor": build_factor_info('wind', factor_scores.get('wind', 0), 15),
@@ -254,9 +705,12 @@ def predict_burnsky():
         "warning_analysis": {
             "active_warnings": active_warnings,
             "warning_impact": warning_impact,
-            "warning_adjusted": warning_impact > 0
+            "warning_risk_score": warning_risk_score,  # 🔮 新增：風險評估分數
+            "warning_risk_warnings": warning_risk_warnings,  # 🔮 新增：風險警告列表
+            "total_warning_impact": total_warning_impact,  # 🔮 新增：總警告影響
+            "warning_adjusted": total_warning_impact > 0  # 🔮 更新：使用總影響判斷
         },
-        "scoring_method": "unified_v1.1_with_warnings"  # 🚨 更新版本號標示警告整合
+        "scoring_method": "unified_v1.2_with_advance_warning_risk"  # � 更新版本號標示風險評估功能
     }
     
     result = convert_numpy_types(result)
@@ -383,6 +837,11 @@ def best_locations():
 def weather_terms():
     """天氣術語詞彙表 - SEO內容"""
     return render_template('weather_terms.html')
+
+@app.route("/warning-dashboard")
+def warning_dashboard():
+    """警告歷史分析儀表板頁面"""
+    return render_template('warning_dashboard.html')
 
 @app.route("/privacy")
 def privacy_policy():
@@ -614,6 +1073,251 @@ def handle_user_preferences():
         return jsonify({
             "status": "success",
             "preferences": default_preferences
+        })
+
+# 🆕 警告歷史分析 API 端點
+@app.route("/api/warnings/history", methods=["GET"])
+def get_warning_history():
+    """獲取警告歷史數據分析"""
+    global warning_analyzer
+    
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({
+            "status": "error",
+            "message": "警告分析系統未可用",
+            "total_warnings": 0,
+            "average_accuracy": 0,
+            "best_category": "無數據"
+        })
+    
+    try:
+        days_back = int(request.args.get('days', 30))
+        days_back = min(max(days_back, 1), 365)  # 限制在1-365天之間
+        
+        # 執行警告模式分析
+        patterns = warning_analyzer.analyze_warning_patterns(days_back)
+        
+        # 構建前端期望的格式
+        return jsonify({
+            "status": "success",
+            "data": patterns,
+            "total_warnings": patterns.get("total_warnings", 0),
+            "average_accuracy": patterns.get("average_accuracy", 0),
+            "best_category": patterns.get("most_common_category", "無數據"),
+            "analysis_period": f"{days_back}天",
+            "generated_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"分析失敗: {str(e)}",
+            "total_warnings": 0,
+            "average_accuracy": 0,
+            "best_category": "錯誤"
+        })
+
+@app.route("/api/warnings/timeline", methods=["GET"])
+def get_warning_timeline():
+    """獲取警告時間軸圖表"""
+    return jsonify({
+        "status": "success",
+        "chart_url": None,
+        "message": "時間軸圖表功能正在開發中"
+    })
+
+@app.route("/api/warnings/category-distribution", methods=["GET"])
+def get_warning_category_distribution():
+    """獲取警告類別分布圖表"""
+    return jsonify({
+        "status": "success", 
+        "chart_url": None,
+        "message": "類別分布圖表功能正在開發中"
+    })
+
+@app.route("/api/warnings/seasonal", methods=["GET"])
+def get_seasonal_analysis():
+    """獲取季節性警告分析"""
+    global warning_analyzer
+    
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({
+            "status": "error",
+            "message": "警告分析系統未可用"
+        })
+    
+    try:
+        seasonal_analysis = warning_analyzer.analyze_seasonal_trends()
+        
+        # 使用 convert_numpy_types 修復 JSON 序列化問題
+        converted_data = convert_numpy_types(seasonal_analysis)
+        
+        return jsonify({
+            "status": "success",
+            "data": converted_data,
+            "generated_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"季節性分析失敗: {str(e)}"
+        })
+
+@app.route("/api/warnings/insights", methods=["GET"])
+def get_warning_insights():
+    """獲取警告數據洞察和建議"""
+    global warning_analyzer
+    
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({
+            "status": "error",
+            "message": "警告分析系統未可用"
+        })
+    
+    try:
+        insights = warning_analyzer.generate_warning_insights()
+        
+        # 使用 convert_numpy_types 修復 JSON 序列化問題
+        converted_data = convert_numpy_types(insights)
+        
+        return jsonify({
+            "status": "success",
+            "data": converted_data,
+            "generated_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"洞察分析失敗: {str(e)}"
+        })
+
+@app.route("/api/warnings/accuracy", methods=["GET"])
+def get_prediction_accuracy():
+    """獲取預測準確性評估"""
+    global warning_analyzer
+    
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({
+            "status": "error", 
+            "message": "警告分析系統未可用"
+        })
+    
+    try:
+        days_back = int(request.args.get('days', 7))
+        days_back = min(max(days_back, 1), 30)  # 限制在1-30天之間
+        
+        accuracy_analysis = warning_analyzer.evaluate_prediction_accuracy(days_back)
+        
+        return jsonify({
+            "status": "success",
+            "data": accuracy_analysis,
+            "evaluation_period": f"{days_back}天",
+            "generated_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"準確性評估失敗: {str(e)}"
+        })
+
+@app.route("/api/warnings/record", methods=["POST"])
+def record_warning_manually():
+    """手動記錄警告（測試用）"""
+    global warning_analyzer
+    
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({
+            "status": "error",
+            "message": "警告分析系統未可用"
+        })
+    
+    try:
+        data = request.get_json()
+        warning_text = data.get('warning_text', '')
+        
+        if not warning_text:
+            return jsonify({
+                "status": "error",
+                "message": "警告文本不能為空"
+            })
+        
+        # 記錄警告
+        warning_id = warning_analyzer.record_warning({
+            "warning_text": warning_text,
+            "source": "manual_input",
+            "user_submitted": True
+        })
+        
+        return jsonify({
+            "status": "success",
+            "message": "警告已記錄",
+            "warning_id": warning_id,
+            "warning_text": warning_text,
+            "recorded_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"記錄警告失敗: {str(e)}"
+        })
+
+@app.route("/api/warnings/export", methods=["GET"])
+def export_warning_analysis():
+    """導出警告分析報告"""
+    global warning_analyzer
+    
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({
+            "status": "error",
+            "message": "警告分析系統未可用"
+        })
+    
+    try:
+        # 生成報告
+        report_file = warning_analyzer.export_analysis_report()
+        
+        return jsonify({
+            "status": "success",
+            "message": "分析報告已生成",
+            "report_file": report_file,
+            "download_url": f"/static/reports/{report_file}",  # 假設報告保存在static/reports目錄
+            "generated_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"報告生成失敗: {str(e)}"
+        })
+
+@app.route("/api/warnings/collector/status", methods=["GET"])
+def get_collector_status():
+    """獲取警告收集器狀態"""
+    global warning_collector
+    
+    if not warning_analysis_available or not warning_collector:
+        return jsonify({
+            "status": "error",
+            "message": "警告收集系統未可用"
+        })
+    
+    try:
+        status = warning_collector.get_collection_status()
+        
+        return jsonify({
+            "status": "success",
+            "data": status,
+            "checked_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"狀態檢查失敗: {str(e)}"
         })
 
 if __name__ == '__main__':
