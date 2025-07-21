@@ -507,12 +507,10 @@ def home():
     """主頁 - 燒天預測前端"""
     return render_template('index.html')
 
-@app.route("/predict", methods=["GET"])
-def predict_burnsky():
-    """統一燒天預測 API 端點 - 支援即時和提前預測"""
-    # 獲取查詢參數
-    prediction_type = request.args.get('type', 'sunset')  # sunset 或 sunrise
-    advance_hours = int(request.args.get('advance', 0))   # 提前預測小時數
+def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
+    """核心燒天預測邏輯 - 共用函數"""
+    # 轉換參數類型
+    advance_hours = int(advance_hours)
     
     # 獲取基本天氣數據
     weather_data = fetch_weather_data()
@@ -714,25 +712,36 @@ def predict_burnsky():
     }
     
     result = convert_numpy_types(result)
+    return result  # 返回結果字典而不是 jsonify
+
+@app.route("/predict", methods=["GET"])
+def predict_burnsky():
+    """統一燒天預測 API 端點 - 支援即時和提前預測"""
+    # 獲取查詢參數
+    prediction_type = request.args.get('type', 'sunset')  # sunset 或 sunrise
+    advance_hours = int(request.args.get('advance', 0))   # 提前預測小時數
+    
+    # 呼叫核心預測邏輯
+    result = predict_burnsky_core(prediction_type, advance_hours)
     return jsonify(result)
 
 @app.route("/predict/sunrise", methods=["GET"])
 def predict_sunrise():
-    """專門的日出燒天預測端點 - 重定向到統一 API"""
+    """專門的日出燒天預測端點 - 直接回傳結果，不重定向"""
     advance_hours = request.args.get('advance_hours', '2')  # 預設提前2小時
     
-    # 重定向到統一的預測 API - 修正參數名稱
-    from flask import redirect
-    return redirect(f'/predict?type=sunrise&advance={advance_hours}')
+    # 直接呼叫核心預測邏輯
+    result = predict_burnsky_core('sunrise', advance_hours)
+    return jsonify(result)
 
 @app.route("/predict/sunset", methods=["GET"])
 def predict_sunset():
-    """專門的日落燒天預測端點 - 重定向到統一 API"""
+    """專門的日落燒天預測端點 - 直接回傳結果，不重定向"""
     advance_hours = request.args.get('advance_hours', '2')  # 預設提前2小時
     
-    # 重定向到統一的預測 API - 修正參數名稱
-    from flask import redirect
-    return redirect(f'/predict?type=sunset&advance={advance_hours}')
+    # 直接呼叫核心預測邏輯
+    result = predict_burnsky_core('sunset', advance_hours)
+    return jsonify(result)
 
 @app.route("/api")
 def api_info():
@@ -744,8 +753,8 @@ def api_info():
         "endpoints": {
             "/": "主頁 - 網頁界面",
             "/predict": "統一燒天預測 API (支援所有預測類型)",
-            "/predict/sunset": "日落預測快捷端點 (重定向到統一 API)",
-            "/predict/sunrise": "日出預測快捷端點 (重定向到統一 API)",
+            "/predict/sunset": "日落預測專用端點 (直接回傳 JSON)",
+            "/predict/sunrise": "日出預測專用端點 (直接回傳 JSON)",
             "/api": "API 資訊",
             "/privacy": "私隱政策",
             "/terms": "使用條款",
