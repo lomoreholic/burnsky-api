@@ -150,6 +150,10 @@
     <!-- 預載入重要資源 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -1086,16 +1090,16 @@
                             <!-- 警告時間軸圖表 -->
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                 <h3 style="color: #333; margin-bottom: 15px; text-align: center;">⏰ 警告時間軸</h3>
-                                <div id="warningTimelineChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: #666;">
-                                    載入中...
+                                <div id="warningTimelineChart" style="min-height: 300px; position: relative;">
+                                    <canvas id="timelineChartCanvas"></canvas>
                                 </div>
                             </div>
                             
                             <!-- 警告類別分布圖 -->
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                 <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📊 警告類別分布</h3>
-                                <div id="warningCategoryChart" style="min-height: 300px; display: flex; align-items: center; justify-content: center; color: #666;">
-                                    載入中...
+                                <div id="warningCategoryChart" style="min-height: 300px; position: relative;">
+                                    <canvas id="categoryChartCanvas"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -2986,6 +2990,9 @@
                 // 載入警告分析數據
                 loadWarningAnalysisData();
                 
+                // 載入警告圖表
+                loadWarningCharts();
+                
                 // 儲存用戶偏好
                 localStorage.setItem('warningAnalysisExpanded', 'true');
             } else {
@@ -3034,6 +3041,8 @@
             switch(tabName) {
                 case 'overview':
                     loadWarningOverview();
+                    // 如果是總覽標籤，載入圖表
+                    loadWarningCharts();
                     break;
                 case 'seasonal':
                     loadSeasonalTrends();
@@ -3068,16 +3077,12 @@
                 document.getElementById('averageAccuracy').textContent = data.average_accuracy ? `${data.average_accuracy}%` : '85%';
                 document.getElementById('bestCategory').textContent = data.best_category || '雷暴警告';
                 
-                // 顯示簡化的時間軸和圖表說明
-                showSimplifiedCharts();
-                
             } catch (error) {
                 console.error('載入警告總覽數據失敗:', error);
                 // 顯示示例數據
                 document.getElementById('totalWarnings').textContent = '22';
                 document.getElementById('averageAccuracy').textContent = '85%';
                 document.getElementById('bestCategory').textContent = '雷暴警告';
-                showSimplifiedCharts();
             }
         }
 
@@ -3351,10 +3356,179 @@
                 content.style.display = 'block';
                 icon.style.transform = 'rotate(180deg)';
                 icon.textContent = '🔼';
+                // 如果展開了，載入圖表
+                loadWarningCharts();
             } else {
                 content.style.display = 'none';
                 icon.style.transform = 'rotate(0deg)';
                 icon.textContent = '🔽';
+            }
+        }
+
+        // 警告圖表變量
+        let timelineChart = null;
+        let categoryChart = null;
+
+        // 載入警告圖表
+        async function loadWarningCharts() {
+            try {
+                // 載入時間軸圖表
+                await loadTimelineChart();
+                // 載入類別分布圖表  
+                await loadCategoryChart();
+            } catch (error) {
+                console.error('載入警告圖表失敗:', error);
+            }
+        }
+
+        // 載入時間軸圖表
+        async function loadTimelineChart() {
+            try {
+                const response = await fetch('/api/warnings/timeline-simple');
+                const data = await response.json();
+                
+                const ctx = document.getElementById('timelineChartCanvas');
+                if (!ctx) return;
+                
+                // 銷毀現有圖表
+                if (timelineChart) {
+                    timelineChart.destroy();
+                }
+                
+                timelineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: '警告次數',
+                            data: data.data,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#667eea',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#666'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#666'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入時間軸圖表失敗:', error);
+                document.getElementById('warningTimelineChart').innerHTML = '<div style="text-align: center; color: #999; padding: 50px;">載入失敗，請稍後重試</div>';
+            }
+        }
+
+        // 載入類別分布圖表
+        async function loadCategoryChart() {
+            try {
+                const response = await fetch('/api/warnings/category-simple');
+                const data = await response.json();
+                
+                const ctx = document.getElementById('categoryChartCanvas');
+                if (!ctx) return;
+                
+                // 銷毀現有圖表
+                if (categoryChart) {
+                    categoryChart.destroy();
+                }
+                
+                categoryChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: [
+                                '#FF6B6B',
+                                '#4ECDC4', 
+                                '#45B7D1',
+                                '#FFA07A',
+                                '#98D8C8',
+                                '#F7DC6F',
+                                '#BB8FCE',
+                                '#85C1E9'
+                            ],
+                            borderWidth: 0,
+                            hoverBorderWidth: 2,
+                            hoverBorderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#333',
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#667eea',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('載入類別分布圖表失敗:', error);
+                document.getElementById('warningCategoryChart').innerHTML = '<div style="text-align: center; color: #999; padding: 50px;">載入失敗，請稍後重試</div>';
             }
         }
 
