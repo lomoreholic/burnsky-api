@@ -1,5 +1,1 @@
-# ads.txt file for burnsky-api.onrender.com
-# This file identifies authorized sellers of digital advertising inventory
-
-# Google AdSense
 google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0
