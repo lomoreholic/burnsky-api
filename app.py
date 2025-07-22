@@ -880,8 +880,7 @@ def terms_of_service():
 @app.route("/ads.txt")
 def ads_txt():
     """Google AdSense ads.txt 文件"""
-    ads_content = "google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0"
-    return ads_content, 200, {'Content-Type': 'text/plain'}
+    return send_from_directory('static', 'ads.txt', mimetype='text/plain')
 
 @app.route("/google<verification_code>.html")
 def google_verification(verification_code):

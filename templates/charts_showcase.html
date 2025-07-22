@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 燒天預測 - 完整警告圖表展示</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+        
+        .charts-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #4a5568;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .chart-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2d3748;
+            text-align: center;
+        }
+        
+        .chart-container {
+            height: 350px;
+            position: relative;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 燒天預測系統</h1>
+            <p>警告歷史分析 - 完整圖表展示</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="loadAllCharts()">🔄 載入所有圖表</button>
+            <button class="btn" onclick="loadSampleData()">📊 顯示示例數據</button>
+            <button class="btn" onclick="window.location.href='/warning-dashboard'">📋 返回儀表板</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalWarnings">--</div>
+                <div class="stat-label">總警告數</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="chartCount">--</div>
+                <div class="stat-label">圖表數量</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="dataSource">--</div>
+                <div class="stat-label">數據來源</div>
+            </div>
+        </div>
+
+        <!-- 總覽圖表區 -->
+        <div class="charts-section">
+            <h2 class="section-title">📊 總覽統計圖表</h2>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">📊 警告類別統計</div>
+                    <div class="chart-container">
+                        <canvas id="overviewCategoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-title">⚠️ 嚴重度分布</div>
+                    <div class="chart-container">
+                        <canvas id="overviewSeverityChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-title">🕐 24小時警告模式</div>
+                    <div class="chart-container">
+                        <canvas id="overviewHourlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 詳細分析圖表區 -->
+        <div class="charts-section">
+            <h2 class="section-title">📈 詳細分析圖表</h2>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">🏷️ 類別分布 (甜甜圈圖)</div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-title">📈 警告時間軸</div>
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局圖表變量
+        let overviewCategoryChart = null;
+        let overviewSeverityChart = null;
+        let overviewHourlyChart = null;
+        let categoryChart = null;
+        let timelineChart = null;
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateStats(totalWarnings = '--', chartCount = '--', dataSource = '--') {
+            document.getElementById('totalWarnings').textContent = totalWarnings;
+            document.getElementById('chartCount').textContent = chartCount;
+            document.getElementById('dataSource').textContent = dataSource;
+        }
+
+        async function loadAllCharts() {
+            showStatus('🔄 正在載入所有圖表數據...', 'info');
+            
+            try {
+                // 並行載入所有圖表數據
+                const [overviewData, categoryData, timelineData] = await Promise.all([
+                    fetch('/api/warnings/overview-charts').then(r => r.json()),
+                    fetch('/api/warnings/category-distribution').then(r => r.json()),
+                    fetch('/api/warnings/timeline').then(r => r.json())
+                ]);
+
+                // 更新統計信息
+                const totalWarnings = overviewData.summary?.total_warnings || 
+                                    categoryData.summary?.total_warnings || 
+                                    timelineData.total_warnings || 0;
+                
+                updateStats(
+                    totalWarnings,
+                    Object.keys(overviewData.charts || {}).length + 2,
+                    overviewData.data_source === 'example_data' ? '示例數據' : '實際數據'
+                );
+
+                // 載入總覽圖表
+                if (overviewData.status === 'success') {
+                    createOverviewCharts(overviewData);
+                }
+
+                // 載入詳細圖表
+                if (categoryData.status === 'success') {
+                    createCategoryChart(categoryData);
+                }
+
+                if (timelineData.status === 'success') {
+                    createTimelineChart(timelineData);
+                }
+
+                showStatus('✅ 所有圖表載入完成！', 'success');
+                
+            } catch (error) {
+                showStatus(`❌ 載入失敗: ${error.message}`, 'error');
+            }
+        }
+
+        function createOverviewCharts(data) {
+            const charts = data.charts;
+            
+            // 警告類別統計圖
+            if (charts.warning_trends) {
+                if (overviewCategoryChart) overviewCategoryChart.destroy();
+                
+                const ctx = document.getElementById('overviewCategoryChart').getContext('2d');
+                overviewCategoryChart = new Chart(ctx, {
+                    type: charts.warning_trends.chart_type,
+                    data: charts.warning_trends.chart_data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+            
+            // 嚴重度分布圖
+            if (charts.severity_distribution) {
+                if (overviewSeverityChart) overviewSeverityChart.destroy();
+                
+                const ctx = document.getElementById('overviewSeverityChart').getContext('2d');
+                overviewSeverityChart = new Chart(ctx, {
+                    type: charts.severity_distribution.chart_type,
+                    data: charts.severity_distribution.chart_data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+            
+            // 時段模式雷達圖
+            if (charts.hourly_pattern) {
+                if (overviewHourlyChart) overviewHourlyChart.destroy();
+                
+                const ctx = document.getElementById('overviewHourlyChart').getContext('2d');
+                overviewHourlyChart = new Chart(ctx, {
+                    type: charts.hourly_pattern.chart_type,
+                    data: charts.hourly_pattern.chart_data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        }
+
+        function createCategoryChart(data) {
+            if (categoryChart) categoryChart.destroy();
+            
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx, {
+                type: data.chart_type,
+                data: data.chart_data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function createTimelineChart(data) {
+            if (timelineChart) timelineChart.destroy();
+            
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            timelineChart = new Chart(ctx, {
+                type: 'line',
+                data: data.chart_data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function loadSampleData() {
+            showStatus('📊 載入示例數據...', 'info');
+            
+            // 示例總覽數據
+            const sampleOverviewData = {
+                charts: {
+                    warning_trends: {
+                        chart_type: 'bar',
+                        chart_data: {
+                            labels: ['雨量', '風暴', '雷暴', '能見度', '空氣', '溫度'],
+                            datasets: [{
+                                label: '警告數量',
+                                data: [15, 12, 8, 6, 4, 2],
+                                backgroundColor: ['#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#10B981', '#F97316']
+                            }]
+                        }
+                    },
+                    severity_distribution: {
+                        chart_type: 'polarArea',
+                        chart_data: {
+                            labels: ['極端', '嚴重', '中等', '輕微'],
+                            datasets: [{
+                                data: [5, 12, 18, 10],
+                                backgroundColor: [
+                                    'rgba(239, 68, 68, 0.7)',
+                                    'rgba(245, 158, 11, 0.7)',
+                                    'rgba(59, 130, 246, 0.7)',
+                                    'rgba(16, 185, 129, 0.7)'
+                                ]
+                            }]
+                        }
+                    },
+                    hourly_pattern: {
+                        chart_type: 'radar',
+                        chart_data: {
+                            labels: ['深夜(0-6)', '上午(6-12)', '下午(12-18)', '晚上(18-24)'],
+                            datasets: [{
+                                data: [3, 10, 18, 7],
+                                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                                borderColor: '#8B5CF6',
+                                borderWidth: 2
+                            }]
+                        }
+                    }
+                }
+            };
+
+            // 示例類別分布數據
+            const sampleCategoryData = {
+                chart_type: 'doughnut',
+                chart_data: {
+                    labels: ['雨量警告', '風暴警告', '雷暴警告', '能見度警告', '空氣品質警告'],
+                    datasets: [{
+                        data: [15, 12, 8, 6, 4],
+                        backgroundColor: ['#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#10B981']
+                    }]
+                }
+            };
+
+            // 示例時間軸數據
+            const sampleTimelineData = {
+                chart_data: {
+                    labels: ['07-15', '07-16', '07-17', '07-18', '07-19', '07-20', '07-21'],
+                    datasets: [{
+                        label: '每日警告數量',
+                        data: [4, 7, 3, 12, 6, 9, 2],
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                }
+            };
+
+            createOverviewCharts(sampleOverviewData);
+            createCategoryChart(sampleCategoryData);
+            createTimelineChart(sampleTimelineData);
+            
+            updateStats(47, 5, '示例數據');
+            showStatus('✅ 示例圖表載入完成', 'success');
+        }
+
+        // 頁面載入時自動載入示例數據
+        window.addEventListener('DOMContentLoaded', function() {
+            loadSampleData();
+        });
+    </script>
+</body>
+</html>
