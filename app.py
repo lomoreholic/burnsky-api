@@ -56,8 +56,41 @@ def convert_numpy_types(obj):
     else:
         return obj
 
-def parse_warning_details(warning_text):
-    """解析警告詳細信息，提取警告類型、等級和具體內容"""
+def parse_warning_details(warning_input):
+    """解析警告詳細信息，提取警告類型、等級和具體內容 - 增強版"""
+    import ast
+    
+    # 提取警告文本和代碼
+    warning_text = ""
+    warning_code = ""
+    
+    if isinstance(warning_input, dict):
+        # 處理字典格式
+        if 'contents' in warning_input and isinstance(warning_input['contents'], list):
+            warning_text = ' '.join(warning_input['contents'])
+        else:
+            warning_text = str(warning_input)
+        warning_code = warning_input.get('warningStatementCode', '')
+    elif isinstance(warning_input, str):
+        # 嘗試解析JSON字符串格式
+        try:
+            if warning_input.startswith('{') and warning_input.endswith('}'):
+                parsed_data = ast.literal_eval(warning_input)
+                if isinstance(parsed_data, dict):
+                    if 'contents' in parsed_data and isinstance(parsed_data['contents'], list):
+                        warning_text = ' '.join(parsed_data['contents'])
+                    else:
+                        warning_text = str(parsed_data)
+                    warning_code = parsed_data.get('warningStatementCode', '')
+                else:
+                    warning_text = warning_input
+            else:
+                warning_text = warning_input
+        except:
+            warning_text = warning_input
+    else:
+        warning_text = str(warning_input)
+    
     warning_info = {
         'category': 'unknown',
         'subcategory': '',
@@ -66,45 +99,95 @@ def parse_warning_details(warning_text):
         'impact_factors': [],
         'duration_hint': '',
         'area_specific': False,
-        'original_text': warning_text
+        'original_text': warning_text,
+        'warning_code': warning_code
     }
     
     text_lower = warning_text.lower()
     
-    # 1. 雨量警告細分
-    if any(keyword in text_lower for keyword in ['雨', 'rain', '降雨', '暴雨']):
-        warning_info['category'] = 'rainfall'
-        if any(keyword in text_lower for keyword in ['黑雨', '黑色暴雨', 'black rain']):
-            warning_info['subcategory'] = 'black_rain'
-            warning_info['level'] = 4
-            warning_info['severity'] = 'extreme'
-            warning_info['impact_factors'] = ['能見度極差', '道路積水', '山洪風險']
-        elif any(keyword in text_lower for keyword in ['紅雨', '紅色暴雨', 'red rain']):
-            warning_info['subcategory'] = 'red_rain'
-            warning_info['level'] = 3
-            warning_info['severity'] = 'severe'
-            warning_info['impact_factors'] = ['能見度差', '交通阻塞', '戶外風險']
-        elif any(keyword in text_lower for keyword in ['黃雨', '黃色暴雨', 'amber rain']):
-            warning_info['subcategory'] = 'amber_rain'
+    # 0. 優先使用官方警告代碼分類
+    if warning_code:
+        if warning_code == 'WTS':
+            warning_info['category'] = 'thunderstorm'
+            warning_info['subcategory'] = 'general_thunderstorm'
             warning_info['level'] = 2
             warning_info['severity'] = 'moderate'
-            warning_info['impact_factors'] = ['能見度下降', '交通延誤']
-        elif any(keyword in text_lower for keyword in ['水浸', '特別報告', '山洪']):
-            warning_info['subcategory'] = 'flood_warning'
+            warning_info['impact_factors'] = ['雷電活動', '局部雨水']
+        elif warning_code == 'WHOT':
+            warning_info['category'] = 'temperature'
+            warning_info['subcategory'] = 'extreme_heat'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['高溫影響', '中暑風險', '紫外線強']
+        elif warning_code == 'WCOLD':
+            warning_info['category'] = 'temperature'
+            warning_info['subcategory'] = 'extreme_cold'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['低溫影響', '保暖需要']
+        elif warning_code == 'WTCSGNL':
+            warning_info['category'] = 'wind_storm'
+            warning_info['subcategory'] = 'tropical_cyclone'
             warning_info['level'] = 3
             warning_info['severity'] = 'severe'
-            warning_info['impact_factors'] = ['道路水浸', '山洪風險', '地下通道危險']
+            warning_info['impact_factors'] = ['強風影響', '海上風浪', '戶外危險']
     
-    # 2. 風暴/颱風警告細分
-    elif any(keyword in text_lower for keyword in ['風球', '颱風', '熱帶氣旋', 'typhoon', 'wtcsgnl']):
-        warning_info['category'] = 'wind_storm'
-        if any(keyword in text_lower for keyword in ['十號', '10號', '颶風', 'hurricane']):
-            warning_info['subcategory'] = 'hurricane_10'
-            warning_info['level'] = 5
-            warning_info['severity'] = 'extreme'
-            warning_info['impact_factors'] = ['極強風暴', '全面停工', '建築物危險', '海浪翻騰']
-        elif any(keyword in text_lower for keyword in ['九號', '9號', '暴風']):
-            warning_info['subcategory'] = 'gale_9'
+    # 1. 如果沒有代碼識別，使用文本關鍵詞分析
+    if warning_info['category'] == 'unknown':
+        # 雨量警告細分
+        if any(keyword in text_lower for keyword in ['雨', 'rain', '降雨', '暴雨']):
+            warning_info['category'] = 'rainfall'
+            if any(keyword in text_lower for keyword in ['黑雨', '黑色暴雨', 'black rain']):
+                warning_info['subcategory'] = 'black_rain'
+                warning_info['level'] = 4
+                warning_info['severity'] = 'extreme'
+                warning_info['impact_factors'] = ['能見度極差', '道路積水', '山洪風險']
+            elif any(keyword in text_lower for keyword in ['紅雨', '紅色暴雨', 'red rain']):
+                warning_info['subcategory'] = 'red_rain'
+                warning_info['level'] = 3
+                warning_info['severity'] = 'severe'
+                warning_info['impact_factors'] = ['能見度差', '交通阻塞', '戶外風險']
+            elif any(keyword in text_lower for keyword in ['黃雨', '黃色暴雨', 'amber rain']):
+                warning_info['subcategory'] = 'amber_rain'
+                warning_info['level'] = 2
+                warning_info['severity'] = 'moderate'
+                warning_info['impact_factors'] = ['能見度下降', '交通延誤']
+            elif any(keyword in text_lower for keyword in ['水浸', '特別報告', '山洪']):
+                warning_info['subcategory'] = 'flood_warning'
+                warning_info['level'] = 3
+                warning_info['severity'] = 'severe'
+                warning_info['impact_factors'] = ['道路水浸', '山洪風險', '地下通道危險']
+    
+        # 2. 風暴/颱風警告細分
+        elif any(keyword in text_lower for keyword in ['風球', '颱風', '熱帶氣旋', 'typhoon', 'wtcsgnl']):
+            warning_info['category'] = 'wind_storm'
+            if any(keyword in text_lower for keyword in ['十號', '10號', '颶風', 'hurricane']):
+                warning_info['subcategory'] = 'hurricane_10'
+                warning_info['level'] = 5
+                warning_info['severity'] = 'extreme'
+                warning_info['impact_factors'] = ['極強風暴', '全面停工', '建築物危險', '海浪翻騰']
+            elif any(keyword in text_lower for keyword in ['九號', '9號', '暴風']):
+                warning_info['subcategory'] = 'gale_9'
+                warning_info['level'] = 4
+                warning_info['severity'] = 'severe'
+                warning_info['impact_factors'] = ['強烈風暴', '戶外危險', '海上風浪']
+        
+        # 3. 雷暴警告細分
+        elif any(keyword in text_lower for keyword in ['雷暴', '閃電', 'thunderstorm', 'lightning']):
+            warning_info['category'] = 'thunderstorm'
+            warning_info['subcategory'] = 'general_thunderstorm'
+            warning_info['level'] = 2
+            warning_info['severity'] = 'moderate'
+            warning_info['impact_factors'] = ['雷電活動', '局部雨水']
+        
+        # 4. 溫度相關警告
+        elif any(keyword in text_lower for keyword in ['酷熱', '寒冷', '高溫', '低溫', 'heat', 'cold']):
+            warning_info['category'] = 'temperature'
+            if any(keyword in text_lower for keyword in ['酷熱', '極熱', 'very hot', 'heat wave']):
+                warning_info['subcategory'] = 'extreme_heat'
+                warning_info['level'] = 2
+                warning_info['severity'] = 'moderate'
+                warning_info['impact_factors'] = ['高溫影響', '中暑風險', '紫外線強']
             warning_info['level'] = 4
             warning_info['severity'] = 'severe'
             warning_info['impact_factors'] = ['強烈風暴', '戶外危險', '海上風浪']
