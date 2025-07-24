@@ -390,6 +390,9 @@ def calculate_warning_impact_advanced(warning_info, time_of_day='day', season='s
     for description, multiplier in multipliers:
         final_impact *= multiplier
     
+    # 確保影響分數在合理範圍內 (0-10)
+    final_impact = max(0, min(final_impact, 10))
+    
     return round(final_impact, 1), multipliers
 
 def get_warning_impact_score(warning_data):
@@ -664,8 +667,8 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
             weather_data, forecast_data, ninday_data, advance_hours
         )
     
-    # 最終分數計算：傳統警告影響 + 未來風險評估
-    total_warning_impact = warning_impact + warning_risk_score
+    # 最終分數計算：傳統警告影響 + 未來風險評估，但限制在合理範圍內
+    total_warning_impact = min(warning_impact + warning_risk_score, 10.0)  # 限制最高 10 分
     
     if total_warning_impact > 0:
         adjusted_score = max(0, score - total_warning_impact)

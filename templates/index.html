@@ -956,21 +956,6 @@
                     <div class="prediction-level" id="predictionLevel" aria-live="polite">載入中...</div>
                     <div class="probability" id="probability" aria-live="polite">計算中...</div>
                     
-                    <!-- 即時天氣警告區域 -->
-                    <div id="currentWarningsSection" class="main-card" style="margin: 20px auto; max-width: 500px; display: none;">
-                        <div class="warning-header" style="background: linear-gradient(45deg, rgba(255, 107, 107, 0.8), rgba(238, 90, 82, 0.8)); color: rgba(255, 255, 255, 0.95); padding: 12px 20px; border-radius: 12px 12px 0 0; text-align: center; font-weight: 500; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);">
-                            ⚠️ 現時天氣警告
-                        </div>
-                        <div id="currentWarningsContent" style="background: white; border: 2px solid #ff6b6b; border-top: none; border-radius: 0 0 12px 12px; padding: 15px;">
-                            <div id="warningsList" style="display: grid; gap: 10px;">
-                                <!-- 警告項目將在此處動態生成 -->
-                            </div>
-                            <div id="warningImpact" style="margin-top: 12px; padding: 10px; background: rgba(255, 107, 107, 0.1); border-radius: 8px; font-size: 0.9rem; color: #d63031; text-align: center; border-left: 3px solid #ff6b6b;">
-                                <!-- 警告影響分數將在此處顯示 -->
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- 燒天指數對照表 -->
                     <div class="score-reference-card" style="margin: 20px auto; max-width: 500px;">
                         <div class="score-reference-header" onclick="toggleScoreReference()" style="cursor: pointer; padding: 12px 20px; background: linear-gradient(45deg, #667eea, #764ba2); color: white; border-radius: 12px 12px 0 0; text-align: center; user-select: none; transition: all 0.3s ease; position: relative; overflow: hidden;">
@@ -1046,8 +1031,10 @@
                 <!-- 天氣數據區域 -->
                 <section class="weather-section" aria-labelledby="weather-title">
                     <h2 class="weather-title" id="weather-title">🌦️ 天氣數據</h2>
+                    
                     <div class="weather-data" id="weatherData" role="region" aria-live="polite">
                         <!-- 天氣數據將動態載入 -->
+                        <!-- 天氣警告卡片將在這裡動態添加 -->
                     </div>
                 </section>
 
@@ -1999,6 +1986,75 @@
                 `;
                 addMobileToggle(colorCard);
                 grid.appendChild(colorCard);
+            }
+            
+            // 添加天氣警告影響分析卡片（如果有警告數據）
+            if (window.currentWarningData && window.currentWarningData.detailed_analysis && window.currentWarningData.detailed_analysis.length > 0) {
+                const warningAnalysisCard = document.createElement('div');
+                warningAnalysisCard.className = 'factor-card';
+                warningAnalysisCard.style.borderLeft = '4px solid #ff6b6b';
+                
+                const warnings = window.currentWarningData.detailed_analysis;
+                const totalImpact = Math.min(window.currentWarningData.total_warning_impact || 0, 10); // 限制最高 10 分
+                
+                // 計算影響等級顏色
+                const impactColor = totalImpact >= 8 ? '#d63031' : 
+                                  totalImpact >= 5 ? '#e17055' : 
+                                  totalImpact >= 3 ? '#fdcb6e' : '#00b894';
+                
+                // 生成警告影響摘要
+                const impactSummary = warnings.map(warning => {
+                    const severity = warning.severity || 'moderate';
+                    const severityMap = {
+                        'extreme': '極端',
+                        'severe': '嚴重', 
+                        'moderate': '中等',
+                        'low': '輕微'
+                    };
+                    const severityDesc = severityMap[severity] || severity;
+                    
+                    let typeIcon = '⚠️';
+                    if (warning.category === 'thunderstorm') typeIcon = '⛈️';
+                    else if (warning.category === 'temperature') typeIcon = '🌡️';
+                    else if (warning.category === 'wind_storm') typeIcon = '💨';
+                    else if (warning.category === 'rain') typeIcon = '🌧️';
+                    
+                    return `${typeIcon} ${severityDesc} (影響: ${warning.impact_score || 0}/10)`;
+                }).join('<br>');
+                
+                // 主要影響因子
+                const allImpactFactors = warnings.reduce((factors, warning) => {
+                    if (warning.impact_factors) {
+                        factors.push(...warning.impact_factors);
+                    }
+                    return factors;
+                }, []);
+                const uniqueFactors = [...new Set(allImpactFactors)];
+                
+                warningAnalysisCard.innerHTML = `
+                    <div class="factor-header">
+                        <div class="factor-name">
+                            ⚠️ 天氣警告影響分析 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                        </div>
+                        <div class="factor-score" style="color: ${impactColor};">${Math.round(totalImpact)}/10</div>
+                    </div>
+                    <div class="factor-description">
+                        <strong>現行警告 (${warnings.length}個):</strong><br>
+                        ${impactSummary}<br><br>
+                        <strong>對燒天預測的影響:</strong><br>
+                        <div style="margin: 8px 0; padding: 8px; background: rgba(255, 107, 107, 0.1); border-radius: 6px;">
+                            ${uniqueFactors.length > 0 ? uniqueFactors.map(factor => `• ${factor}`).join('<br>') : '• 降低整體預測準確度<br>• 影響天空能見度<br>• 可能阻擋日照'}
+                        </div>
+                        <strong>安全建議:</strong> 
+                        ${window.currentWarningData.has_severe_warnings ? 
+                            '<span style="color: #d63031;">⚠️ 建議取消戶外攝影活動</span>' : 
+                            '<span style="color: #fdcb6e;">⚠️ 注意天氣變化，做好防護措施</span>'
+                        }<br>
+                        <br><small style="color: #888; font-style: italic;">⚠️ 根據香港天文台警告分析對燒天預測的潛在影響</small>
+                    </div>
+                `;
+                addMobileToggle(warningAnalysisCard);
+                grid.appendChild(warningAnalysisCard);
             }
         }
 
@@ -3007,23 +3063,12 @@
             }
         }
 
-        // 更新當前警告顯示
+        // 更新當前警告顯示 - 修改為卡片模式添加到天氣數據
         function updateCurrentWarnings(analysisDetails) {
             console.log('🔍 updateCurrentWarnings 被調用', analysisDetails);
             
-            const warningsSection = document.getElementById('currentWarningsSection');
-            if (!warningsSection) {
-                console.log('❌ 找不到 currentWarningsSection 元素');
-                return;
-            }
-            
-            if (!analysisDetails) {
-                console.log('❌ analysisDetails 為空');
-                return;
-            }
-            
-            if (!analysisDetails.weather_warnings) {
-                console.log('❌ weather_warnings 不存在');
+            if (!analysisDetails || !analysisDetails.weather_warnings) {
+                console.log('❌ 沒有警告數據');
                 return;
             }
 
@@ -3033,148 +3078,65 @@
             // 檢查是否有警告
             if (!weatherWarnings.detailed_analysis || weatherWarnings.detailed_analysis.length === 0) {
                 console.log('❌ 無詳細警告分析數據');
-                warningsSection.style.display = 'none';
                 return;
             }
 
-            console.log(`✅ 發現 ${weatherWarnings.detailed_analysis.length} 個警告，開始顯示`);
-            warningsSection.style.display = 'block';
-            const warningsList = document.getElementById('warningsList');
+            console.log(`✅ 發現 ${weatherWarnings.detailed_analysis.length} 個警告，將以卡片形式添加到天氣數據`);
             
-            if (!warningsList) {
-                console.log('❌ 找不到 warningsList 元素');
+            // 取得天氣數據容器
+            const weatherContainer = document.getElementById('weatherData');
+            if (!weatherContainer) {
+                console.log('❌ 找不到 weatherData 容器');
                 return;
             }
             
-            // 添加調試信息到頁面上
-            document.title = `🚨 ${weatherWarnings.detailed_analysis.length} 個警告 - 燒天預測`;
-            
-            // 清空現有內容
-            warningsList.innerHTML = '';
-
-            // 顯示警告概要
-            const warningsSummaryHeader = document.createElement('div');
-            warningsSummaryHeader.className = 'warnings-summary-header';
-            warningsSummaryHeader.innerHTML = `
-                <div style="text-align: center; margin-bottom: 15px; padding: 12px; background: linear-gradient(135deg, rgba(255,75,75,0.2), rgba(255,150,0,0.2)); border-radius: 12px; border: 2px solid rgba(255,75,75,0.3);">
-                    <div style="font-size: 1.1rem; font-weight: bold; color: #ff4757; margin-bottom: 5px;">
-                        ⚠️ 當前有 ${weatherWarnings.warning_count || 0} 個氣象警告生效
-                    </div>
-                    <div style="font-size: 0.9rem; color: #ff6b6b;">
-                        總影響分數: ${Math.round(weatherWarnings.total_warning_impact || 0)} 分
-                    </div>
-                </div>
-            `;
-            warningsList.appendChild(warningsSummaryHeader);
-
-            // 處理每個警告詳情
+            // 為每個警告創建天氣卡片
             weatherWarnings.detailed_analysis.forEach((warning, index) => {
-                const warningElement = document.createElement('div');
-                warningElement.className = 'warning-item';
-                
                 // 根據警告類型設定圖示和顏色
                 let icon = '⚠️';
-                let color = '#ff9500';
-                let typeDesc = '一般警告';
+                let typeDesc = '氣象警告';
                 
                 if (warning.category === 'thunderstorm') {
                     icon = '⛈️';
-                    color = '#6c5ce7';
                     typeDesc = '雷暴警告';
                 } else if (warning.category === 'temperature') {
                     icon = '🌡️';
-                    color = '#ff7675';
                     typeDesc = '溫度警告';
                 } else if (warning.category === 'wind_storm') {
                     icon = '💨';
-                    color = '#74b9ff';
                     typeDesc = '風暴警告';
                 } else if (warning.category === 'rain') {
                     icon = '🌧️';
-                    color = '#0984e3';
-                    typeDesc = '雨水警告';
+                    typeDesc = '降雨警告';
                 }
 
-                // 計算警告的影響分數顏色
-                const impactScore = warning.impact_score || 0;
-                const scoreColor = impactScore >= 8 ? '#d63031' : 
-                                 impactScore >= 5 ? '#e17055' : 
-                                 impactScore >= 3 ? '#fdcb6e' : '#00b894';
-
-                // 嚴重等級描述
-                let severityDesc = warning.severity || 'moderate';
+                // 嚴重等級
                 const severityMap = {
                     'extreme': '極端',
                     'severe': '嚴重', 
                     'moderate': '中等',
                     'low': '輕微'
                 };
-                severityDesc = severityMap[severityDesc] || severityDesc;
+                const severityDesc = severityMap[warning.severity] || warning.severity || '中等';
+                const levelDesc = warning.level ? `${warning.level}級` : '';
 
-                warningElement.innerHTML = `
-                    <div class="warning-header" style="border-left: 4px solid ${color}; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); padding: 12px; border-radius: 8px; margin-bottom: 8px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="warning-icon" style="font-size: 1.5rem;">${icon}</div>
-                                <div class="warning-info">
-                                    <div class="warning-type" style="font-weight: bold; color: ${color}; font-size: 1rem;">${typeDesc}</div>
-                                    <div class="warning-severity" style="font-size: 0.85rem; color: #999; margin-top: 2px;">等級: ${severityDesc} | 級別: ${warning.level || 0}</div>
-                                </div>
-                            </div>
-                            <div class="warning-impact" style="text-align: right;">
-                                <div style="color: ${scoreColor}; font-weight: bold; font-size: 1rem;">
-                                    影響: ${impactScore}/10
-                                </div>
-                                <div style="font-size: 0.8rem; color: #999;">
-                                    ${new Date().toLocaleTimeString('zh-HK', {hour: '2-digit', minute: '2-digit'})}
-                                </div>
-                            </div>
+                // 創建警告卡片
+                const warningCard = `
+                    <div class="weather-card" style="border-left: 4px solid #ff6b6b;">
+                        <div class="weather-icon">${icon}</div>
+                        <div class="weather-value" style="font-size: 1.2rem;">${typeDesc}</div>
+                        <div class="weather-label">
+                            ${severityDesc}${levelDesc ? ` • ${levelDesc}` : ''}<br>
+                            <small>現正生效中</small>
                         </div>
                     </div>
-                    
-                    ${warning.impact_factors && warning.impact_factors.length > 0 ? 
-                        `<div class="warning-impacts" style="margin: 8px 0; padding: 8px 12px; background: rgba(116, 185, 255, 0.15); border-radius: 6px; border: 1px solid rgba(116, 185, 255, 0.3);">
-                            <div style="font-size: 0.85rem; color: #74b9ff; margin-bottom: 5px;"><strong>主要影響:</strong></div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                ${warning.impact_factors.map(factor => 
-                                    `<span style="background: ${color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">${factor}</span>`
-                                ).join('')}
-                            </div>
-                        </div>` : ''
-                    }
-                    
-                    ${warning.adjustments && warning.adjustments.length > 0 ? 
-                        `<div class="warning-adjustments" style="margin-top: 8px; padding: 8px 12px; background: rgba(255, 206, 84, 0.15); border-radius: 6px; border: 1px solid rgba(255, 206, 84, 0.3);">
-                            <div style="font-size: 0.85rem; color: #fdcb6e; margin-bottom: 5px;"><strong>分數調整:</strong></div>
-                            ${warning.adjustments.map(adj => 
-                                `<div style="font-size: 0.8rem; color: #f39c12;">🔧 ${adj[0]}: ×${adj[1].toFixed(1)}</div>`
-                            ).join('')}
-                        </div>` : ''
-                    }
                 `;
-
-                warningsList.appendChild(warningElement);
+                
+                weatherContainer.innerHTML += warningCard;
             });
 
-            // 添加警告總結和建議
-            const warningsSummary = document.createElement('div');
-            warningsSummary.className = 'warnings-summary';
-            warningsSummary.innerHTML = `
-                <div style="text-align: center; margin-top: 15px; padding: 12px; background: rgba(0, 184, 148, 0.15); border-radius: 10px; border: 1px solid rgba(0, 184, 148, 0.3);">
-                    <div style="font-size: 0.9rem; color: #00b894; margin-bottom: 8px;">
-                        <strong>🛡️ 安全提醒</strong>
-                    </div>
-                    <div style="font-size: 0.85rem; color: #00a085; line-height: 1.4;">
-                        ${weatherWarnings.has_severe_warnings ? 
-                            '⚠️ 檢測到嚴重警告，建議取消戶外攝影活動' : 
-                            '⚠️ 請注意天氣變化，做好防護措施'
-                        }
-                        <br>
-                        <small style="color: #55a3ff;">📡 數據來源: 香港天文台 | 更新: ${new Date().toLocaleString('zh-HK')}</small>
-                    </div>
-                </div>
-            `;
-            warningsList.appendChild(warningsSummary);
+            // 儲存警告數據供分析因子使用
+            window.currentWarningData = weatherWarnings;
         }
 
         // 初始化燒天指數對照表狀態
