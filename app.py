@@ -10,8 +10,8 @@ from datetime import datetime
 try:
     from warning_history_analyzer import WarningHistoryAnalyzer
     from warning_data_collector import WarningDataCollector
-    warning_analysis_available = False  # 暫時使用示例數據以提供更好的用戶體驗
-    print("✅ 警告歷史分析系統已載入，但使用示例數據")
+    warning_analysis_available = True  # 使用真實數據
+    print("✅ 警告歷史分析系統已載入")
 except ImportError as e:
     warning_analysis_available = False
     print(f"⚠️ 警告歷史分析系統未可用: {e}")
@@ -968,42 +968,6 @@ def get_shooting_locations():
         "status": "success",
         "locations": locations,
         "total": len(locations),
-        "last_updated": datetime.now().isoformat()
-    })
-
-@app.route("/api/webcams")
-def get_webcam_feeds():
-    """取得即時天空攝影機資料 API"""
-    # 注意：實際使用時需要申請相關攝影機權限
-    webcams = [
-        {
-            "id": "hko_kp",
-            "name": "天文台總部",
-            "location": "九龍天文台道",
-            "description": "香港天文台總部天空攝影機",
-            "coordinates": [22.3016, 114.1745],
-            "status": "online",
-            "last_update": datetime.now().isoformat(),
-            "image_url": "https://www.hko.gov.hk/wxinfo/aws/hko_mica.jpg",  # 示例URL
-            "refresh_interval": 300  # 5分鐘
-        },
-        {
-            "id": "tsim_sha_tsui",
-            "name": "尖沙咀海濱",
-            "location": "尖沙咀海濱長廊",
-            "description": "面向維港的實時天空影像",
-            "coordinates": [22.2940, 114.1722],
-            "status": "online", 
-            "last_update": datetime.now().isoformat(),
-            "image_url": "/static/placeholder_webcam.jpg",  # 佔位圖片
-            "refresh_interval": 300
-        }
-    ]
-    
-    return jsonify({
-        "status": "success",
-        "webcams": webcams,
-        "total": len(webcams),
         "last_updated": datetime.now().isoformat()
     })
 
