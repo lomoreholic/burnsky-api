@@ -4,7 +4,27 @@ from unified_scorer import calculate_burnsky_score_unified
 from forecast_extractor import forecast_extractor
 import numpy as np
 import os
+import time
 from datetime import datetime
+
+# 簡單的快取機制
+cache = {}
+CACHE_DURATION = 60  # 快取1分鐘
+
+def get_cached_data(key, fetch_function, *args):
+    """獲取快取數據或重新獲取"""
+    current_time = time.time()
+    
+    if key in cache:
+        cached_time, cached_data = cache[key]
+        if current_time - cached_time < CACHE_DURATION:
+            print(f"✅ 使用快取: {key}")
+            return cached_data
+    
+    print(f"🔄 重新獲取: {key}")
+    fresh_data = fetch_function(*args)
+    cache[key] = (current_time, fresh_data)
+    return fresh_data
 
 # 警告歷史分析系統
 try:
@@ -595,14 +615,13 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     # 轉換參數類型
     advance_hours = int(advance_hours)
     
-    # 獲取基本天氣數據
-    weather_data = fetch_weather_data()
-    forecast_data = fetch_forecast_data()
-    ninday_data = fetch_ninday_forecast()
-    wind_data = get_current_wind_data()
+    # 使用快取獲取數據
+    weather_data = get_cached_data('weather', fetch_weather_data)
+    forecast_data = get_cached_data('forecast', fetch_forecast_data)
+    ninday_data = get_cached_data('ninday', fetch_ninday_forecast)
+    wind_data = get_cached_data('wind', get_current_wind_data)
+    warning_data = get_cached_data('warning', fetch_warning_data)
     
-    # 🚨 獲取天氣警告數據（新增）
-    warning_data = fetch_warning_data()
     print(f"🚨 獲取天氣警告數據: {len(warning_data.get('details', [])) if warning_data else 0} 個警告")
     
     # 將風速數據加入天氣數據中
