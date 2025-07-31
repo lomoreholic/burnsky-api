@@ -63,18 +63,17 @@
             transform: translateY(-2px);
         }
 
-        /* 手機版響應式導航 */
+        /* 手機版響應式導航 - 4+4+3 格式 */
         @media (max-width: 768px) {
-            .nav-row {
+            .nav-container {
                 display: grid !important;
                 grid-template-columns: repeat(4, 1fr) !important;
                 gap: 8px !important;
-                margin-bottom: 8px !important;
+                grid-auto-rows: auto !important;
             }
 
-            .nav-row:last-child {
-                grid-template-columns: repeat(3, 1fr) !important;
-                margin-bottom: 0 !important;
+            .nav-row {
+                display: contents !important;
             }
 
             .nav-row a {
@@ -82,6 +81,16 @@
                 font-size: 12px !important;
                 text-align: center !important;
                 border-radius: 6px !important;
+                margin-bottom: 8px !important;
+            }
+
+            /* 第三行只有3個項目 */
+            .nav-row:last-child a:nth-child(n+4) {
+                display: none !important;
+            }
+            
+            .nav-row:last-child a:nth-child(1) {
+                grid-column: 2 / span 1 !important;
             }
         }
 
