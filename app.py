@@ -2461,7 +2461,17 @@ def photo_analysis_test():
 @app.route("/ads.txt")
 def ads_txt():
     """Google AdSense ads.txt 文件"""
-    return send_from_directory('static', 'ads.txt', mimetype='text/plain')
+    try:
+        response = send_from_directory('static', 'ads.txt', mimetype='text/plain')
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # 快取24小時
+        response.headers['X-Robots-Tag'] = 'noindex'  # 告訴爬蟲不要索引
+        return response
+    except Exception as e:
+        print(f"❌ ads.txt 錯誤: {e}")
+        return "google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0", 200, {
+            'Content-Type': 'text/plain',
+            'Cache-Control': 'public, max-age=86400'
+        }
 
 @app.route("/google<verification_code>.html")
 def google_verification(verification_code):

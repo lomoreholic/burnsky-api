@@ -7,6 +7,10 @@ Allow: /predict*
 Allow: /privacy
 Allow: /terms
 
+# AdSense 和驗證文件
+Allow: /ads.txt
+Allow: /google*.html
+
 # 靜態資源
 Allow: /static/
 
