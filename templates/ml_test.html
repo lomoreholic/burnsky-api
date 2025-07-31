@@ -78,14 +78,29 @@
         /* 手機版響應式導航 - 4+4+3 格式 */
         @media (max-width: 768px) {
             .nav-container {
-                display: grid !important;
-                grid-template-columns: repeat(4, 1fr) !important;
+                display: flex !important;
+                flex-direction: column !important;
                 gap: 8px !important;
-                grid-auto-rows: auto !important;
             }
 
             .nav-row {
-                display: contents !important;
+                display: grid !important;
+                gap: 8px !important;
+                margin-bottom: 0 !important;
+            }
+            
+            /* 第一行和第二行：4個項目 */
+            .nav-row:nth-child(1),
+            .nav-row:nth-child(2) {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+            
+            /* 第三行：3個項目 */
+            .nav-row:nth-child(3) {
+                grid-template-columns: repeat(3, 1fr) !important;
+                justify-self: center !important;
+                max-width: 75% !important;
+                margin: 0 auto !important;
             }
 
             .nav-row a {
@@ -93,16 +108,6 @@
                 font-size: 12px !important;
                 text-align: center !important;
                 border-radius: 6px !important;
-                margin-bottom: 8px !important;
-            }
-
-            /* 第三行只有3個項目 */
-            .nav-row:last-child a:nth-child(n+4) {
-                display: none !important;
-            }
-            
-            .nav-row:last-child a:nth-child(1) {
-                grid-column: 2 / span 1 !important;
             }
         }
 
@@ -114,6 +119,19 @@
             .nav-row a {
                 padding: 5px 4px !important;
                 font-size: 11px !important;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+
+            .glass-card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .prediction-score {
+                font-size: 2em;
             }
         }
 
@@ -250,71 +268,14 @@
             100% { transform: rotate(360deg); }
         }
 
-        @media (max-width: 768px) {
-            .nav-container {
-                padding: 0 10px;
-            }
-            
-            /* 手機版：重新安排導航為3行，使用Grid布局 */
-            .nav-row {
-                display: grid !important;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 6px;
-                margin-bottom: 8px;
-                justify-content: center;
-            }
-            
-            /* 手機版：第三行只有3個項目，居中顯示 */
-            .nav-row:last-child {
-                grid-template-columns: repeat(3, 1fr) !important;
-                max-width: 75%;
-                margin: 0 auto 8px auto !important;
-            }
-            
-            .nav-row a {
-                font-size: 11px !important;
-                padding: 6px 4px !important;
-                text-align: center;
-                border-radius: 6px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                min-height: 32px;
-                display: flex !important;
-                align-items: center;
-                justify-content: center;
-                line-height: 1.2;
-                gap: 0 !important;
-            }
-
-            .container {
-                padding: 10px;
-            }
-
-            .glass-card {
-                padding: 20px;
-                margin-bottom: 20px;
-            }
-            
-            .prediction-score {
-                font-size: 2em;
-            }
-        }
-        
-        /* 針對更小螢幕的調整 */
         @media (max-width: 480px) {
+            .nav-container {
+                padding: 0 10px !important;
+            }
+
             .nav-row a {
-                font-size: 10px !important;
-                padding: 4px 2px !important;
-                min-height: 28px;
-            }
-            
-            .nav-row {
-                gap: 4px !important;
-            }
-            
-            .nav-row:last-child {
-                max-width: 80% !important;
+                padding: 5px 4px !important;
+                font-size: 11px !important;
             }
         }
     </style>
