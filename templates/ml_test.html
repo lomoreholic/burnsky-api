@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🤖 燒天機器學習預測測試 | BurnSky 燒天預測系統</title>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <style>
         :root {
             --primary-color: #FF6B35;
@@ -47,6 +47,7 @@
             padding: 0 20px;
         }
 
+        /* 桌面版導航樣式 */
         .nav-row {
             display: flex;
             justify-content: center;
@@ -208,14 +209,40 @@
         }
 
         @media (max-width: 768px) {
-            .nav-row {
-                flex-wrap: wrap;
-                gap: 10px;
+            .nav-container {
+                padding: 0 10px;
             }
-
+            
+            /* 手機版：重新安排導航為3行，使用Grid布局 */
+            .nav-row {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 6px;
+                margin-bottom: 8px;
+                justify-content: center;
+            }
+            
+            /* 手機版：第三行只有3個項目，居中顯示 */
+            .nav-row:last-child {
+                grid-template-columns: repeat(3, 1fr) !important;
+                max-width: 75%;
+                margin: 0 auto 8px auto !important;
+            }
+            
             .nav-row a {
-                font-size: 12px;
-                padding: 6px 10px;
+                font-size: 11px !important;
+                padding: 6px 4px !important;
+                text-align: center;
+                border-radius: 6px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-height: 32px;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                line-height: 1.2;
+                gap: 0 !important;
             }
 
             .container {
@@ -229,6 +256,23 @@
             
             .prediction-score {
                 font-size: 2em;
+            }
+        }
+        
+        /* 針對更小螢幕的調整 */
+        @media (max-width: 480px) {
+            .nav-row a {
+                font-size: 10px !important;
+                padding: 4px 2px !important;
+                min-height: 28px;
+            }
+            
+            .nav-row {
+                gap: 4px !important;
+            }
+            
+            .nav-row:last-child {
+                max-width: 80% !important;
             }
         }
     </style>

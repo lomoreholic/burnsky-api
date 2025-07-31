@@ -88,6 +88,39 @@
             color: white;
             transform: translateY(-2px);
         }
+
+        /* 手機版響應式導航 */
+        @media (max-width: 768px) {
+            .nav-row {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 8px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .nav-row:last-child {
+                grid-template-columns: repeat(3, 1fr) !important;
+                margin-bottom: 0 !important;
+            }
+
+            .nav-row a {
+                padding: 6px 8px !important;
+                font-size: 12px !important;
+                text-align: center !important;
+                border-radius: 6px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-container {
+                padding: 0 10px !important;
+            }
+
+            .nav-row a {
+                padding: 5px 4px !important;
+                font-size: 11px !important;
+            }
+        }
         
         .container {
             max-width: 1000px;
