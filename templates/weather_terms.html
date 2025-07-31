@@ -93,14 +93,29 @@
         /* 手機版響應式導航 - 4+4+3 格式 */
         @media (max-width: 768px) {
             .nav-container {
-                display: grid !important;
-                grid-template-columns: repeat(4, 1fr) !important;
+                display: flex !important;
+                flex-direction: column !important;
                 gap: 8px !important;
-                grid-auto-rows: auto !important;
             }
 
             .nav-row {
-                display: contents !important;
+                display: grid !important;
+                gap: 8px !important;
+                margin-bottom: 0 !important;
+            }
+            
+            /* 第一行和第二行：4個項目 */
+            .nav-row:nth-child(1),
+            .nav-row:nth-child(2) {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+            
+            /* 第三行：3個項目 */
+            .nav-row:nth-child(3) {
+                grid-template-columns: repeat(3, 1fr) !important;
+                justify-self: center !important;
+                max-width: 75% !important;
+                margin: 0 auto !important;
             }
 
             .nav-row a {
@@ -108,16 +123,6 @@
                 font-size: 12px !important;
                 text-align: center !important;
                 border-radius: 6px !important;
-                margin-bottom: 8px !important;
-            }
-
-            /* 第三行只有3個項目 */
-            .nav-row:last-child a:nth-child(n+4) {
-                display: none !important;
-            }
-            
-            .nav-row:last-child a:nth-child(1) {
-                grid-column: 2 / span 1 !important;
             }
         }
 
