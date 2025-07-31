@@ -153,9 +153,96 @@
             color: #666;
             margin-top: 5px;
         }
+        
+        /* 頂部導航樣式 */
+        .top-nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            font-size: 0.85rem;
+        }
+
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .nav-link {
+            color: #333;
+            text-decoration: none;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 500;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-link:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .top-nav {
+                position: static;
+                margin: 0 0 20px 0;
+                max-width: none;
+                font-size: 0.8rem;
+            }
+            
+            .nav-row {
+                flex-wrap: wrap;
+            }
+            
+            .nav-link {
+                padding: 5px 6px;
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-row">
+                <a href="/" class="nav-link">📊 即時數據</a>
+                <a href="/history" class="nav-link">� 歷史趨勢</a>
+                <a href="/warning" class="nav-link">⚠️ 警告台</a>
+            </div>
+            <div class="nav-row">
+                <a href="/photo_analysis" class="nav-link">� 照片分析</a>
+                <a href="/best_locations" class="nav-link">🏔️ 最佳位置</a>
+                <a href="/photography_guide" class="nav-link">� 攝影指南</a>
+            </div>
+            <div class="nav-row">
+                <a href="/weather_terms" class="nav-link">🌤️ 天氣術語</a>
+                <a href="/faq" class="nav-link">❓ 常見問答</a>
+                <a href="/api_docs" class="nav-link">📚 API 文檔</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
         <div class="header">
             <h1>🔥 燒天預測系統</h1>

@@ -123,9 +123,96 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* 頂部導航樣式 */
+        .top-nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            font-size: 0.85rem;
+        }
+
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .nav-link {
+            color: #333;
+            text-decoration: none;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 500;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-link:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .top-nav {
+                position: static;
+                margin: 0 0 20px 0;
+                max-width: none;
+                font-size: 0.8rem;
+            }
+            
+            .nav-row {
+                flex-wrap: wrap;
+            }
+            
+            .nav-link {
+                padding: 5px 6px;
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-row">
+                <a href="/" class="nav-link">📊 即時數據</a>
+                <a href="/history" class="nav-link">� 歷史趨勢</a>
+                <a href="/warning" class="nav-link">⚠️ 警告台</a>
+            </div>
+            <div class="nav-row">
+                <a href="/photo_analysis" class="nav-link">� 照片分析</a>
+                <a href="/best_locations" class="nav-link">🏔️ 最佳位置</a>
+                <a href="/photography_guide" class="nav-link">� 攝影指南</a>
+            </div>
+            <div class="nav-row">
+                <a href="/weather_terms" class="nav-link">🌤️ 天氣術語</a>
+                <a href="/faq" class="nav-link">❓ 常見問答</a>
+                <a href="/api_docs" class="nav-link">📚 API 文檔</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
         <div class="header">
             <h1>🔥 燒天預測系統狀態</h1>
@@ -214,10 +301,44 @@
             </div>
         </div>
 
+        <!-- 頁面導航 -->
+        <div style="margin-top: 30px; padding: 25px; background: rgba(255,255,255,0.12); border-radius: 15px; backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3 style="color: white; margin-bottom: 20px; font-size: 1.2em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">🔗 快速導航</h3>
+                
+                <!-- 主要功能 -->
+                <div style="margin-bottom: 18px;">
+                    <a href="/" style="color: rgba(255,255,255,0.95); text-decoration: none; margin: 0 8px; padding: 10px 18px; background: rgba(255,255,255,0.25); border-radius: 22px; transition: all 0.3s ease; display: inline-block; font-weight: 500;">🏠 主頁</a>
+                    <a href="/photo-analysis" style="color: rgba(255,255,255,0.95); text-decoration: none; margin: 0 8px; padding: 10px 18px; background: rgba(255,255,255,0.25); border-radius: 22px; transition: all 0.3s ease; display: inline-block; font-weight: 500;">� 照片分析</a>
+                    <a href="/warning-dashboard" style="color: rgba(255,255,255,0.95); text-decoration: none; margin: 0 8px; padding: 10px 18px; background: rgba(255,255,255,0.25); border-radius: 22px; transition: all 0.3s ease; display: inline-block; font-weight: 500;">⚠️ 警告分析</a>
+                </div>
+                
+                <!-- 開發者資源 -->
+                <div style="margin-bottom: 18px;">
+                    <a href="/weather-terms" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em; padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 18px;">� 天氣術語</a>
+                    <a href="/api-docs" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em;">API文檔</a>
+                    <a href="/status" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em; padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 18px; border: 2px solid rgba(255,255,255,0.5);">系統狀態</a>
+                    <a href="/sitemap.xml" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em;">網站地圖</a>
+                </div>
+                
+                <!-- 法律頁面 -->
+                <div style="margin-bottom: 15px;">
+                    <a href="/privacy" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em;">私隱政策</a>
+                    <a href="/terms" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em;">使用條款</a>
+                    <a href="mailto:contact@burnsky.hk" style="color: rgba(255,255,255,0.85); text-decoration: none; margin: 0 12px; font-size: 0.95em;">聯絡我們</a>
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.25);">
+                <p style="color: rgba(255,255,255,0.9); font-size: 0.9em; margin-bottom: 8px;">© 2025 BurnSky 燒天預測系統 | 基於香港天文台開放數據</p>
+                <p style="color: rgba(255,255,255,0.75); font-size: 0.85em;">
+                    🌅 讓科技與自然美景相遇 | Made with ❤️ in Hong Kong
+                </p>
+            </div>
+        </div>
+
         <div class="center">
             <button class="btn" onclick="runSystemCheck()">🔄 重新檢查</button>
-            <a href="/" class="btn">🏠 返回主頁</a>
-            <a href="/" class="btn">🔥 查看預測</a>
         </div>
     </div>
 

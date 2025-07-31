@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天氣術語詞彙表 | 燒天預測專業名詞解釋 | BurnSky</title>
     
     <!-- SEO 標籤 -->
-    <title>天氣術語詞彙表 | 燒天預測專業名詞解釋 | BurnSky</title>
     <meta name="description" content="完整的天氣術語詞彙表，解釋燒天預測中的專業名詞，包含氣象、攝影、預測相關術語，幫助您更好理解天氣預報。">
     <meta name="keywords" content="天氣術語,氣象名詞,燒天術語,天氣預報,氣象詞彙,天氣專業名詞,氣象知識">
     <meta name="robots" content="index, follow">
@@ -34,54 +34,112 @@
     </script>
     
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .nav-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-row a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-row a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .nav-row a.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
         }
         
         .container {
             max-width: 900px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
+            padding: 20px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #667eea;
+            color: white;
+            margin-bottom: 30px;
         }
         
-        .breadcrumb {
-            background: rgba(255,255,255,0.9);
-            padding: 10px 15px;
-            border-radius: 8px;
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+        
+        .search-box {
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .breadcrumb a {
-            color: #667eea;
-            text-decoration: none;
-            margin-right: 10px;
-            font-weight: 500;
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
         }
         
         .category {
             margin-bottom: 35px;
-            background: #f8f9fa;
+            background: rgba(255,255,255,0.95);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         
         .category-header {
@@ -128,31 +186,9 @@
             line-height: 1.6;
         }
         
-        .search-box {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 1em;
-            transition: border-color 0.3s ease;
-        }
-        
-        .search-input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
         .back-home {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 30px;
         }
         
         .back-home a {
@@ -164,15 +200,34 @@
             transition: background 0.3s ease;
             display: inline-block;
         }
+        
+        .back-home a:hover {
+            background: #5a6fd8;
+        }
     </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-row">
+                <a href="/">🏠 首頁</a>
+                <a href="/photo-analysis">📸 照片分析</a>
+                <a href="/warning-dashboard">⚠️ 警告台</a>
+                <a href="/ml-test">🤖 ML測試</a>
+                <a href="/api-docs">📋 API文檔</a>
+                <a href="/photography-guide">📸 攝影指南</a>
+            </div>
+            <div class="nav-row">
+                <a href="/best-locations">📍 最佳地點</a>
+                <a href="/faq">❓ FAQ</a>
+                <a href="/weather-terms" class="active">📚 天氣術語</a>
+                <a href="/terms">📄 條款</a>
+                <a href="/privacy">🔒 私隱</a>
+            </div>
+        </div>
+    </nav>
+    
     <div class="container">
-        <!-- 麵包屑導航 -->
-        <nav class="breadcrumb">
-            <a href="/">🏠 首頁</a> › <span style="color: #333; font-weight: 500;">天氣術語</span>
-        </nav>
-        
         <header class="header">
             <h1>📚 天氣術語詞彙表</h1>
             <p>理解燒天預測的專業術語</p>
@@ -211,18 +266,6 @@
                         <div class="term-definition">
                             日出後和日落前的一小時內，此時陽光柔和，色溫偏暖，是攝影的最佳時機。燒天現象通常在這個時段出現。
                         </div>
-                    </div>
-                    
-                    <!-- Google AdSense 廣告區域 -->
-                    <div style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(248, 249, 250, 0.6); border-radius: 4px;">
-                        <ins class="adsbygoogle"
-                             style="display:block"
-                             data-ad-client="ca-pub-3552699426860096"
-                             data-ad-format="auto"
-                             data-full-width-responsive="true"></ins>
-                        <script>
-                             (adsbygoogle = window.adsbygoogle || []).push({});
-                        </script>
                     </div>
                     
                     <div class="term-item">
@@ -429,7 +472,7 @@
         </main>
         
         <div class="back-home">
-            <a href="/">🏠 返回燒天預測系統</a>
+            <a href="/">🏠 返回首頁</a>
         </div>
     </div>
     

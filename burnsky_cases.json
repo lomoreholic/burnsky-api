@@ -1,0 +1,194 @@
+[
+  {
+    "location": "流浮山",
+    "time": "18:40",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "適中",
+      "visibility": "良好",
+      "temperature": "夏季溫度",
+      "humidity": "中等",
+      "wind": "輕微",
+      "air_quality": "一般"
+    },
+    "visual_rating": 8,
+    "notes": "金橙色調豐富，雲層有層次，水面反射明顯，系統預測32%但實際效果很好",
+    "timestamp": "2025-07-24T19:05:28.420480"
+  },
+  {
+    "location": "橫瀾島",
+    "time": "18:40",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "適宜",
+      "visibility": "極佳",
+      "temperature": "夏季溫度",
+      "humidity": "中等",
+      "wind": "輕微",
+      "air_quality": "良好"
+    },
+    "visual_rating": 9,
+    "notes": "強烈橙紅色燒天，雲層厚度完美，典型火燒雲效果，山脈剪影增強視覺",
+    "timestamp": "2025-07-24T19:05:28.420501"
+  },
+  {
+    "location": "大帽山",
+    "time": "18:55",
+    "direction": "西南面",
+    "weather_conditions": {
+      "cloud_coverage": "較厚",
+      "visibility": "一般",
+      "temperature": "夏季溫度",
+      "humidity": "較高",
+      "wind": "輕微",
+      "air_quality": "一般"
+    },
+    "visual_rating": 3,
+    "notes": "燒天效果不太明顯，雲層較厚，光線被遮擋，時間也較晚(18:55)",
+    "timestamp": "2025-07-24T19:05:28.420503"
+  },
+  {
+    "location": "尖沙咀天文台總部",
+    "time": "18:55",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "較厚",
+      "visibility": "一般",
+      "temperature": "夏季溫度",
+      "humidity": "較高",
+      "wind": "輕微",
+      "air_quality": "城市環境"
+    },
+    "visual_rating": 3,
+    "notes": "燒天效果不算明顯，城市環境，雲層較厚，時間較晚(18:55)，光線條件不佳",
+    "timestamp": "2025-07-24T19:05:28.420504"
+  },
+  {
+    "location": "流浮山",
+    "time": "18:40",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "適中",
+      "visibility": "良好",
+      "temperature": "夏季溫度",
+      "humidity": "中等",
+      "wind": "輕微",
+      "air_quality": "一般"
+    },
+    "visual_rating": 8,
+    "notes": "金橙色調豐富，雲層有層次，水面反射明顯，系統預測32%但實際效果很好",
+    "timestamp": "2025-07-24T19:05:59.584013"
+  },
+  {
+    "location": "橫瀾島",
+    "time": "18:40",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "適宜",
+      "visibility": "極佳",
+      "temperature": "夏季溫度",
+      "humidity": "中等",
+      "wind": "輕微",
+      "air_quality": "良好"
+    },
+    "visual_rating": 9,
+    "notes": "強烈橙紅色燒天，雲層厚度完美，典型火燒雲效果，山脈剪影增強視覺",
+    "timestamp": "2025-07-24T19:05:59.584020"
+  },
+  {
+    "location": "大帽山",
+    "time": "18:55",
+    "direction": "西南面",
+    "weather_conditions": {
+      "cloud_coverage": "較厚",
+      "visibility": "一般",
+      "temperature": "夏季溫度",
+      "humidity": "較高",
+      "wind": "輕微",
+      "air_quality": "一般"
+    },
+    "visual_rating": 3,
+    "notes": "燒天效果不太明顯，雲層較厚，光線被遮擋，時間也較晚(18:55)",
+    "timestamp": "2025-07-24T19:05:59.584021"
+  },
+  {
+    "location": "尖沙咀天文台總部",
+    "time": "18:55",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "較厚",
+      "visibility": "一般",
+      "temperature": "夏季溫度",
+      "humidity": "較高",
+      "wind": "輕微",
+      "air_quality": "城市環境"
+    },
+    "visual_rating": 3,
+    "notes": "燒天效果不算明顯，城市環境，雲層較厚，時間較晚(18:55)，光線條件不佳",
+    "timestamp": "2025-07-24T19:05:59.584023"
+  },
+  {
+    "location": "流浮山",
+    "time": "18:40",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "適中",
+      "visibility": "良好",
+      "temperature": "夏季溫度",
+      "humidity": "中等",
+      "wind": "輕微",
+      "air_quality": "一般"
+    },
+    "visual_rating": 8,
+    "notes": "金橙色調豐富，雲層有層次，水面反射明顯，系統預測32%但實際效果很好",
+    "timestamp": "2025-07-29T21:21:55.630750"
+  },
+  {
+    "location": "橫瀾島",
+    "time": "18:40",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "適宜",
+      "visibility": "極佳",
+      "temperature": "夏季溫度",
+      "humidity": "中等",
+      "wind": "輕微",
+      "air_quality": "良好"
+    },
+    "visual_rating": 9,
+    "notes": "強烈橙紅色燒天，雲層厚度完美，典型火燒雲效果，山脈剪影增強視覺",
+    "timestamp": "2025-07-29T21:21:55.630759"
+  },
+  {
+    "location": "大帽山",
+    "time": "18:55",
+    "direction": "西南面",
+    "weather_conditions": {
+      "cloud_coverage": "較厚",
+      "visibility": "一般",
+      "temperature": "夏季溫度",
+      "humidity": "較高",
+      "wind": "輕微",
+      "air_quality": "一般"
+    },
+    "visual_rating": 3,
+    "notes": "燒天效果不太明顯，雲層較厚，光線被遮擋，時間也較晚(18:55)",
+    "timestamp": "2025-07-29T21:21:55.630761"
+  },
+  {
+    "location": "尖沙咀天文台總部",
+    "time": "18:55",
+    "direction": "西面",
+    "weather_conditions": {
+      "cloud_coverage": "較厚",
+      "visibility": "一般",
+      "temperature": "夏季溫度",
+      "humidity": "較高",
+      "wind": "輕微",
+      "air_quality": "城市環境"
+    },
+    "visual_rating": 3,
+    "notes": "燒天效果不算明顯，城市環境，雲層較厚，時間較晚(18:55)，光線條件不佳",
+    "timestamp": "2025-07-29T21:21:55.630762"
+  }
+]

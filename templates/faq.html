@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>常見問題 FAQ | 燒天預測系統 | BurnSky 香港火燒雲預測</title>
     
     <!-- SEO 標籤 -->
-    <title>常見問題 FAQ | 燒天預測系統 | BurnSky 香港火燒雲預測</title>
     <meta name="description" content="燒天預測系統常見問題解答，包含燒天現象解釋、預測準確率、最佳拍攝地點、攝影技巧等專業建議。">
     <meta name="keywords" content="燒天FAQ,火燒雲問題,香港燒天,攝影問題,天氣預測,燒天攝影,日落拍攝">
     <meta name="robots" content="index, follow">
@@ -29,41 +29,80 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-    
+
       gtag('config', 'G-4KLPHLD5EQ');
     </script>
     
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .nav-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-row a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-row a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
         }
         
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            backdrop-filter: blur(10px);
+            padding: 20px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #667eea;
+            color: white;
+            margin-bottom: 30px;
         }
         
         .header h1 {
-            color: #333;
-            margin-bottom: 10px;
             font-size: 2.2em;
         }
         
@@ -94,26 +133,6 @@
             line-height: 1.7;
         }
         
-        .breadcrumb {
-            background: rgba(255,255,255,0.9);
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .breadcrumb a {
-            color: #667eea;
-            text-decoration: none;
-            margin-right: 10px;
-            font-weight: 500;
-        }
-        
-        .breadcrumb a:hover {
-            color: #5a6fd8;
-            text-decoration: underline;
-        }
-        
         .back-home {
             text-align: center;
             margin-top: 30px;
@@ -135,12 +154,27 @@
     </style>
 </head>
 <body>
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-row">
+                <a href="/">🏠 首頁</a>
+                <a href="/photo-analysis">📸 照片分析</a>
+                <a href="/warning-dashboard">⚠️ 警告台</a>
+                <a href="/ml-test">🤖 ML測試</a>
+                <a href="/api-docs">📋 API文檔</a>
+                <a href="/photography-guide">📸 攝影指南</a>
+            </div>
+            <div class="nav-row">
+                <a href="/best-locations">📍 最佳地點</a>
+                <a href="/faq">❓ FAQ</a>
+                <a href="/weather-terms">📚 天氣術語</a>
+                <a href="/terms">📄 條款</a>
+                <a href="/privacy">🔒 私隱</a>
+            </div>
+        </div>
+    </nav>
+    
     <div class="container">
-        <!-- 麵包屑導航 -->
-        <nav class="breadcrumb">
-            <a href="/">🏠 首頁</a> › <span style="color: #333; font-weight: 500;">常見問題</span>
-        </nav>
-        
         <header class="header">
             <h1>🔥 常見問題 FAQ</h1>
             <p>關於燒天預測的一切問題解答</p>
@@ -181,134 +215,105 @@
             <div class="faq-item">
                 <div class="faq-question">🕐 如何知道今天會不會有燒天？</div>
                 <div class="faq-answer">
-                    使用我們的燒天預測系統非常簡單：<br>
-                    1. 訪問網站首頁<br>
-                    2. 查看當日燒天機率評分 (0-100分)<br>
-                    3. 閱讀預測等級說明<br>
-                    4. 參考詳細分析因子<br>
-                    5. 查看推薦拍攝地點<br>
-                    系統每小時更新數據，提供最即時的預測結果。
+                    請查看我們的首頁預測系統，系統每小時更新一次預測結果。我們建議：<br>
+                    • 在日落前2-3小時查看預測<br>
+                    • 燒天機率60%以上時建議前往拍攝<br>
+                    • 關注雲層厚度和濕度變化<br>
+                    • 留意空氣品質指數(AQHI)影響
                 </div>
             </div>
             
             <div class="faq-item">
-                <div class="faq-question">📸 燒天攝影有什麼技巧？</div>
+                <div class="faq-question">📸 拍攝燒天有什麼技巧？</div>
                 <div class="faq-answer">
-                    <strong>器材準備：</strong><br>
-                    • 三腳架（必須）- 確保穩定拍攝<br>
-                    • 廣角鏡頭 - 捕捉更多天空<br>
-                    • ND濾鏡 - 控制曝光時間<br><br>
+                    <strong>拍攝設定：</strong><br>
+                    • 使用三腳架確保穩定<br>
+                    • 手動模式控制曝光<br>
+                    • ISO 100-400 保持畫質<br>
+                    • 包圍曝光拍攝HDR<br><br>
                     
-                    <strong>拍攝技巧：</strong><br>
-                    • 提早30分鐘到達現場<br>
-                    • 使用手動模式控制曝光<br>
-                    • 嘗試不同構圖角度<br>
-                    • 注意前景元素搭配<br>
-                    • 拍攝RAW格式方便後製
-                </div>
-            </div>
-            
-            <!-- Google AdSense 廣告區域 -->
-            <div style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(248, 249, 250, 0.6); border-radius: 4px;">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-3552699426860096"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
-                <script>
-                     (adsbygoogle = window.adsbygoogle || []).push({});
-                </script>
-            </div>
-            
-            <div class="faq-item">
-                <div class="faq-question">⏰ 燒天現象持續多長時間？</div>
-                <div class="faq-answer">
-                    燒天現象通常持續10-30分鐘，具體時間取決於當日氣象條件：<br><br>
-                    
-                    <strong>影響因素：</strong><br>
-                    • 雲層厚度和覆蓋範圍<br>
-                    • 大氣透明度<br>
-                    • 風速和風向<br>
-                    • 空氣品質<br><br>
-                    
-                    <strong>最佳拍攝時機：</strong><br>
-                    • 日落前10分鐘開始準備<br>
-                    • 日落時刻是色彩最豐富的時候<br>
-                    • 日落後15分鐘仍可能有餘暉
+                    <strong>構圖建議：</strong><br>
+                    • 包含前景增加層次<br>
+                    • 運用三分法則構圖<br>
+                    • 尋找水面倒影<br>
+                    • 捕捉城市輪廓剪影
                 </div>
             </div>
             
             <div class="faq-item">
-                <div class="faq-question">🌤️ 什麼天氣條件最容易出現燒天？</div>
+                <div class="faq-question">🌦️ 哪些天氣條件有利於燒天？</div>
                 <div class="faq-answer">
-                    最理想的燒天條件包括：<br><br>
+                    <strong>理想條件：</strong><br>
+                    • 中層雲覆蓋30-70%<br>
+                    • 濕度60-85%<br>
+                    • 風速輕微至溫和<br>
+                    • 空氣能見度良好<br>
+                    • 無強烈對流活動<br><br>
                     
-                    <strong>雲層條件：</strong><br>
-                    • 中低層雲，覆蓋率30-70%<br>
-                    • 雲層不能太厚或太薄<br>
-                    • 西方天空有適度雲隙<br><br>
-                    
-                    <strong>氣象條件：</strong><br>
-                    • 濕度60-80%<br>
-                    • 風速適中（2-4級）<br>
-                    • 空氣品質良好（AQHI ≤ 6）<br>
-                    • 無降雨<br>
-                    • 高壓系統過境後
+                    <strong>不利條件：</strong><br>
+                    • 完全晴朗或完全陰霾<br>
+                    • 雷暴或強風<br>
+                    • 空氣污染嚴重<br>
+                    • 濕度過低或過高
                 </div>
             </div>
             
             <div class="faq-item">
-                <div class="faq-question">🔄 預測數據多久更新一次？</div>
+                <div class="faq-question">⏰ 燒天通常持續多長時間？</div>
                 <div class="faq-answer">
-                    我們的預測系統每小時自動更新，數據來源包括：<br><br>
+                    燒天現象通常持續15-45分鐘，具體時間取決於：<br>
+                    • 雲層移動速度<br>
+                    • 大氣穩定度<br>
+                    • 太陽角度變化<br>
+                    • 濕度條件<br><br>
                     
-                    • <strong>香港天文台開放數據：</strong>每小時更新<br>
-                    • <strong>空氣品質數據：</strong>每小時更新<br>
-                    • <strong>衛星雲圖：</strong>每30分鐘更新<br>
-                    • <strong>風向風速：</strong>每小時更新<br><br>
+                    最佳拍攝時間通常在日落前後30分鐘內，建議提早到達拍攝地點準備。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🔔 如何獲得燒天預警通知？</div>
+                <div class="faq-answer">
+                    目前系統提供實時網頁預測，建議您：<br>
+                    • 每日定時查看預測結果<br>
+                    • 收藏本網站便於快速訪問<br>
+                    • 關注社交媒體更新<br>
+                    • 與其他攝影愛好者分享資訊<br><br>
                     
-                    建議在計劃拍攝前2-3小時查看最新預測，並在出發前再次確認。
+                    我們正在開發推送通知功能，敬請期待！
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🤖 AI預測系統如何運作？</div>
+                <div class="faq-answer">
+                    我們的系統結合多種數據源：<br>
+                    • 香港天文台實時氣象數據<br>
+                    • 衛星雲圖分析<br>
+                    • 空氣品質監測<br>
+                    • 歷史燒天記錄<br>
+                    • 機器學習模型預測<br><br>
+                    
+                    系統會綜合分析這些因素，計算燒天發生機率並提供詳細解釋。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">📱 有手機App嗎？</div>
+                <div class="faq-answer">
+                    目前我們提供響應式網頁版本，在手機、平板和電腦上都能完美使用。您可以：<br>
+                    • 將網站添加到主屏幕作為快捷方式<br>
+                    • 使用書籤功能快速訪問<br>
+                    • 享受完整的移動端體驗<br><br>
+                    
+                    原生App正在開發中，敬請期待！
                 </div>
             </div>
         </main>
         
         <div class="back-home">
-            <a href="/">🏠 返回燒天預測系統</a>
+            <a href="/">🏠 返回首頁</a>
         </div>
     </div>
-    
-    <!-- FAQ結構化數據 -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": "什麼是燒天？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "燒天是指日出或日落時天空呈現橙紅色火燒般色彩的自然現象，通常發生在特定的大氣條件下，是攝影愛好者最喜愛的自然景觀之一。"
-                }
-            },
-            {
-                "@type": "Question", 
-                "name": "燒天預測的準確率如何？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "我們的AI預測系統結合香港天文台數據和機器學習算法，準確率約達85%。預測會考慮雲層厚度、濕度、風速、空氣品質等多項因素。"
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "香港最佳的燒天拍攝地點在哪裡？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "日落拍攝：維多利亞港、太平山頂、青馬大橋、西環海濱。日出拍攝：石澳、獅子山、大東山。系統會根據當日條件推薦最佳位置。"
-                }
-            }
-        ]
-    }
-    </script>
 </body>
 </html>

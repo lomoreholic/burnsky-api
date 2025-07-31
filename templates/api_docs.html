@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 文檔 | BurnSky 燒天預測系統</title>
+    <meta name="description" content="BurnSky 燒天預測系統 API 文檔，提供完整的 API 接口說明、使用範例和技術規格，助您輕鬆整合燒天預測功能。">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://burnsky-api.onrender.com/api-docs">
+    <meta property="og:title" content="API 文檔 | BurnSky 燒天預測系統">
+    <meta property="og:description" content="完整的 BurnSky 燒天預測 API 文檔，包含使用說明和程式範例">
+    <meta property="og:url" content="https://burnsky-api.onrender.com/api-docs">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .nav-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-row a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-row a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            color: #667eea;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            color: #666;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .method {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .method.post {
+            background: #007bff;
+        }
+
+        .url {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        .param-table th,
+        .param-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .param-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 30px 20px;
+            margin-top: 40px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #667eea;
+        }
+
+        .footer p {
+            color: #aaa;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .nav-row {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .nav-row a {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .container {
+                margin: 10px;
+                padding: 20px 15px;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-row">
+                <a href="/">🏠 首頁</a>
+                <a href="/photo-analysis">� 照片分析</a>
+                <a href="/warning-dashboard">⚠️ 警告台</a>
+                <a href="/ml-test">🤖 ML測試</a>
+                <a href="/api-docs">📋 API文檔</a>
+                <a href="/photography-guide">📸 攝影指南</a>
+            </div>
+            <div class="nav-row">
+                <a href="/best-locations">📍 最佳地點</a>
+                <a href="/faq">❓ FAQ</a>
+                <a href="/weather-terms">📚 天氣術語</a>
+                <a href="/terms">📄 條款</a>
+                <a href="/privacy">🔒 私隱</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>📋 API 文檔</h1>
+        
+        <p>BurnSky 燒天預測系統提供 RESTful API，讓開發者可以輕鬆整合燒天預測功能到自己的應用中。</p>
+
+        <h2>基本資訊</h2>
+        <ul>
+            <li><strong>Base URL:</strong> <code>https://burnsky-api.onrender.com</code></li>
+            <li><strong>API 版本:</strong> v1</li>
+            <li><strong>回應格式:</strong> JSON</li>
+            <li><strong>認證:</strong> 不需要</li>
+        </ul>
+
+        <h2>API 端點</h2>
+
+        <div class="endpoint">
+            <h3><span class="method">GET</span> 燒天預測</h3>
+            <div class="url">GET /api/prediction</div>
+            <p>獲取當前的燒天預測資訊，包括機率、指數和建議拍攝時間。</p>
+            
+            <h4>查詢參數</h4>
+            <table class="param-table">
+                <tr>
+                    <th>參數</th>
+                    <th>類型</th>
+                    <th>必需</th>
+                    <th>說明</th>
+                </tr>
+                <tr>
+                    <td>location</td>
+                    <td>string</td>
+                    <td>否</td>
+                    <td>地點代碼 (預設: HK)</td>
+                </tr>
+                <tr>
+                    <td>days</td>
+                    <td>integer</td>
+                    <td>否</td>
+                    <td>預測天數 (1-7, 預設: 3)</td>
+                </tr>
+            </table>
+
+            <h4>範例請求</h4>
+            <div class="code-block">
+curl -X GET "https://burnsky-api.onrender.com/api/prediction?location=HK&days=3"
+            </div>
+
+            <h4>範例回應</h4>
+            <div class="code-block">
+{
+  "status": "success",
+  "timestamp": "2024-12-27T10:30:00Z",
+  "location": "香港",
+  "predictions": [
+    {
+      "date": "2024-12-27",
+      "sunrise": "07:03",
+      "sunset": "17:56",
+      "burnsky_probability": 75,
+      "burnsky_index": 8.2,
+      "weather_conditions": {
+        "cloud_cover": 45,
+        "humidity": 65,
+        "wind_speed": 12,
+        "temperature": 22
+      },
+      "recommendation": "高機率，建議 17:30 開始準備拍攝"
+    }
+  ]
+}
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <h3><span class="method">GET</span> 天氣資料</h3>
+            <div class="url">GET /api/weather</div>
+            <p>獲取詳細的天氣資料，包括溫度、濕度、風速等。</p>
+            
+            <h4>範例回應</h4>
+            <div class="code-block">
+{
+  "status": "success",
+  "weather": {
+    "temperature": 22,
+    "humidity": 65,
+    "wind_speed": 12,
+    "wind_direction": "東北",
+    "cloud_cover": 45,
+    "visibility": 15,
+    "uv_index": 3
+  }
+}
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <h3><span class="method">GET</span> 最佳拍攝地點</h3>
+            <div class="url">GET /api/locations</div>
+            <p>獲取推薦的燒天拍攝地點清單。</p>
+            
+            <h4>範例回應</h4>
+            <div class="code-block">
+{
+  "status": "success",
+  "locations": [
+    {
+      "name": "西環泳棚",
+      "coordinates": [22.2808, 114.1277],
+      "rating": 9.2,
+      "description": "絕佳西面海景，無遮擋視野",
+      "best_time": "日落前30分鐘"
+    },
+    {
+      "name": "石澳",
+      "coordinates": [22.2132, 114.2513],
+      "rating": 8.8,
+      "description": "開闊海景，多角度拍攝選擇",
+      "best_time": "日落前45分鐘"
+    }
+  ]
+}
+            </div>
+        </div>
+
+        <h2>錯誤處理</h2>
+        <p>API 使用標準 HTTP 狀態碼。所有錯誤回應都包含錯誤資訊：</p>
+        <div class="code-block">
+{
+  "status": "error",
+  "error_code": "INVALID_PARAMETER",
+  "message": "查詢參數無效",
+  "details": "days 參數必須在 1-7 之間"
+}
+        </div>
+
+        <h2>速率限制</h2>
+        <p>為確保服務穩定，API 實施以下速率限制：</p>
+        <ul>
+            <li>每分鐘最多 60 次請求</li>
+            <li>每小時最多 1000 次請求</li>
+            <li>超出限制將回傳 429 狀態碼</li>
+        </ul>
+
+        <h2>使用範例</h2>
+        
+        <h3>JavaScript (Fetch API)</h3>
+        <div class="code-block">
+async function getBurnskyPrediction() {
+  try {
+    const response = await fetch('https://burnsky-api.onrender.com/api/prediction');
+    const data = await response.json();
+    console.log('燒天機率:', data.predictions[0].burnsky_probability);
+  } catch (error) {
+    console.error('API 錯誤:', error);
+  }
+}
+        </div>
+
+        <h3>Python</h3>
+        <div class="code-block">
+import requests
+
+def get_burnsky_prediction():
+    try:
+        response = requests.get('https://burnsky-api.onrender.com/api/prediction')
+        data = response.json()
+        return data['predictions'][0]['burnsky_probability']
+    except requests.RequestException as e:
+        print(f'API 錯誤: {e}')
+        return None
+        </div>
+
+        <h2>支援</h2>
+        <p>如有 API 使用問題或建議，請聯絡我們：</p>
+        <ul>
+            <li>電郵：api@burnsky.hk</li>
+            <li>GitHub：<a href="https://github.com/burnsky-api" target="_blank">https://github.com/burnsky-api</a></li>
+        </ul>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <h3>🔥 BurnSky 燒天預測系統</h3>
+            <div class="footer-links">
+                <a href="/">🏠 首頁</a>
+                <a href="/photo-analysis">🔥 燒天預測</a>
+                <a href="/warning-dashboard">⚠️ 警告台</a>
+                <a href="/api-docs">📋 API 文檔</a>
+                <a href="/photography-guide">📸 攝影指南</a>
+                <a href="/best-locations">📍 最佳地點</a>
+                <a href="/faq">❓ FAQ</a>
+                <a href="/weather-terms">📚 天氣術語</a>
+                <a href="/terms">📄 條款</a>
+                <a href="/privacy">🔒 私隱</a>
+            </div>
+            <p>&copy; 2024 BurnSky 燒天預測系統. 為攝影愛好者提供精準的火燒雲預測服務.</p>
+        </div>
+    </footer>
+</body>
+</html>

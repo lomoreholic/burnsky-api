@@ -7,3 +7,5 @@ astral
 gunicorn
 pytz
 schedule
+Pillow
+Werkzeug
