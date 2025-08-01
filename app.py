@@ -957,21 +957,16 @@ def apply_burnsky_photo_corrections(score, weather_data, prediction_type):
             correction += 3
             quality_factors.append("🎨 中等顏色潛力: +3分")
         
-        # 檢查是否類似成功案例（但重視品質匹配）
-        current_conditions = {
-            "time": f"{current_hour:02d}:{current_minute:02d}",
-            "cloud_quality": cloud_quality_score,
-            "atmospheric_quality": atmospheric_quality,
-            "color_potential": color_potential,
-            "weather_data": weather_data
-        }
+        # 🚫 暫時禁用歷史案例校正 - 等待真實照片數據收集
+        # 原因: 目前的歷史案例都是硬編碼虛假數據，缺乏真實的品質指標
+        # 未來計劃: 建立真實的照片上傳和評分系統後重新啟用
         
-        is_similar, similarity_score, match_reason = is_similar_to_quality_cases(current_conditions)
+        # 註解掉的歷史案例匹配邏輯:
+        # current_conditions = {...}
+        # is_similar, similarity_score, match_reason = is_similar_to_quality_cases(current_conditions)
+        # pattern_correction = ...
         
-        if is_similar and similarity_score >= 7:
-            pattern_correction = min(int(similarity_score * 2), 15)  # 最多15分
-            correction += pattern_correction
-            quality_factors.append(f"📸 品質案例匹配: +{pattern_correction}分 ({match_reason})")
+        quality_factors.append("� 歷史案例校正已禁用 (等待真實數據)")
         
         # 品質閾值控制 - 防止低品質情況被過度推高
         if cloud_quality_score < 4 and atmospheric_quality < 4:
@@ -1145,16 +1140,16 @@ def is_similar_to_quality_cases(current_conditions):
             similarity = 0
             reasons = []
             
-            # 比較品質指標
-            if abs(current_conditions['cloud_quality'] - case.get('cloud_quality', 5)) <= 2:
+            # 比較品質指標 - 更嚴格的匹配條件
+            if abs(current_conditions['cloud_quality'] - case.get('cloud_quality', 5)) <= 1.5:
                 similarity += 3
                 reasons.append("雲層品質相似")
             
-            if abs(current_conditions['atmospheric_quality'] - case.get('atmospheric_quality', 5)) <= 2:
+            if abs(current_conditions['atmospheric_quality'] - case.get('atmospheric_quality', 5)) <= 1.5:
                 similarity += 3
                 reasons.append("大氣條件相似")
             
-            if abs(current_conditions['color_potential'] - case.get('color_potential', 5)) <= 2:
+            if abs(current_conditions['color_potential'] - case.get('color_potential', 5)) <= 1.5:
                 similarity += 4
                 reasons.append("顏色潛力相似")
             
@@ -1163,11 +1158,6 @@ def is_similar_to_quality_cases(current_conditions):
                 best_match_reason = " + ".join(reasons)
     
     return best_similarity >= 6, best_similarity, best_match_reason
-    
-    if correction > 0:
-        print(f"📸 照片案例總校正: +{correction}分 ({score} → {final_score})")
-    
-    return final_score
 
 def initialize_photo_cases():
     """初始化已知的成功燒天案例"""
@@ -1861,9 +1851,10 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         score = adjusted_score
     
     # 🌅 應用基於實際照片案例的校正
-    corrected_score = apply_burnsky_photo_corrections(score, future_weather_data, prediction_type)
+    photo_correction = apply_burnsky_photo_corrections(score, future_weather_data, prediction_type)
     
-    if corrected_score != score:
+    if photo_correction != 0:
+        corrected_score = score + photo_correction
         print(f"📸 照片案例學習校正: {score:.1f} → {corrected_score:.1f}")
         score = corrected_score
     

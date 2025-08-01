@@ -45,9 +45,9 @@ class UnifiedBurnskyScorer:
                 'advance': {'traditional': 0.40, 'ml': 0.60}         # 其他提前預測
             },
             
-            # 調整係數 - 改為加減分數而非乘數
+            # 調整係數 - 改為加減分數而非乘數  
             'adjustment_factors': {
-                'cloud_visibility_low': -10,    # 厚雲扣10分
+                'cloud_visibility_low': -5,     # 厚雲扣5分 (原-10分太嚴厲)
                 'cloud_visibility_high': +8,    # 極佳條件加8分
                 'seasonal_summer': +3,          # 夏季加3分
                 'seasonal_winter': -2           # 冬季扣2分
