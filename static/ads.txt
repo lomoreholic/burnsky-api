@@ -1,7 +1,7 @@
 # Google AdSense
-google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0
+google.com, pub-3552699426860096, DIRECT, f08c47fec0942fa0
 
 # Google Ad Manager
-google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0
+google.com, pub-3552699426860096, DIRECT, f08c47fec0942fa0
 
-# 最後更新日期: 2025-07-31
+# 最後更新日期: 2025-08-12

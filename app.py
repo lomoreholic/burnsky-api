@@ -2459,7 +2459,7 @@ def ads_txt():
         return response
     except Exception as e:
         print(f"❌ ads.txt 錯誤: {e}")
-        return "google.com, ca-pub-3552699426860096, DIRECT, f08c47fec0942fa0", 200, {
+        return "google.com, pub-3552699426860096, DIRECT, f08c47fec0942fa0", 200, {
             'Content-Type': 'text/plain',
             'Cache-Control': 'public, max-age=86400'
         }
