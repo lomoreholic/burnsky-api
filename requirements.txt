@@ -1,4 +1,12 @@
 Flask
+Flask-Caching
+Flask-CORS
+flask-limiter
+python-dotenv
+pytest
+pytest-flask
+pytest-cov
+flask-swagger-ui
 requests
 pandas
 scikit-learn
@@ -9,3 +17,5 @@ pytz
 schedule
 Pillow
 Werkzeug
+opencv-python
+scipy

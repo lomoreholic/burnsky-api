@@ -1,12 +1,19 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory, redirect
+from flask_caching import Cache
+from flask_cors import CORS
 from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast, get_current_wind_data, fetch_warning_data
 from unified_scorer import calculate_burnsky_score_unified
 from forecast_extractor import forecast_extractor
-from burnsky_case_analyzer import case_analyzer
+from hko_webcam_fetcher import RealTimeWebcamMonitor, HKOWebcamFetcher, WebcamImageAnalyzer
+from burnsky_case_analyzer import BurnskyCaseAnalyzer
 import numpy as np
 import os
 import time
 import schedule
+from dotenv import load_dotenv
+
+# 載入環境變量
+load_dotenv()
 import threading
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -17,27 +24,60 @@ import uuid
 import sqlite3
 import json
 
-# 簡單的快取機制
-cache = {}
-CACHE_DURATION = 300  # 快取5分鐘
+# ========== 模塊化組件導入 ==========
+# 優先使用模塊化組件，如果不可用則使用內嵌函數
+try:
+    from modules.config import (
+        CACHE_DURATION, UPLOAD_FOLDER, ALLOWED_EXTENSIONS, 
+        MAX_FILE_SIZE, AUTO_SAVE_PHOTOS, PHOTO_RETENTION_DAYS,
+        PREDICTION_HISTORY_DB, HOURLY_SAVE_ENABLED,
+        BURNSKY_PHOTO_CASES, LAST_CASE_UPDATE
+    )
+    from modules.cache import cache
+    from modules.database import (
+        init_prediction_history_db, save_prediction_to_history,
+        get_season, get_time_category
+    )
+    from modules.cache import get_cached_data, clear_prediction_cache, trigger_prediction_update
+    from modules.scheduler import auto_save_current_predictions, start_hourly_scheduler
+    from modules.file_handler import (
+        allowed_file, validate_image_content, cleanup_old_photos,
+        save_uploaded_photo, get_photo_storage_info
+    )
+    from modules.utils import (
+        convert_numpy_types, get_prediction_level,
+        get_optimal_sunset_time, get_optimal_burnsky_time,
+        get_historical_prediction_for_time, cross_check_photo_with_prediction
+    )
+    from modules.photo_analyzer import (
+        analyze_photo_quality, record_burnsky_photo_case,
+        analyze_photo_case_patterns, apply_burnsky_photo_corrections,
+        is_similar_to_successful_cases, initialize_photo_cases
+    )
+    MODULES_LOADED = True
+    print("✅ 模塊化組件已載入")
+except ImportError as e:
+    print(f"⚠️ 模塊化組件未可用，使用內嵌函數: {e}")
+    MODULES_LOADED = False
+    # 如果模塊不可用，保留原始的變數定義
+    cache = {}
+    CACHE_DURATION = int(os.getenv('CACHE_DURATION', '300'))
+    BURNSKY_PHOTO_CASES = {}
+    LAST_CASE_UPDATE = None
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'uploads')
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', str(16 * 1024 * 1024)))
+    AUTO_SAVE_PHOTOS = os.getenv('AUTO_SAVE_PHOTOS', 'False').lower() == 'true'
+    PHOTO_RETENTION_DAYS = int(os.getenv('PHOTO_RETENTION_DAYS', '30'))
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    PREDICTION_HISTORY_DB = os.getenv('PREDICTION_HISTORY_DB', 'prediction_history.db')
+    HOURLY_SAVE_ENABLED = os.getenv('HOURLY_SAVE_ENABLED', 'True').lower() == 'true'
 
-# 照片案例學習系統
-BURNSKY_PHOTO_CASES = {}
-LAST_CASE_UPDATE = None  # 記錄最後一次案例更新時間
+# 即時攝影機監控系統
+webcam_monitor = RealTimeWebcamMonitor()
 
-# 上傳配置
-UPLOAD_FOLDER = 'uploads'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
-AUTO_SAVE_PHOTOS = False  # 預設不自動儲存照片
-PHOTO_RETENTION_DAYS = 30  # 照片保留30天
-
-# 確保上傳目錄存在
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# 預測歷史數據庫配置
-PREDICTION_HISTORY_DB = 'prediction_history.db'
-HOURLY_SAVE_ENABLED = True  # 啟用每小時自動保存
+# ========== 以下是原始函數定義（保留用於向後兼容）==========
+# 如果模塊已載入，這些函數將被模塊中的版本覆蓋
 
 def init_prediction_history_db():
     """初始化預測歷史數據庫"""
@@ -341,13 +381,20 @@ def start_hourly_scheduler():
         while True:
             schedule.run_pending()
             time.sleep(60)  # 每分鐘檢查一次
-    
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
     scheduler_thread.start()
     print("⏰ 每小時預測保存排程已啟動")
 
 # 初始化預測歷史數據庫
-init_prediction_history_db()
+if MODULES_LOADED:
+    print("🔧 使用模塊化組件初始化系統...")
+    initialize_photo_cases()  # 初始化照片案例系統
+    start_hourly_scheduler()  # 啟動調度器
+else:
+    print("🔧 使用內嵌函數初始化系統...")
+    init_prediction_history_db()
+
+# 以下函數定義保留用於向後兼容（當模塊未載入時）
 
 def allowed_file(filename):
     """檢查檔案類型是否允許"""
@@ -445,9 +492,199 @@ except ImportError as e:
 
 app = Flask(__name__)
 
+# 配置 Flask 應用
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24).hex())
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_FILE_SIZE', str(16 * 1024 * 1024)))
+
+# 配置快取系統
+app.config['CACHE_TYPE'] = os.getenv('CACHE_TYPE', 'SimpleCache')  # SimpleCache, RedisCache, FileSystemCache
+app.config['CACHE_DEFAULT_TIMEOUT'] = int(os.getenv('CACHE_DEFAULT_TIMEOUT', '300'))  # 5分鐘
+app.config['CACHE_REDIS_URL'] = os.getenv('REDIS_URL', None)  # Redis連接URL（可選）
+app.config['CACHE_DIR'] = os.getenv('CACHE_DIR', 'cache')  # 文件系統快取目錄（可選）
+
+# 初始化快取
+flask_cache = Cache(app)
+
+# 配置 CORS (跨域資源共享)
+cors_enabled = os.getenv('CORS_ENABLED', 'True').lower() == 'true'
+if cors_enabled:
+    cors_origins = os.getenv('CORS_ORIGINS', '*')  # 允許的來源，生產環境應指定具體域名
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": cors_origins if cors_origins != '*' else '*',
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "expose_headers": ["Content-Type", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
+            "supports_credentials": True,
+            "max_age": 3600  # 預檢請求快取1小時
+        },
+        r"/predict*": {
+            "origins": cors_origins if cors_origins != '*' else '*',
+            "methods": ["GET", "OPTIONS"],
+            "allow_headers": ["Content-Type"],
+            "max_age": 600  # 預檢請求快取10分鐘
+        }
+    })
+    print(f"✅ CORS已啟用 - 允許來源: {cors_origins}")
+else:
+    print("⚠️ CORS已禁用")
+
+# 配置速率限制
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+rate_limit_enabled = os.getenv('RATE_LIMIT_ENABLED', 'True').lower() == 'true'
+
+if rate_limit_enabled:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=[os.getenv('RATE_LIMIT_DEFAULT', '200 per hour, 50 per minute')],
+        storage_uri=os.getenv('RATE_LIMIT_STORAGE', 'memory://'),
+        strategy="fixed-window",
+        headers_enabled=True  # 啟用速率限制標頭
+    )
+else:
+    # 如果禁用速率限制，創建一個空裝飾器
+    class NoOpLimiter:
+        def limit(self, *args, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
+    limiter = NoOpLimiter()
+
+# ========== 錯誤處理 ==========
+import logging
+from logging.handlers import RotatingFileHandler
+from datetime import datetime as dt
+
+# 配置日誌輪轉
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+log_file = os.getenv('LOG_FILE', 'app.log')
+max_bytes = int(os.getenv('LOG_MAX_BYTES', str(10 * 1024 * 1024)))  # 默認 10MB
+backup_count = int(os.getenv('LOG_BACKUP_COUNT', '5'))  # 默認保留5個備份
+
+# 創建日誌處理器
+file_handler = RotatingFileHandler(
+    log_file,
+    maxBytes=max_bytes,
+    backupCount=backup_count,
+    encoding='utf-8'
+)
+file_handler.setLevel(getattr(logging, log_level))
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(getattr(logging, log_level))
+console_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(message)s'
+))
+
+# 配置根日誌記錄器
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    handlers=[file_handler, console_handler]
+)
+logger = logging.getLogger(__name__)
+
+def error_response(error_code, message, details=None):
+    """統一的錯誤響應格式"""
+    response = {
+        'error': True,
+        'code': error_code,
+        'message': message,
+        'timestamp': dt.now().isoformat()
+    }
+    if details:
+        response['details'] = details
+    return jsonify(response), error_code
+
+@app.errorhandler(400)
+def bad_request(error):
+    """400 錯誤 - 請求參數錯誤"""
+    logger.warning(f"Bad Request: {error}")
+    return error_response(400, '請求參數錯誤', str(error))
+
+@app.errorhandler(404)
+def not_found(error):
+    """404 錯誤 - 資源不存在"""
+    logger.info(f"Not Found: {request.path}")
+    return error_response(404, '請求的資源不存在', f'路徑: {request.path}')
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    """405 錯誤 - 方法不允許"""
+    logger.warning(f"Method Not Allowed: {request.method} {request.path}")
+    return error_response(405, 'HTTP 方法不允許', f'{request.method} 不支持此端點')
+
+@app.errorhandler(429)
+def rate_limit_exceeded(error):
+    """429 錯誤 - 超過速率限制"""
+    logger.warning(f"Rate Limit Exceeded: {request.remote_addr} - {request.path}")
+    return error_response(429, '請求過於頻繁，請稍後再試', '已超過速率限制')
+
+@app.errorhandler(500)
+def internal_error(error):
+    """500 錯誤 - 服務器內部錯誤"""
+    logger.error(f"Internal Server Error: {error}", exc_info=True)
+    return error_response(500, '服務器內部錯誤', '請稍後再試或聯繫管理員')
+
+@app.errorhandler(503)
+def service_unavailable(error):
+    """503 錯誤 - 服務不可用"""
+    logger.error(f"Service Unavailable: {error}")
+    return error_response(503, '服務暫時不可用', '系統維護中或資源不足')
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """處理所有未捕獲的異常"""
+    logger.error(f"Unhandled Exception: {error}", exc_info=True)
+    
+    # 如果是 HTTP 異常，使用其狀態碼
+    if hasattr(error, 'code'):
+        return error_response(error.code, str(error), type(error).__name__)
+    
+    # 其他異常返回 500
+    return error_response(500, '發生未預期的錯誤', type(error).__name__)
+
 # 全局警告分析器實例
 warning_analyzer = None
 warning_collector = None
+
+# ========== API 輔助函數 ==========
+def validate_request_data(data, required_fields):
+    """驗證請求數據是否包含必需字段"""
+    if not data:
+        raise ValueError("請求體不能為空")
+    
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        raise ValueError(f"缺少必需字段: {', '.join(missing_fields)}")
+    
+    return True
+
+def safe_api_call(func):
+    """API 調用安全包裝器裝飾器"""
+    from functools import wraps
+    
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ValueError as e:
+            logger.warning(f"Validation Error in {func.__name__}: {e}")
+            return error_response(400, str(e))
+        except KeyError as e:
+            logger.warning(f"Missing Key in {func.__name__}: {e}")
+            return error_response(400, f"缺少必需參數: {e}")
+        except Exception as e:
+            logger.error(f"Error in {func.__name__}: {e}", exc_info=True)
+            return error_response(500, "處理請求時發生錯誤")
+    
+    return wrapper
+
 
 def init_warning_analysis():
     """初始化警告分析系統"""
@@ -2011,6 +2248,8 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     return result  # 返回結果字典而不是 jsonify
 
 @app.route("/predict", methods=["GET"])
+@limiter.limit("100 per hour")
+@flask_cache.cached(timeout=300, query_string=True)  # 5分鐘快取，根據查詢參數
 def predict_burnsky():
     """統一燒天預測 API 端點 - 支援即時和提前預測"""
     # 獲取查詢參數
@@ -2022,6 +2261,8 @@ def predict_burnsky():
     return jsonify(result)
 
 @app.route("/predict/sunrise", methods=["GET"])
+@limiter.limit("100 per hour")
+@flask_cache.cached(timeout=300, query_string=True)  # 5分鐘快取，根據查詢參數
 def predict_sunrise():
     """專門的日出燒天預測端點 - 直接回傳結果，不重定向"""
     advance_hours = request.args.get('advance_hours', '0')  # 預設即時預測
@@ -2031,6 +2272,8 @@ def predict_sunrise():
     return jsonify(result)
 
 @app.route("/predict/sunset", methods=["GET"])
+@limiter.limit("100 per hour")
+@flask_cache.cached(timeout=300, query_string=True)  # 5分鐘快取，根據查詢參數
 def predict_sunset():
     """專門的日落燒天預測端點 - 直接回傳結果，不重定向"""
     advance_hours = request.args.get('advance_hours', '0')  # 預設即時預測
@@ -2040,6 +2283,7 @@ def predict_sunset():
     return jsonify(result)
 
 @app.route("/api")
+@flask_cache.cached(timeout=3600)  # 1小時快取，API資訊很少變化
 def api_info():
     """API 資訊和文檔"""
     api_docs = {
@@ -2101,6 +2345,169 @@ def api_info():
 def api_docs_page():
     """API 文檔頁面"""
     return render_template("api_docs.html")
+
+@app.route("/api/webcam/current", methods=["GET"])
+@flask_cache.cached(timeout=120, query_string=True)  # 2分鐘快取，攝影機狀態變化較快
+def get_current_webcam_conditions():
+    """
+    獲取即時攝影機天氣狀況分析
+    
+    Returns:
+        JSON格式的即時天氣狀況分析結果
+    """
+    try:
+        # 獲取詳細參數
+        detailed = request.args.get('detailed', 'true').lower() == 'true'
+        
+        # 獲取當前狀況
+        conditions = webcam_monitor.get_current_conditions(detailed=detailed)
+        
+        # 轉換數據結構以符合前端期望
+        response_data = {
+            'overall_sunset_potential': conditions.get('overall_sunset_potential', 0),
+            'analysis_status': conditions.get('status', 'unknown'),
+            'webcam_data': {}
+        }
+        
+        # 轉換個別分析結果
+        if 'individual_analyses' in conditions:
+            for cam_id, analysis_data in conditions['individual_analyses'].items():
+                response_data['webcam_data'][cam_id] = {
+                    'name': analysis_data.get('location', cam_id),
+                    'analysis': {
+                        'sunset_potential': analysis_data.get('analysis', {}).get('sunset_potential', {}).get('score', 0),
+                        'status': analysis_data.get('analysis', {}).get('status', 'unknown')
+                    }
+                }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        return jsonify({
+            'overall_sunset_potential': 0,
+            'analysis_status': 'error',
+            'webcam_data': {},
+            'error_message': f'攝影機分析失敗: {str(e)}'
+        }), 500
+
+@app.route("/api/webcam/image/<location_id>", methods=["GET"])
+def get_webcam_image(location_id):
+    """
+    獲取指定攝影機的最新圖片
+    
+    Args:
+        location_id: 攝影機位置ID (如 HK_HKO, HK_VPB 等)
+        
+    Query Parameters:
+        format: 返回格式 (base64, url)
+        analyze: 是否進行分析 (true/false)
+        
+    Returns:
+        圖片數據或分析結果
+    """
+    try:
+        fetcher = HKOWebcamFetcher()
+        analyzer = WebcamImageAnalyzer()
+        
+        # 檢查參數
+        return_format = request.args.get('format', 'base64')
+        analyze = request.args.get('analyze', 'false').lower() == 'true'
+        
+        # 獲取圖片
+        if return_format == 'url':
+            # 直接返回URL
+            if location_id in fetcher.WEBCAM_LOCATIONS:
+                location_info = fetcher.WEBCAM_LOCATIONS[location_id]
+                return jsonify({
+                    'status': 'success',
+                    'location_id': location_id,
+                    'location_name': location_info['name'],
+                    'image_url': location_info['url'],
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'未知的攝影機位置: {location_id}'
+                }), 400
+        
+        # 獲取圖片數據
+        webcam_data = fetcher.fetch_webcam_image(location_id, return_format='base64')
+        
+        if not webcam_data:
+            return jsonify({
+                'status': 'error',
+                'message': f'無法獲取攝影機 {location_id} 的圖片'
+            }), 404
+            
+        result = {
+            'status': 'success',
+            'location_id': location_id,
+            'location_name': webcam_data['location_name'],
+            'direction': webcam_data['direction'],
+            'capture_time': webcam_data['capture_time'].isoformat(),
+            'image_size': webcam_data['image_size']
+        }
+        
+        if return_format == 'base64':
+            result['image_data'] = webcam_data['image']
+            
+        # 如果需要分析
+        if analyze and 'image' in webcam_data:
+            # 重新獲取PIL格式進行分析
+            pil_data = fetcher.fetch_webcam_image(location_id, return_format='pil')
+            if pil_data:
+                analysis = analyzer.analyze_sky_conditions(pil_data['image'])
+                result['analysis'] = analysis
+                
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'獲取攝影機圖片失敗: {str(e)}',
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route("/api/webcam/locations", methods=["GET"])
+def get_webcam_locations():
+    """
+    獲取所有可用的攝影機位置列表
+    
+    Returns:
+        所有攝影機位置的詳細信息
+    """
+    try:
+        fetcher = HKOWebcamFetcher()
+        
+        locations = {}
+        for location_id, info in fetcher.WEBCAM_LOCATIONS.items():
+            locations[location_id] = {
+                'name': info['name'],
+                'direction': info['direction'],
+                'latitude': info['latitude'],
+                'longitude': info['longitude'],
+                'priority': info['priority']
+            }
+            
+        return jsonify({
+            'status': 'success',
+            'locations': locations,
+            'total_count': len(locations),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'獲取攝影機位置列表失敗: {str(e)}',
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route("/webcam-analysis")
+def webcam_analysis_page():
+    """即時攝影機分析頁面"""
+    return render_template("webcam_analysis.html")
 
 @app.route("/ml-test")
 def ml_test():
@@ -4511,14 +4918,24 @@ initialize_photo_cases()
 
 # 初始化ML案例分析器
 try:
+    case_analyzer = BurnskyCaseAnalyzer()
     case_analyzer.load_or_train_model()
     print("✅ ML燒天預測系統已初始化")
 except Exception as e:
+    case_analyzer = None
     print(f"⚠️ ML系統初始化失敗: {e}")
 
 @app.route('/api/ml-analysis', methods=['POST'])
+@limiter.limit("30 per hour")  # ML分析更嚴格的限制
 def ml_analysis():
     """使用機器學習分析燒天條件"""
+    if not case_analyzer:
+        return jsonify({
+            'status': 'error',
+            'message': 'ML系統未初始化',
+            'ml_enabled': False
+        }), 503
+    
     try:
         data = request.json
         conditions = {
@@ -4547,8 +4964,15 @@ def ml_analysis():
         }), 500
 
 @app.route('/api/ml-feedback', methods=['POST'])
+@limiter.limit("20 per hour")  # 反饋端點限制
 def submit_ml_feedback():
     """接收用戶反饋來改進ML模型"""
+    if not case_analyzer:
+        return jsonify({
+            'status': 'error',
+            'message': 'ML系統未初始化'
+        }), 503
+    
     try:
         data = request.json
         conditions = data.get('conditions', {})
@@ -4577,6 +5001,13 @@ def submit_ml_feedback():
 @app.route('/api/ml-status')
 def ml_status():
     """獲取ML系統狀態"""
+    if not case_analyzer:
+        return jsonify({
+            'status': 'error',
+            'message': 'ML系統未初始化',
+            'ml_enabled': False
+        })
+    
     try:
         # 獲取模型統計
         stats = {
@@ -4601,6 +5032,12 @@ def ml_status():
 start_hourly_scheduler()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))  # 預設使用5001端口
-    debug_mode = os.environ.get('FLASK_ENV', 'development') == 'development'
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    port = int(os.getenv('PORT', '5001'))
+    host = os.getenv('HOST', '0.0.0.0')
+    debug_mode = os.getenv('FLASK_DEBUG', os.getenv('FLASK_ENV', 'development')) == 'development'
+    
+    print(f"🚀 啟動服務器: http://{host}:{port}")
+    print(f"🔧 Debug 模式: {debug_mode}")
+    print(f"🔒 速率限制: {'啟用' if rate_limit_enabled else '禁用'}")
+    
+    app.run(host=host, port=port, debug=debug_mode)

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即時攝影機分析 | BurnSky 燒天預測系統</title>
+    <meta name="description" content="基於香港天文台攝影機的即時天氣狀況分析，提供即時燒天潛力評估和天空狀況監測。">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3552699426860096"
+         crossorigin="anonymous"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 統一的導航樣式 */
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .nav-row a {
+            color: #333 !important;
+            text-decoration: none !important;
+            background: rgba(255, 255, 255, 0.8) !important;
+            padding: 8px 16px !important;
+            border-radius: 20px !important;
+            text-align: center !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
+            border: 1px solid rgba(102, 126, 234, 0.2) !important;
+            white-space: nowrap !important;
+        }
+
+        .nav-row a:hover {
+            background: #667eea !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        /* 桌面版導航 (4+4+4 格式) */
+        @media (min-width: 769px) {
+            .nav-container {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .nav-row {
+                display: flex !important;
+                justify-content: center !important;
+                gap: 15px !important;
+            }
+        }
+
+        /* 手機版導航 (4+4+4 格式) */
+        @media (max-width: 768px) {
+            .nav-container {
+                display: grid !important;
+                gap: 8px !important;
+            }
+            
+            .nav-row {
+                display: grid !important;
+                gap: 6px !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+            
+            .nav-row a {
+                padding: 8px 4px !important;
+                font-size: 12px !important;
+                text-align: center !important;
+            }
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .status-grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        @media (min-width: 769px) {
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .status-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .webcam-grid {
+            display: grid;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        @media (min-width: 769px) {
+            .webcam-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .webcam-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .webcam-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            text-align: center;
+        }
+
+        .webcam-image {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading {
+            padding: 60px 20px;
+            text-align: center;
+            color: #666;
+        }
+
+        .error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .update-time {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+        }
+
+        /* 頁尾樣式 */
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            margin-top: 60px;
+            padding: 40px 20px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .footer-links a:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .copyright {
+            color: #999;
+            font-size: 0.8rem;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+                margin: 10px 0;
+            }
+            
+            .footer-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 統一導航欄 -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <div class="nav-row">
+                <a href="/">🏠 首頁</a>
+                <a href="/photo-analysis">📸 照片分析</a>
+                <a href="/warning-dashboard">⚠️ 警告台</a>
+                <a href="/ml-test">🤖 ML測試</a>
+            </div>
+            <div class="nav-row">
+                <a href="/api-docs">📚 API文檔</a>
+                <a href="/photography-guide">📸 攝影指南</a>
+                <a href="/webcam-analysis" style="background: #667eea !important; color: white !important;">📷 即時攝影機</a>
+                <a href="/best-locations">📍 最佳地點</a>
+            </div>
+            <div class="nav-row">
+                <a href="/faq">❓ FAQ</a>
+                <a href="/weather-terms">📚 天氣術語</a>
+                <a href="/terms">📄 條款</a>
+                <a href="/privacy">🔒 私隱</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="main-content">
+            <h1>📷 即時攝影機天氣分析</h1>
+            
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>🌅 整體燒天潛力</h3>
+                    <div id="overall-potential" class="loading">載入中...</div>
+                </div>
+                <div class="status-card">
+                    <h3>📊 分析狀態</h3>
+                    <div id="analysis-status" class="loading">載入中...</div>
+                </div>
+            </div>
+
+            <div id="webcam-container" class="loading">載入攝影機資料...</div>
+            
+            <div class="update-time" id="last-update"></div>
+        </div>
+    </div>
+
+    <!-- 統一頁尾 -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/">首頁</a>
+                <a href="/photo-analysis">照片分析</a>
+                <a href="/warning-dashboard">警告台</a>
+                <a href="/ml-test">ML測試</a>
+                <a href="/api-docs">API文檔</a>
+                <a href="/photography-guide">攝影指南</a>
+                <a href="/webcam-analysis">即時攝影機</a>
+                <a href="/best-locations">最佳地點</a>
+                <a href="/faq">FAQ</a>
+                <a href="/weather-terms">天氣術語</a>
+                <a href="/terms">使用條款</a>
+                <a href="/privacy">私隱政策</a>
+            </div>
+            <div class="copyright">
+                <p>© 2024 BurnSky 燒天預測系統. 版權所有.</p>
+                <p>基於香港天文台公開資料 | 僅供參考用途</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let autoRefreshEnabled = false;
+        let autoRefreshTimer = null;
+
+        // 載入攝影機分析資料
+        async function loadWebcamAnalysis() {
+            try {
+                showLoading();
+                
+                const response = await fetch('/api/webcam/current');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+                updateLastUpdateTime();
+                
+            } catch (error) {
+                console.error('載入攝影機分析時發生錯誤:', error);
+                showError(error.message);
+            }
+        }
+
+        // 顯示載入狀態
+        function showLoading() {
+            document.getElementById('webcam-container').innerHTML = '<div class="loading">載入攝影機資料...</div>';
+            document.getElementById('overall-potential').innerHTML = '載入中...';
+            document.getElementById('analysis-status').innerHTML = '載入中...';
+        }
+
+        // 顯示錯誤訊息
+        function showError(message) {
+            const errorHtml = `
+                <div class="error">
+                    ⚠️ 載入失敗: ${message}
+                    <br><button onclick="loadWebcamAnalysis()" class="btn" style="margin-top: 10px;">🔄 重新載入</button>
+                </div>
+            `;
+            document.getElementById('webcam-container').innerHTML = errorHtml;
+            document.getElementById('overall-potential').innerHTML = '載入失敗';
+            document.getElementById('analysis-status').innerHTML = '錯誤';
+        }
+
+        // 顯示分析結果
+        function displayResults(data) {
+            // 顯示整體燒天潛力
+            const overallScore = data.overall_sunset_potential || 0;
+            const scoreLevel = getScoreLevel(overallScore);
+            
+            document.getElementById('overall-potential').innerHTML = `
+                <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(overallScore)};">
+                    ${overallScore.toFixed(1)}
+                </div>
+                <div style="margin-top: 5px; color: #666;">
+                    ${scoreLevel}
+                </div>
+            `;
+
+            // 顯示分析狀態
+            const statusMessage = data.analysis_status || '未知';
+            document.getElementById('analysis-status').innerHTML = `
+                <div style="font-weight: 500;">
+                    ${statusMessage}
+                </div>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 5px;">
+                    分析了 ${data.webcam_data ? Object.keys(data.webcam_data).length : 0} 個攝影機位置
+                </div>
+            `;
+
+            // 顯示各攝影機詳細資料
+            displayWebcamDetails(data.webcam_data || {});
+        }
+
+        // 顯示各攝影機詳細資料
+        function displayWebcamDetails(webcamData) {
+            const container = document.getElementById('webcam-container');
+            
+            if (Object.keys(webcamData).length === 0) {
+                container.innerHTML = '<div class="error">沒有可用的攝影機資料</div>';
+                return;
+            }
+
+            let html = '<div class="webcam-grid">';
+            
+            for (const [locationId, data] of Object.entries(webcamData)) {
+                const score = data.analysis?.sunset_potential || 0;
+                const status = data.analysis?.status || 'unknown';
+                
+                html += `
+                    <div class="webcam-card">
+                        <h4>${data.name || locationId}</h4>
+                        <img src="/api/webcam/image/${locationId}" alt="${data.name}" class="webcam-image" onerror="this.style.display='none'">
+                        <div style="margin-top: 10px;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: ${getScoreColor(score)};">
+                                ${score.toFixed(1)}
+                            </div>
+                            <div style="color: #666; font-size: 0.9rem;">
+                                ${getScoreLevel(score)}
+                            </div>
+                            <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">
+                                狀態: ${translateStatus(status)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // 獲取分數等級描述
+        function getScoreLevel(score) {
+            if (score >= 80) return '極佳燒天';
+            if (score >= 60) return '良好燒天';
+            if (score >= 40) return '普通燒天';
+            if (score >= 20) return '微弱燒天';
+            return '無燒天';
+        }
+
+        // 獲取分數顏色
+        function getScoreColor(score) {
+            if (score >= 80) return '#ff6b35';
+            if (score >= 60) return '#ff8c42';
+            if (score >= 40) return '#ffa726';
+            if (score >= 20) return '#ffb74d';
+            return '#90a4ae';
+        }
+
+        // 翻譯狀態
+        function translateStatus(status) {
+            const statusMap = {
+                'success': '成功',
+                'not_applicable': '不適用',
+                'error': '錯誤',
+                'no_sunset': '非日落時間',
+                'dark_image': '圖片過暗',
+                'unknown': '未知'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 更新最後更新時間
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-HK', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('last-update').innerHTML = `最後更新: ${timeString}`;
+        }
+
+        // 自動重新整理功能
+        function toggleAutoRefresh() {
+            if (autoRefreshEnabled) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshEnabled = false;
+                document.getElementById('autoRefreshStatus').textContent = '已關閉';
+            } else {
+                autoRefreshTimer = setInterval(loadWebcamAnalysis, 300000); // 5分鐘更新一次
+                autoRefreshEnabled = true;
+                document.getElementById('autoRefreshStatus').textContent = '已啟用 (5分鐘)';
+            }
+        }
+
+        // 頁面載入時自動載入資料
+        document.addEventListener('DOMContentLoaded', function() {
+            loadWebcamAnalysis();
+        });
+    </script>
+</body>
+</html>        /* 統一的導航樣式 */
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 0;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .nav-row a {
+            color: #333 !important;
+            text-decoration: none !important;
+            background: rgba(255, 255, 255, 0.8) !important;
+            padding: 8px 16px !important;
+            border-radius: 20px !important;
+            text-align: center !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            transition: all 0.3s ease !important;
+            border: 1px solid rgba(102, 126, 234, 0.2) !important;
+            white-space: nowrap !important;
+        }
+
+        .nav-row a:hover {
+            background: #667eea !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+        }
+
+        /* 桌面版導航 (4+4+4 格式) */
+        @media (min-width: 769px) {
+            .nav-container {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .nav-row {
+                display: flex !important;
+                justify-content: center !important;
+                gap: 15px !important;
+            }
+        }
+
+        /* 手機版導航 (4+4+4 格式) */
+        @media (max-width: 768px) {
+            .nav-container {
+                display: grid !important;
+                gap: 8px !important;
+            }
+            
+            .nav-row {
+                display: grid !important;
+                gap: 6px !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+            
+            .nav-row a {
+                padding: 8px 4px !important;
+                font-size: 12px !important;
+                text-align: center !important;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .overall-score {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-excellent { color: #4CAF50; }
+        .score-good { color: #8BC34A; }
+        .score-fair { color: #FFC107; }
+        .score-poor { color: #FF9800; }
+        .score-very-poor { color: #F44336; }
+
+        .webcam-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .webcam-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .webcam-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .webcam-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .webcam-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .webcam-direction {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .webcam-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .webcam-analysis {
+            padding: 1.5rem;
+        }
+
+        .analysis-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .analysis-label {
+            font-weight: 500;
+        }
+
+        .analysis-value {
+            font-weight: 600;
+        }
+
+        .potential-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .last-updated {
+            text-align: center;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .score-display {
+                font-size: 3rem;
+            }
+            
+            .webcam-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-container">
+        <nav class="nav-grid">
+            <a href="/" class="nav-link">🏠 主頁</a>
+            <a href="/predict" class="nav-link">🌅 日出預測</a>
+            <a href="/predict/sunset" class="nav-link">🌇 日落預測</a>
+            <a href="/api" class="nav-link">🔗 API</a>
+            <a href="/photo-analysis" class="nav-link">📷 照片分析</a>
+            <a href="/sunrise-time" class="nav-link">⏰ 日出時間</a>
+            <a href="/sunset-time" class="nav-link">🌅 日落時間</a>
+            <a href="/weather-trend" class="nav-link">📈 天氣趨勢</a>
+            <a href="/photography-guide" class="nav-link">📸 攝影指南</a>
+            <a href="/webcam-analysis" class="nav-link">📹 即時攝影機</a>
+            <a href="/ml-test" class="nav-link">🤖 ML測試</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🎥 即時攝影機天氣分析</h1>
+            <p>香港天文台攝影機即時圖片分析與燒天預測</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="loadWebcamAnalysis()">🔄 更新分析</button>
+            <button class="btn" onclick="toggleAutoRefresh()">⏰ 自動更新</button>
+            <span id="autoRefreshStatus">已關閉</span>
+        </div>
+
+        <div id="loadingIndicator" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>正在獲取攝影機數據...</p>
+        </div>
+
+        <div id="overallScore" class="overall-score" style="display: none;">
+            <h2>整體燒天潛力</h2>
+            <div id="scoreDisplay" class="score-display">--</div>
+            <div id="scoreLevel">評估中...</div>
+        </div>
+
+</body>
+</html>
