@@ -1794,20 +1794,7 @@
                     apiUrl = `/predict?advance=${advanceHours}&_=${cacheBuster}`;
                 }
                 
-                const response = await fetch(apiUrl, {
-                    cache: 'no-cache',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI(apiUrl);
                 
                 // 如果對照表已展開，更新高亮
                 const scoreReferenceContent = document.getElementById('scoreReferenceContent');
@@ -3155,12 +3142,10 @@
             `;
             
             try {
-                const response = await fetch('/api/upload-photo', {
+                const result = await APIUtils.fetchAPI('/api/upload-photo', {
                     method: 'POST',
                     body: formData
                 });
-                
-                const result = await response.json();
                 
                 if (result.status === 'success') {
                     displayPhotoAnalysisResult(result);
@@ -3277,21 +3262,20 @@
 
         async function loadPhotoCases() {
             try {
-                const response = await fetch('/api/photo-cases');
-                const result = await response.json();
+                const result = await APIUtils.fetchAPI('/api/photo-cases');
                 
                 if (result.status === 'success') {
                     displayPhotoCases(result);
                 }
             } catch (error) {
-                console.error('載入照片案例錯誤:', error);
+                console.error('❌ 載入照片案例錯誤:', error);
+                APIUtils.showToast('載入照片案例失敗', 'error');
             }
         }
 
         async function loadPhotoCasesCount() {
             try {
-                const response = await fetch('/api/photo-cases');
-                const result = await response.json();
+                const result = await APIUtils.fetchAPI('/api/photo-cases');
                 
                 if (result.status === 'success') {
                     const countElement = document.getElementById('casesCount');
@@ -3300,7 +3284,7 @@
                     }
                 }
             } catch (error) {
-                console.error('載入案例數量錯誤:', error);
+                console.error('❌ 載入案例數量錯誤:', error);
             }
         }
 
@@ -3382,11 +3366,9 @@
 
         async function manualUpdatePrediction() {
             try {
-                const response = await fetch('/api/prediction/update', {
+                const result = await APIUtils.fetchAPI('/api/prediction/update', {
                     method: 'POST'
                 });
-                
-                const result = await response.json();
                 
                 if (result.status === 'success') {
                     showPredictionUpdateNotification();
@@ -3398,16 +3380,17 @@
                     }, 1000);
                 } else {
                     console.error('預測更新失敗:', result.message);
+                    APIUtils.showToast(`預測更新失敗: ${result.message}`, 'error');
                 }
             } catch (error) {
-                console.error('預測更新錯誤:', error);
+                console.error('❌ 預測更新錯誤:', error);
+                APIUtils.showToast('預測更新失敗，請稍後重試', 'error');
             }
         }
 
         async function checkPredictionStatus() {
             try {
-                const response = await fetch('/api/prediction/status');
-                const result = await response.json();
+                const result = await APIUtils.fetchAPI('/api/prediction/status');
                 
                 if (result.status === 'success') {
                     const system = result.prediction_system;
@@ -3420,7 +3403,8 @@
                     return system;
                 }
             } catch (error) {
-                console.error('獲取預測狀態錯誤:', error);
+                console.error('❌ 獲取預測狀態錯誤:', error);
+                // 狀態查詢失敗不顯示 Toast，不影響使用者體驗
             }
             return null;
         }
@@ -3698,20 +3682,7 @@
             try {
                 // 強制刷新：添加緩存破壞參數
                 const timestamp = Date.now();
-                const response = await fetch(`/api/warnings/history?_refresh=${timestamp}`, {
-                    cache: 'no-cache',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI(`/api/warnings/history?_refresh=${timestamp}`);
                 
                 // 更新統計卡片
                 document.getElementById('totalWarnings').textContent = data.total_warnings || '22';
@@ -3774,8 +3745,7 @@
 
         async function loadSeasonalTrends() {
             try {
-                const response = await fetch('/api/warnings/seasonal');
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI('/api/warnings/seasonal');
                 
                 const chartContainer = document.getElementById('seasonalChart');
                 
@@ -3831,8 +3801,7 @@
 
         async function loadAccuracyMetrics() {
             try {
-                const response = await fetch('/api/warnings/accuracy');
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI('/api/warnings/accuracy');
                 
                 // 更新準確度指標
                 document.getElementById('overallAccuracy').textContent = data.overall_accuracy ? `${data.overall_accuracy}%` : '85%';
@@ -3897,8 +3866,7 @@
 
         async function loadWarningInsights() {
             try {
-                const response = await fetch('/api/warnings/insights');
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI('/api/warnings/insights');
                 
                 // 更新智能分析內容
                 document.getElementById('keyFindings').innerHTML = formatInsightContent(data.key_findings) || getDefaultInsights().keyFindings;
@@ -3906,7 +3874,8 @@
                 document.getElementById('recommendations').innerHTML = formatInsightContent(data.recommendations) || getDefaultInsights().recommendations;
                 
             } catch (error) {
-                console.error('載入智能分析失敗:', error);
+                console.error('❌ 載入智能分析失敗:', error);
+                APIUtils.showToast('智能分析數據載入失敗', 'warning', 3000);
                 // 顯示預設的智能分析內容
                 const defaultInsights = getDefaultInsights();
                 document.getElementById('keyFindings').innerHTML = defaultInsights.keyFindings;
@@ -4100,7 +4069,8 @@
                     }
                 });
             } catch (error) {
-                console.error('載入時間軸圖表失敗:', error);
+                console.error('❌ 載入時間軸圖表失敗:', error);
+                APIUtils.showToast('時間軸圖表載入失敗', 'warning', 3000);
                 document.getElementById('warningTimelineChart').innerHTML = '<div style="text-align: center; color: #999; padding: 50px;">載入失敗，請稍後重試</div>';
             }
         }
@@ -4108,8 +4078,7 @@
         // 載入類別分布圖表
         async function loadCategoryChart() {
             try {
-                const response = await fetch('/api/warnings/category-simple');
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI('/api/warnings/category-simple');
                 
                 const ctx = document.getElementById('categoryChartCanvas');
                 if (!ctx) return;
@@ -4174,7 +4143,8 @@
                     }
                 });
             } catch (error) {
-                console.error('載入類別分布圖表失敗:', error);
+                console.error('❌ 載入類別分布圖表失敗:', error);
+                APIUtils.showToast('類別分布圖表載入失敗', 'warning', 3000);
                 document.getElementById('warningCategoryChart').innerHTML = '<div style="text-align: center; color: #999; padding: 50px;">載入失敗，請稍後重試</div>';
             }
         }
