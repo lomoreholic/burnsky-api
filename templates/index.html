@@ -183,6 +183,163 @@
             overflow-x: hidden;
         }
 
+        /* Toast 通知樣式 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease-out;
+            border-left: 4px solid;
+            min-width: 280px;
+        }
+
+        .toast.error { border-left-color: #ff6b6b; }
+        .toast.success { border-left-color: #51cf66; }
+        .toast.info { border-left-color: #339af0; }
+        .toast.warning { border-left-color: #feca57; }
+
+        .toast-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #999;
+            transition: color 0.2s;
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover {
+            color: #333;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOutRight 0.3s ease-out forwards;
+        }
+
+        @media (max-width: 768px) {
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+            
+            .toast {
+                min-width: auto;
+            }
+        }
+
+        /* 全局載入指示器 */
+        .global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .global-loading-overlay.active {
+            display: flex;
+        }
+
+        .global-loading-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1rem;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .loading-progress {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 8px;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -1471,6 +1628,145 @@
             });
         }
 
+        // ==================== API 工具函數 ====================
+        // 統一的API載入和錯誤處理工具
+        const APIUtils = {
+            // Toast 通知容器
+            toastContainer: null,
+            
+            // 初始化Toast容器
+            initToastContainer() {
+                if (!this.toastContainer) {
+                    this.toastContainer = document.createElement('div');
+                    this.toastContainer.className = 'toast-container';
+                    document.body.appendChild(this.toastContainer);
+                }
+            },
+            
+            // 顯示Toast通知
+            showToast(message, type = 'info', duration = 5000) {
+                this.initToastContainer();
+                
+                const icons = {
+                    error: '❌',
+                    success: '✅',
+                    info: 'ℹ️',
+                    warning: '⚠️'
+                };
+                
+                const titles = {
+                    error: '錯誤',
+                    success: '成功',
+                    info: '提示',
+                    warning: '警告'
+                };
+                
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `
+                    <div class="toast-icon">${icons[type] || icons.info}</div>
+                    <div class="toast-content">
+                        <div class="toast-title">${titles[type] || titles.info}</div>
+                        <div class="toast-message">${message}</div>
+                    </div>
+                    <div class="toast-close" onclick="this.parentElement.remove()">×</div>
+                `;
+                
+                this.toastContainer.appendChild(toast);
+                
+                // 自動移除
+                setTimeout(() => {
+                    toast.classList.add('hiding');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            },
+            
+            // 全局載入狀態
+            loadingOverlay: null,
+            loadingCount: 0,
+            
+            // 顯示全局載入
+            showGlobalLoading(message = '正在載入數據...') {
+                if (!this.loadingOverlay) {
+                    this.loadingOverlay = document.createElement('div');
+                    this.loadingOverlay.className = 'global-loading-overlay';
+                    this.loadingOverlay.innerHTML = `
+                        <div class="global-loading-content">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">${message}</div>
+                            <div class="loading-progress" id="loadingProgress"></div>
+                        </div>
+                    `;
+                    document.body.appendChild(this.loadingOverlay);
+                }
+                
+                this.loadingCount++;
+                this.loadingOverlay.classList.add('active');
+            },
+            
+            // 隱藏全局載入
+            hideGlobalLoading() {
+                this.loadingCount = Math.max(0, this.loadingCount - 1);
+                if (this.loadingCount === 0 && this.loadingOverlay) {
+                    this.loadingOverlay.classList.remove('active');
+                }
+            },
+            
+            // 更新載入進度
+            updateLoadingProgress(current, total) {
+                const progressEl = document.getElementById('loadingProgress');
+                if (progressEl) {
+                    progressEl.textContent = `載入中 ${current}/${total}`;
+                }
+            },
+            
+            // 統一的API請求處理
+            async fetchAPI(url, options = {}) {
+                const defaultOptions = {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                };
+                
+                try {
+                    const response = await fetch(url, { ...defaultOptions, ...options });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error(`API請求失敗 (${url}):`, error);
+                    throw error;
+                }
+            },
+            
+            // 並行載入多個API
+            async loadParallel(requests) {
+                const results = await Promise.allSettled(requests.map(req => {
+                    if (typeof req === 'function') {
+                        return req();
+                    }
+                    return this.fetchAPI(req.url, req.options);
+                }));
+                
+                return results.map((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        return { success: true, data: result.value };
+                    } else {
+                        const reqInfo = requests[index];
+                        const url = typeof reqInfo === 'function' ? '函數請求' : reqInfo.url;
+                        console.error(`請求失敗 (${url}):`, result.reason);
+                        return { success: false, error: result.reason };
+                    }
+                });
+            }
+        };
+
         async function loadPrediction() {
             const loading = document.getElementById('loading');
             const content = document.getElementById('content');
@@ -1574,6 +1870,9 @@
                 content.style.display = 'block';
                 
             } catch (error) {
+                console.error('❌ 載入預測數據失敗:', error);
+                APIUtils.showToast('無法載入預測數據，請檢查網路連接', 'error');
+                
                 loading.innerHTML = `
                     <div style="color: #ff6b6b;">
                         <h3>載入失敗</h3>
@@ -1583,6 +1882,7 @@
                         </button>
                     </div>
                 `;
+                throw error; // 重新拋出錯誤以便上層處理
             }
         }
 
@@ -2890,7 +3190,9 @@
                 }
                 
             } catch (error) {
-                console.error('照片上傳錯誤:', error);
+                console.error('❌ 照片上傳錯誤:', error);
+                APIUtils.showToast(`照片上傳失敗: ${error.message}`, 'error');
+                
                 resultDiv.innerHTML = `
                     <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; border: 1px solid #f5c6cb;">
                         <h4 style="margin: 0 0 10px 0;">❌ 上傳失敗</h4>
@@ -3417,7 +3719,9 @@
                 document.getElementById('bestCategory').textContent = data.best_category || '雷暴警告';
                 
             } catch (error) {
-                console.error('載入警告總覽數據失敗:', error);
+                console.error('❌ 載入警告總覽數據失敗:', error);
+                APIUtils.showToast('警告總覽數據載入失敗', 'warning', 3000);
+                
                 // 顯示示例數據
                 document.getElementById('totalWarnings').textContent = '22';
                 document.getElementById('averageAccuracy').textContent = '85%';
@@ -3509,7 +3813,9 @@
                 }
                 
             } catch (error) {
-                console.error('載入季節趨勢失敗:', error);
+                console.error('❌ 載入季節趨勢失敗:', error);
+                APIUtils.showToast('季節趨勢數據載入失敗', 'warning', 3000);
+                
                 document.getElementById('seasonalChart').innerHTML = `
                     <div style="text-align: center; padding: 40px;">
                         <div style="font-size: 3rem; margin-bottom: 15px;">🗓️</div>
@@ -3568,7 +3874,9 @@
                 }
                 
             } catch (error) {
-                console.error('載入準確度指標失敗:', error);
+                console.error('❌ 載入準確度指標失敗:', error);
+                APIUtils.showToast('準確度數據載入失敗', 'warning', 3000);
+                
                 // 顯示預設數據
                 document.getElementById('overallAccuracy').textContent = '85%';
                 document.getElementById('timelyAccuracy').textContent = '92%';
@@ -3877,16 +4185,101 @@
         // 頁面載入時立即更新時間和初始化狀態
         updateCurrentTime();
         
-        // 頁面載入完成後初始化詳細分析因子區塊狀態
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeFactorsSection();
-            initializeScoreReferenceSection();
-            initializeWarningAnalysisSection();
-            loadPrediction();
+        // ==================== 頁面初始化 ====================
+        // 並行載入優化版本 - 所有API同時載入
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 開始並行載入頁面數據...');
+            const startTime = performance.now();
+            
+            // 顯示載入狀態
+            APIUtils.showGlobalLoading('正在載入燒天預測系統...');
+            
+            try {
+                // 初始化區塊狀態（同步操作，不耗時）
+                initializeFactorsSection();
+                initializeScoreReferenceSection();
+                initializeWarningAnalysisSection();
+                
+                // 並行載入所有數據
+                const requests = [
+                    { name: '主預測數據', fn: () => loadPrediction() },
+                    { name: '照片案例數量', fn: () => loadPhotoCasesCount() },
+                    { name: '警告分析數據', fn: () => loadWarningAnalysisDataSilent() }
+                ];
+                
+                APIUtils.updateLoadingProgress(0, requests.length);
+                
+                // 使用 Promise.allSettled 確保所有請求都完成（即使部分失敗）
+                const results = await Promise.allSettled(
+                    requests.map((req, index) => {
+                        return req.fn().then(result => {
+                            APIUtils.updateLoadingProgress(index + 1, requests.length);
+                            console.log(`✅ ${req.name} 載入完成`);
+                            return result;
+                        });
+                    })
+                );
+                
+                // 統計結果
+                const successCount = results.filter(r => r.status === 'fulfilled').length;
+                const failCount = results.length - successCount;
+                
+                const endTime = performance.now();
+                const loadTime = ((endTime - startTime) / 1000).toFixed(2);
+                
+                console.log(`🎉 頁面載入完成！耗時 ${loadTime}秒 (成功: ${successCount}, 失敗: ${failCount})`);
+                
+                // 顯示成功提示
+                if (failCount === 0) {
+                    APIUtils.showToast(`頁面載入成功 (${loadTime}秒)`, 'success', 3000);
+                } else {
+                    APIUtils.showToast(`頁面部分載入成功 (${failCount}個請求失敗)`, 'warning', 4000);
+                }
+                
+                // 處理失敗的請求
+                results.forEach((result, index) => {
+                    if (result.status === 'rejected') {
+                        console.error(`❌ ${requests[index].name} 載入失敗:`, result.reason);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ 頁面初始化錯誤:', error);
+                APIUtils.showToast('頁面載入失敗，請重新整理頁面', 'error', 8000);
+            } finally {
+                // 隱藏載入狀態
+                APIUtils.hideGlobalLoading();
+            }
         });
         
-        // 每5分鐘自動更新
-        setInterval(loadPrediction, 300000);
+        // 靜默版本的警告分析載入（不顯示錯誤提示）
+        async function loadWarningAnalysisDataSilent() {
+            try {
+                const content = document.getElementById('warningAnalysisContent');
+                if (!content || content.style.display === 'none') {
+                    // 如果警告分析區塊未展開，跳過載入
+                    return;
+                }
+                
+                await loadWarningAnalysisData();
+            } catch (error) {
+                console.warn('警告分析數據載入失敗（靜默處理）:', error);
+                // 靜默處理，不顯示錯誤給用戶
+            }
+        }
+        
+        // 每5分鐘自動更新（同樣並行載入）
+        setInterval(async () => {
+            console.log('🔄 自動更新預測數據...');
+            try {
+                await Promise.allSettled([
+                    loadPrediction(),
+                    loadPhotoCasesCount()
+                ]);
+            } catch (error) {
+                console.error('自動更新失敗:', error);
+            }
+        }, 300000);
     </script>
     
     

@@ -154,30 +154,62 @@
         }
         
         .faq-item {
-            margin-bottom: 25px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
             overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .faq-item:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
         }
         
         .faq-question {
-            background: #f8f9fa;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
             cursor: pointer;
             font-weight: bold;
             font-size: 1.1em;
-            color: #333;
-            transition: background 0.3s ease;
+            color: white;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .faq-question:hover {
-            background: #e9ecef;
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        
+        .faq-question::after {
+            content: '+';
+            font-size: 1.5em;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+        
+        .faq-item.active .faq-question::after {
+            content: '−';
+            transform: rotate(180deg);
         }
         
         .faq-answer {
-            padding: 20px;
+            max-height: 0;
+            padding: 0 20px;
             background: white;
-            line-height: 1.7;
+            line-height: 1.8;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            color: #333;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 1000px;
+            padding: 20px;
         }
         
         .back-home {
@@ -228,6 +260,20 @@
             <h1>🔥 常見問題 FAQ</h1>
             <p>關於燒天預測的一切問題解答</p>
         </header>
+        
+        <div style="margin-bottom: 30px;">
+            <input type="text" id="faq-search" placeholder="🔍 搜尋問題..." style="
+                width: 100%;
+                padding: 15px 20px;
+                font-size: 16px;
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                border-radius: 30px;
+                background: rgba(255, 255, 255, 0.9);
+                outline: none;
+                transition: all 0.3s ease;
+            " onfocus="this.style.borderColor='#667eea'; this.style.background='white';" 
+               onblur="this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.background='rgba(255, 255, 255, 0.9)';">
+        </div>
         
         <main>
             <div class="faq-item">
@@ -364,5 +410,55 @@
             <a href="/">🏠 返回首頁</a>
         </div>
     </div>
+    
+    <script>
+        // FAQ 手風琴效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const faqItems = document.querySelectorAll('.faq-item');
+            
+            // 默認展開第一個
+            if (faqItems.length > 0) {
+                faqItems[0].classList.add('active');
+            }
+            
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                
+                question.addEventListener('click', () => {
+                    // 切換當前項目
+                    const isActive = item.classList.contains('active');
+                    
+                    // 可選：關閉其他項目（手風琴模式）
+                    // faqItems.forEach(i => i.classList.remove('active'));
+                    
+                    // 切換當前項目
+                    if (isActive) {
+                        item.classList.remove('active');
+                    } else {
+                        item.classList.add('active');
+                    }
+                });
+            });
+            
+            // 搜尋功能（可選）
+            const searchInput = document.getElementById('faq-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase();
+                    
+                    faqItems.forEach(item => {
+                        const question = item.querySelector('.faq-question').textContent.toLowerCase();
+                        const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+                        
+                        if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -2514,6 +2514,177 @@ def ml_test():
     """機器學習測試頁面"""
     return render_template("ml_test.html")
 
+@app.route("/api/ml-prediction", methods=['POST'])
+def ml_prediction():
+    """機器學習預測 API - 根據用戶輸入的天氣參數進行預測"""
+    try:
+        data = request.get_json()
+        
+        # 獲取參數
+        cloud_coverage = int(data.get('cloud_coverage', 50))
+        humidity = int(data.get('humidity', 70))
+        wind_speed = int(data.get('wind_speed', 15))
+        temperature = int(data.get('temperature', 20))
+        time_of_day = int(data.get('time_of_day', 18))
+        
+        print(f"🤖 ML預測請求: 雲量={cloud_coverage}%, 濕度={humidity}%, 風速={wind_speed}km/h, 氣溫={temperature}°C, 時間={time_of_day}:00")
+        
+        # 構建特徵數據 (模擬真實天氣數據格式)
+        weather_data = {
+            'temperature': temperature,
+            'humidity': humidity,
+            'cloud_coverage': cloud_coverage,
+            'wind_speed': wind_speed,
+            'visibility': 10000,  # 默認能見度
+            'pressure': 1013,     # 默認氣壓
+            'uv_index': 5         # 默認紫外線指數
+        }
+        
+        forecast_data = {
+            'max_temp': temperature + 2,
+            'min_temp': temperature - 2,
+            'humidity': humidity
+        }
+        
+        # 判斷時間段（日出或日落）
+        prediction_type = 'sunrise' if time_of_day < 12 else 'sunset'
+        
+        # 使用現有的預測函數計算評分
+        try:
+            # 計算基礎評分
+            base_score = calculate_burnsky_score(
+                weather_data, 
+                forecast_data, 
+                {}, 
+                prediction_type
+            )
+            
+            # 時間因子調整
+            if prediction_type == 'sunset':
+                if 17 <= time_of_day <= 19:
+                    time_factor = 1.1  # 黃金時段加成
+                elif time_of_day == 20:
+                    time_factor = 0.95
+                else:
+                    time_factor = 0.85
+            else:
+                if 5 <= time_of_day <= 7:
+                    time_factor = 1.1
+                else:
+                    time_factor = 0.85
+            
+            # 雲量最佳範圍調整
+            if 40 <= cloud_coverage <= 70:
+                cloud_factor = 1.15
+            elif 30 <= cloud_coverage <= 80:
+                cloud_factor = 1.05
+            elif cloud_coverage < 20 or cloud_coverage > 85:
+                cloud_factor = 0.7
+            else:
+                cloud_factor = 0.9
+            
+            # 濕度最佳範圍調整
+            if 55 <= humidity <= 75:
+                humidity_factor = 1.1
+            elif 45 <= humidity <= 85:
+                humidity_factor = 1.0
+            else:
+                humidity_factor = 0.85
+            
+            # 風速影響
+            if wind_speed <= 20:
+                wind_factor = 1.05
+            elif wind_speed <= 30:
+                wind_factor = 1.0
+            else:
+                wind_factor = 0.9
+            
+            # 綜合評分
+            final_score = base_score * time_factor * cloud_factor * humidity_factor * wind_factor
+            final_score = min(100, max(0, final_score))
+            
+        except Exception as e:
+            print(f"⚠️ 使用ML模型計算時出錯: {e}")
+            # 備用簡單計算
+            final_score = 50 + (cloud_coverage - 50) * 0.3 + (70 - humidity) * 0.2 + (25 - wind_speed) * 0.5
+            final_score = min(100, max(0, final_score))
+        
+        # 生成建議時間
+        if prediction_type == 'sunset':
+            if time_of_day <= 17:
+                best_time = "18:00-18:30"
+            elif time_of_day == 18:
+                best_time = "18:30-19:00"
+            else:
+                best_time = "19:00-19:30"
+        else:
+            if time_of_day <= 5:
+                best_time = "06:00-06:30"
+            elif time_of_day == 6:
+                best_time = "06:30-07:00"
+            else:
+                best_time = "07:00-07:30"
+        
+        # 生成天氣評估
+        if cloud_coverage >= 40 and cloud_coverage <= 70 and humidity >= 55 and humidity <= 75:
+            assessment = "優秀"
+        elif cloud_coverage >= 30 and cloud_coverage <= 80:
+            assessment = "良好"
+        elif cloud_coverage < 20 or cloud_coverage > 85:
+            assessment = "較差"
+        else:
+            assessment = "一般"
+        
+        # 生成拍攝建議
+        if final_score >= 80:
+            recommendation = "強烈推薦拍攝！條件極佳"
+        elif final_score >= 65:
+            recommendation = "建議拍攝，條件良好"
+        elif final_score >= 50:
+            recommendation = "可以嘗試，有機會出現"
+        elif final_score >= 35:
+            recommendation = "不太理想，碰碰運氣"
+        else:
+            recommendation = "不建議拍攝，條件不佳"
+        
+        # 計算可信度（基於參數合理性）
+        confidence_score = 75
+        if 40 <= cloud_coverage <= 70:
+            confidence_score += 8
+        if 55 <= humidity <= 75:
+            confidence_score += 7
+        if 17 <= time_of_day <= 19 or 5 <= time_of_day <= 7:
+            confidence_score += 10
+        
+        confidence = f"{min(99, confidence_score)}%"
+        
+        print(f"✅ ML預測完成: 評分={final_score:.1f}, 評估={assessment}, 可信度={confidence}")
+        
+        return jsonify({
+            'success': True,
+            'score': round(final_score),
+            'best_time': best_time,
+            'confidence': confidence,
+            'assessment': assessment,
+            'recommendation': recommendation,
+            'factors': {
+                'cloud_factor': f"{cloud_factor:.2f}x",
+                'humidity_factor': f"{humidity_factor:.2f}x",
+                'wind_factor': f"{wind_factor:.2f}x",
+                'time_factor': f"{time_factor:.2f}x"
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ ML預測錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': '預測服務暫時不可用'
+        }), 500
+
 @app.route("/api_docs")
 def api_docs_redirect():
     """重定向舊的API文檔URL到新格式"""
@@ -2917,6 +3088,187 @@ def handle_photo_cases():
             "patterns": patterns,
             "cases": BURNSKY_PHOTO_CASES
         })
+
+@app.route('/api/analyze-photo', methods=['POST'])
+def analyze_photo():
+    """簡易照片分析 API - 僅供前端照片分析頁面使用"""
+    try:
+        print(f"📸 收到照片分析請求")
+        print(f"   Content-Type: {request.content_type}")
+        print(f"   Files: {list(request.files.keys())}")
+        print(f"   Form: {list(request.form.keys())}")
+        
+        # 檢查是否有檔案
+        if 'photo' not in request.files:
+            print(f"❌ 錯誤: 沒有 'photo' 欄位")
+            return jsonify({
+                "success": False,
+                "message": f"沒有選擇照片。收到的欄位: {list(request.files.keys())}"
+            }), 400
+        
+        file = request.files['photo']
+        if file.filename == '':
+            print(f"❌ 錯誤: 檔案名稱為空")
+            return jsonify({
+                "success": False,
+                "message": "沒有選擇照片"
+            }), 400
+        
+        print(f"   檔案名稱: {file.filename}")
+        
+        # 檢查檔案大小
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        print(f"   檔案大小: {file_size / 1024:.1f} KB")
+        
+        if file_size > MAX_FILE_SIZE:
+            print(f"❌ 錯誤: 檔案太大")
+            return jsonify({
+                "success": False,
+                "message": f"檔案太大，最大支援 {MAX_FILE_SIZE // (1024*1024)}MB"
+            }), 400
+        
+        # 讀取照片
+        photo_data = file.read()
+        print(f"   讀取了 {len(photo_data)} bytes")
+        
+        # 驗證圖片有效性並嘗試轉換 HEIC
+        try:
+            # 檢查是否為 HEIC 格式
+            if file.filename.lower().endswith(('.heic', '.heif')):
+                try:
+                    # 嘗試使用 pillow-heif
+                    from pillow_heif import register_heif_opener
+                    register_heif_opener()
+                    print(f"   檢測到 HEIC 格式，已啟用 HEIF 支持")
+                except ImportError:
+                    print(f"❌ HEIC 格式需要轉換")
+                    return jsonify({
+                        "success": False,
+                        "message": "不支援 HEIC/HEIF 格式。請使用 iPhone 設定 > 相機 > 格式 改為「最相容」，或將照片轉換為 JPG/PNG 格式後上傳。"
+                    }), 400
+            
+            test_image = Image.open(io.BytesIO(photo_data))
+            test_image.verify()
+            print(f"   圖片驗證成功: {test_image.format} {test_image.size}")
+        except Exception as ve:
+            print(f"❌ 圖片驗證失敗: {ve}")
+            file_ext = file.filename.split('.')[-1].lower() if '.' in file.filename else 'unknown'
+            
+            if file_ext in ['heic', 'heif']:
+                error_msg = "不支援 HEIC/HEIF 格式。請將照片轉換為 JPG 或 PNG 格式後上傳。"
+            else:
+                error_msg = f"檔案損壞或不是有效的圖片格式 ({file_ext})"
+            
+            return jsonify({
+                "success": False,
+                "message": error_msg
+            }), 400
+        
+        # 分析照片質量
+        photo_analysis = analyze_photo_quality(photo_data)
+        
+        # 獲取用戶評分
+        user_rating = int(request.form.get('rating', 5))
+        
+        # 將質量分數轉換為 0-100 分制
+        quality_score = photo_analysis.get('quality_score', 5.0)
+        ai_score = min(100, quality_score * 10)  # 1-10 分 → 0-100 分
+        
+        # 生成詳細分析文字
+        color_data = photo_analysis.get('color_analysis', {})
+        cloud_data = photo_analysis.get('cloud_analysis', {})
+        lighting_data = photo_analysis.get('lighting_analysis', {})
+        
+        # 色彩分析描述
+        warm_ratio = color_data.get('warm_ratio', 0) * 100
+        if warm_ratio > 40:
+            color_desc = f"天空呈現濃郁的橙紅色調（{warm_ratio:.1f}%），燒天效果極佳！"
+        elif warm_ratio > 20:
+            color_desc = f"天空有明顯的暖色調（{warm_ratio:.1f}%），屬於良好的燒天。"
+        elif warm_ratio > 10:
+            color_desc = f"天空出現輕微的橙黃色調（{warm_ratio:.1f}%），燒天效果一般。"
+        else:
+            color_desc = f"天空缺乏明顯的暖色調（{warm_ratio:.1f}%），非典型燒天場景。"
+        
+        # 雲層分析描述
+        variation = cloud_data.get('variation', 0) * 100
+        if variation > 60:
+            cloud_desc = "雲層變化豐富，層次分明，具有強烈的視覺衝擊力。"
+        elif variation > 40:
+            cloud_desc = "雲層變化適中，呈現一定的層次感和紋理。"
+        elif variation > 20:
+            cloud_desc = "雲層較為平淡，缺乏明顯的變化和層次。"
+        else:
+            cloud_desc = "天空雲層單調，建議尋找更有變化的場景。"
+        
+        # 光影效果描述
+        golden_ratio = lighting_data.get('golden_ratio', 0) * 100
+        if golden_ratio > 60:
+            lighting_desc = f"光線條件極佳（{golden_ratio:.1f}%），處於黃金攝影時段。"
+        elif golden_ratio > 40:
+            lighting_desc = f"光線條件良好（{golden_ratio:.1f}%），適合拍攝燒天。"
+        elif golden_ratio > 20:
+            lighting_desc = f"光線條件一般（{golden_ratio:.1f}%），可以嘗試後期增強。"
+        else:
+            lighting_desc = f"光線條件較差（{golden_ratio:.1f}%），建議選擇接近日出日落的時段。"
+        
+        # 整體評價
+        if ai_score >= 80:
+            overall = "這是一張極品燒天照片！色彩絢麗，雲層豐富，光影完美。值得分享和收藏。"
+        elif ai_score >= 65:
+            overall = "這是一張優質的燒天照片，各方面表現均衡，具有較高的觀賞價值。"
+        elif ai_score >= 50:
+            overall = "照片捕捉到了燒天的基本特徵，但仍有提升空間。"
+        elif ai_score >= 35:
+            overall = "照片具有一定的燒天元素，但整體效果不夠理想。"
+        else:
+            overall = "照片的燒天特徵不明顯，建議等待更好的天氣條件。"
+        
+        # 改進建議
+        suggestions = []
+        if warm_ratio < 20:
+            suggestions.append("等待日落前後30分鐘，此時天空暖色調最明顯")
+        if variation < 40:
+            suggestions.append("尋找雲層更豐富的天空，高積雲和層積雲最佳")
+        if golden_ratio < 40:
+            suggestions.append("在日出後15分鐘或日落前30分鐘拍攝")
+        if color_data.get('saturation', 0) < 0.5:
+            suggestions.append("後期可適當提升飽和度和對比度")
+        if not suggestions:
+            suggestions.append("照片品質已經很好，繼續保持！")
+        
+        suggestions_text = " | ".join(suggestions)
+        
+        return jsonify({
+            "success": True,
+            "ai_score": round(ai_score, 1),
+            "user_rating": user_rating,
+            "photo_analysis": {
+                "color_analysis": color_desc,
+                "cloud_structure": cloud_desc,
+                "lighting_effect": lighting_desc,
+                "overall_quality": overall,
+                "suggestions": suggestions_text
+            },
+            "raw_data": {
+                "warm_color_ratio": round(warm_ratio, 1),
+                "cloud_variation": round(variation, 1),
+                "lighting_quality": round(golden_ratio, 1),
+                "color_intensity": round(color_data.get('intensity', 0) * 100, 1)
+            }
+        })
+    
+    except Exception as e:
+        print(f"❌ 照片分析錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "message": f"分析失敗：{str(e)}"
+        }), 500
 
 @app.route('/api/upload-photo', methods=['POST'])
 def upload_burnsky_photo():
@@ -4008,66 +4360,145 @@ def get_overview_charts():
 
 @app.route("/api/warnings/history", methods=["GET"])
 def get_warning_history():
-    """獲取警告歷史數據分析"""
+    """獲取警告歷史數據分析 - 使用真實數據庫統計"""
     global warning_analyzer
-    
-    if not warning_analysis_available or not warning_analyzer:
-        # 返回更豐富的示例數據
-        return jsonify({
-            "status": "success",
-            "data_source": "demo_data",
-            "total_warnings": 24,
-            "average_accuracy": 85.6,
-            "best_category": "雷暴警告",
-            "warning_patterns": {
-                "categories": {
-                    "雷暴警告": {"count": 8, "accuracy": 92.5},
-                    "暴雨警告": {"count": 6, "accuracy": 88.3},
-                    "大風警告": {"count": 5, "accuracy": 81.2},
-                    "酷熱警告": {"count": 3, "accuracy": 78.9},
-                    "寒冷警告": {"count": 2, "accuracy": 95.0}
-                },
-                "monthly_distribution": {
-                    "labels": ["1月", "2月", "3月", "4月", "5月", "6月"],
-                    "data": [2, 1, 3, 5, 8, 5]
-                },
-                "hourly_patterns": {
-                    "peak_hours": [14, 15, 16, 17],
-                    "low_hours": [2, 3, 4, 5]
-                },
-                "accuracy_trends": {
-                    "improving": True,
-                    "monthly_accuracy": [82.1, 84.3, 86.7, 85.9, 87.2, 88.1]
-                }
-            },
-            "insights": [
-                "雷暴警告準確率最高 (92.5%)",
-                "下午2-5點是警告高峰期", 
-                "整體準確率持續改善",
-                "5月份警告數量最多"
-            ],
-            "message": "使用示例數據 - 實際系統需要更多歷史數據"
-        })
     
     try:
         days_back = int(request.args.get('days', 30))
         days_back = min(max(days_back, 1), 365)  # 限制在1-365天之間
         
-        # 執行警告模式分析
-        patterns = warning_analyzer.analyze_warning_patterns(days_back)
+        # 從數據庫查詢真實統計數據
+        conn = sqlite3.connect('warning_history.db')
+        cursor = conn.cursor()
+        
+        # 計算時間範圍
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        
+        # 1. 總警告數
+        cursor.execute('''
+            SELECT COUNT(*) FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        total_warnings = cursor.fetchone()[0]
+        
+        # 2. 類別分布
+        cursor.execute('''
+            SELECT category, COUNT(*) as count 
+            FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY category 
+            ORDER BY count DESC
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        category_data = cursor.fetchall()
+        
+        categories = {}
+        best_category = "無數據"
+        if category_data:
+            best_category = category_data[0][0] if category_data[0][0] else "未分類"
+            for cat, count in category_data:
+                cat_name = cat if cat else "未分類"
+                # 計算該類別的平均影響分數作為準確率參考
+                cursor.execute('''
+                    SELECT AVG(impact_score) FROM warning_records 
+                    WHERE category = ? AND timestamp >= ? AND timestamp <= ?
+                ''', (cat, start_date.isoformat(), end_date.isoformat()))
+                avg_impact = cursor.fetchone()[0] or 0
+                # 將影響分數轉換為準確率指標 (0-100)
+                accuracy = min(100, max(0, avg_impact * 2.5))
+                
+                categories[cat_name] = {
+                    "count": count,
+                    "accuracy": round(accuracy, 1)
+                }
+        
+        # 3. 每月分布
+        cursor.execute('''
+            SELECT strftime('%m', timestamp) as month, COUNT(*) 
+            FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY month 
+            ORDER BY month
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        monthly_data = cursor.fetchall()
+        
+        monthly_labels = [f"{int(m)}月" for m, _ in monthly_data] if monthly_data else []
+        monthly_counts = [c for _, c in monthly_data] if monthly_data else []
+        
+        # 4. 時段分布
+        cursor.execute('''
+            SELECT CAST(strftime('%H', timestamp) AS INTEGER) as hour, COUNT(*) 
+            FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY hour 
+            ORDER BY hour
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        hourly_data = cursor.fetchall()
+        hourly_dict = {h: c for h, c in hourly_data}
+        
+        # 找出高峰和低谷時段
+        if hourly_dict:
+            sorted_hours = sorted(hourly_dict.items(), key=lambda x: x[1], reverse=True)
+            peak_hours = [h for h, _ in sorted_hours[:4]]
+            low_hours = [h for h, _ in sorted_hours[-4:]]
+        else:
+            peak_hours = []
+            low_hours = []
+        
+        # 5. 計算平均準確率 (基於預測記錄)
+        cursor.execute('''
+            SELECT AVG(impact_score) FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        avg_impact_result = cursor.fetchone()[0]
+        average_accuracy = round(min(100, max(0, (avg_impact_result or 0) * 2.5)), 1)
+        
+        # 6. 生成洞察
+        insights = []
+        if category_data and len(category_data) > 0:
+            top_cat = category_data[0][0] or "未分類"
+            top_count = category_data[0][1]
+            insights.append(f"{top_cat} 數量最多 ({top_count}次)")
+        
+        if peak_hours:
+            peak_str = ', '.join([f"{h}時" for h in peak_hours[:2]])
+            insights.append(f"{peak_str} 是警告高峰期")
+        
+        if total_warnings > 0:
+            insights.append(f"過去{days_back}天共發出{total_warnings}次警告")
+        else:
+            insights.append(f"過去{days_back}天無警告記錄")
+        
+        conn.close()
         
         # 構建前端期望的格式
         return jsonify({
             "status": "success",
-            "data": patterns,
-            "total_warnings": patterns.get("total_warnings", 0),
-            "average_accuracy": patterns.get("average_accuracy", 0),
-            "best_category": patterns.get("most_common_category", "無數據"),
+            "data_source": "real_database",
+            "total_warnings": total_warnings,
+            "average_accuracy": average_accuracy,
+            "best_category": best_category,
+            "warning_patterns": {
+                "categories": categories,
+                "monthly_distribution": {
+                    "labels": monthly_labels,
+                    "data": monthly_counts
+                },
+                "hourly_patterns": {
+                    "peak_hours": peak_hours,
+                    "low_hours": low_hours
+                }
+            },
+            "insights": insights,
             "analysis_period": f"{days_back}天",
-            "generated_at": datetime.now().isoformat()
+            "generated_at": datetime.now().isoformat(),
+            "message": "基於真實歷史數據的統計分析"
         })
         
     except Exception as e:
+        print(f"❌ 警告歷史分析錯誤: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "status": "error",
             "message": f"分析失敗: {str(e)}",
@@ -4078,32 +4509,45 @@ def get_warning_history():
 
 @app.route("/api/warnings/timeline", methods=["GET"])
 def get_warning_timeline():
-    """獲取警告時間軸圖表數據"""
-    global warning_analyzer
-    
-    if not warning_analysis_available or not warning_analyzer:
-        # 返回示例時間軸數據
-        from datetime import datetime, timedelta
+    """獲取警告時間軸圖表數據 - 使用真實數據"""
+    try:
         days_back = int(request.args.get('days', 30))
         days_back = min(max(days_back, 1), 365)
+        display_days = min(days_back, 30)  # 最多顯示30天
+        
+        conn = sqlite3.connect('warning_history.db')
+        cursor = conn.cursor()
         
         end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        
+        # 查詢每日警告數量
+        cursor.execute('''
+            SELECT DATE(timestamp) as date, COUNT(*) as count
+            FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY date
+            ORDER BY date
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        daily_data = cursor.fetchall()
+        conn.close()
+        
+        # 構建完整的日期範圍（包含無警告的日期）
         timeline_data = []
         labels = []
+        date_dict = {date_str: count for date_str, count in daily_data}
         
-        for i in range(min(days_back, 14)):  # 最多顯示14天
-            date = end_date - timedelta(days=i)
-            date_str = date.strftime('%m-%d')
-            labels.insert(0, date_str)
-            
-            # 模擬合理的警告數據分布
-            import random
-            warning_count = random.randint(0, 6)  # 0-6個警告
-            timeline_data.insert(0, warning_count)
+        for i in range(display_days):
+            date = end_date - timedelta(days=display_days - 1 - i)
+            date_str = date.strftime('%Y-%m-%d')
+            label = date.strftime('%m-%d')
+            labels.append(label)
+            timeline_data.append(date_dict.get(date_str, 0))
         
         return jsonify({
             "status": "success",
-            "data_source": "example_data",
+            "data_source": "real_database",
             "chart_type": "line",
             "chart_data": {
                 "labels": labels,
@@ -4141,7 +4585,7 @@ def get_warning_timeline():
                 "plugins": {
                     "title": {
                         "display": True,
-                        "text": f"過去 {min(days_back, 14)} 天警告時間軸"
+                        "text": f"過去 {display_days} 天警告時間軸"
                     },
                     "legend": {
                         "display": True,
@@ -4150,141 +4594,79 @@ def get_warning_timeline():
                 }
             },
             "total_warnings": sum(timeline_data),
-            "period": f"{min(days_back, 14)}天",
+            "period": f"{display_days}天",
             "generated_at": datetime.now().isoformat()
         })
-    
+    except Exception as e:
+        print(f"❌ 警告時間軸錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": f"無法生成時間軸: {str(e)}",
+            "chart_data": {
+                "labels": [],
+                "datasets": []
+            }
+        })
+
+@app.route("/api/warnings/category-simple", methods=["GET"])
+def get_warning_category_simple():
+    """獲取警告類別分布簡化數據 - 使用真實數據"""
     try:
         days_back = int(request.args.get('days', 30))
-        days_back = min(max(days_back, 1), 365)  # 限制在1-365天之間
+        days_back = min(max(days_back, 1), 365)
         
-        # 獲取警告模式數據
-        patterns = warning_analyzer.analyze_warning_patterns(days_back)
+        conn = sqlite3.connect('warning_history.db')
+        cursor = conn.cursor()
         
-        # 如果沒有數據，返回示例數據
-        if patterns.get('total_warnings', 0) == 0:
-            # 生成示例時間軸數據
-            from datetime import datetime, timedelta
-            end_date = datetime.now()
-            timeline_data = []
-            labels = []
-            
-            for i in range(min(days_back, 14)):  # 最多顯示14天
-                date = end_date - timedelta(days=i)
-                date_str = date.strftime('%m-%d')
-                labels.insert(0, date_str)
-                
-                # 模擬數據
-                warning_count = max(0, 5 - abs(i - 7))  # 中間較多警告
-                timeline_data.insert(0, warning_count)
-            
-            return jsonify({
-                "status": "success",
-                "chart_type": "timeline",
-                "chart_data": {
-                    "labels": labels,
-                    "datasets": [{
-                        "label": "每日警告數量",
-                        "data": timeline_data,
-                        "borderColor": "#3B82F6",
-                        "backgroundColor": "rgba(59, 130, 246, 0.1)",
-                        "fill": True,
-                        "tension": 0.3
-                    }]
-                },
-                "chart_options": {
-                    "responsive": True,
-                    "scales": {
-                        "y": {
-                            "beginAtZero": True,
-                            "title": {
-                                "display": True,
-                                "text": "警告數量"
-                            }
-                        },
-                        "x": {
-                            "title": {
-                                "display": True,
-                                "text": "日期"
-                            }
-                        }
-                    },
-                    "plugins": {
-                        "title": {
-                            "display": True,
-                            "text": f"過去 {days_back} 天警告時間軸 (示例數據)"
-                        }
-                    }
-                },
-                "data_source": "example_data",
-                "period": f"{days_back}天"
-            })
-        
-        # 處理實際數據 - 簡化版時間軸
-        timeline_data = []
-        labels = []
-        
-        # 從模式數據中提取時間信息
-        from datetime import datetime, timedelta
         end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
         
-        # 生成過去幾天的標籤和數據
-        for i in range(min(days_back, 30)):  # 最多30天
-            date = end_date - timedelta(days=i)
-            date_str = date.strftime('%m-%d')
-            labels.insert(0, date_str)
-            
-            # 基於總警告數分散到各天（簡化）
-            daily_avg = patterns.get('total_warnings', 0) / min(days_back, 30)
-            timeline_data.insert(0, round(daily_avg * (0.8 + 0.4 * (i % 3))))  # 添加變化
+        # 查詢類別分布
+        cursor.execute('''
+            SELECT category, COUNT(*) as count
+            FROM warning_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY category
+            ORDER BY count DESC
+            LIMIT 10
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        category_data = cursor.fetchall()
+        conn.close()
+        
+        labels = [cat if cat else "未分類" for cat, _ in category_data]
+        data = [count for _, count in category_data]
+        
+        # 中文化類別名稱
+        label_map = {
+            "thunderstorm": "雷暴",
+            "rainfall": "暴雨",
+            "wind_storm": "大風",
+            "temperature": "極端溫度",
+            "visibility": "能見度",
+            "marine": "海事",
+            "air_quality": "空氣質量"
+        }
+        labels = [label_map.get(l, l) for l in labels]
         
         return jsonify({
             "status": "success",
-            "chart_type": "timeline",
+            "data_source": "real_database",
             "chart_data": {
                 "labels": labels,
-                "datasets": [{
-                    "label": "每日警告數量",
-                    "data": timeline_data,
-                    "borderColor": "#EF4444",
-                    "backgroundColor": "rgba(239, 68, 68, 0.1)",
-                    "fill": True,
-                    "tension": 0.3
-                }]
+                "data": data
             },
-            "chart_options": {
-                "responsive": True,
-                "scales": {
-                    "y": {
-                        "beginAtZero": True,
-                        "title": {
-                            "display": True,
-                            "text": "警告數量"
-                        }
-                    },
-                    "x": {
-                        "title": {
-                            "display": True,
-                            "text": "日期"
-                        }
-                    }
-                },
-                "plugins": {
-                    "title": {
-                        "display": True,
-                        "text": f"過去 {days_back} 天警告時間軸"
-                    }
-                }
-            },
-            "total_warnings": patterns.get('total_warnings', 0),
-            "period": f"{days_back}天",
-            "generated_at": datetime.now().isoformat()
+            "total": sum(data),
+            "period": f"{days_back}天"
         })
-        
     except Exception as e:
+        print(f"❌ 警告類別統計錯誤: {e}")
         return jsonify({
             "status": "error",
-            "message": f"時間軸生成失敗: {str(e)}"
+            "message": str(e),
+            "chart_data": {"labels": [], "data": []}
         })
 
 @app.route("/api/warnings/category-distribution", methods=["GET"])
@@ -4489,138 +4871,83 @@ def get_warning_timeline_simple():
             "data": [2, 5, 3, 8, 4, 6, 3]
         })
 
-@app.route("/api/warnings/category-simple", methods=["GET"])
-def get_warning_category_simple():
-    """獲取簡化的警告類別分布數據（適用於 index.html）"""
-    global warning_analyzer
-    
-    try:
-        if warning_analysis_available and warning_analyzer:
-            patterns = warning_analyzer.analyze_warning_patterns(30)
-            category_dist = patterns.get('category_distribution', {})
-            
-            if category_dist:
-                # 處理實際數據
-                labels = []
-                data = []
-                
-                category_labels = {
-                    "rainfall": "雨量警告",
-                    "wind_storm": "風暴警告", 
-                    "thunderstorm": "雷暴警告",
-                    "visibility": "能見度警告",
-                    "air_quality": "空氣品質警告",
-                    "temperature": "溫度警告",
-                    "marine": "海事警告"
-                }
-                
-                sorted_categories = sorted(category_dist.items(), key=lambda x: x[1], reverse=True)
-                
-                for category, count in sorted_categories:
-                    if count > 0:  # 只顯示有數據的類別
-                        label = category_labels.get(category, category)
-                        labels.append(label)
-                        data.append(count)
-                
-                if labels:  # 如果有實際數據
-                    return jsonify({
-                        "labels": labels,
-                        "data": data
-                    })
-        
-        # 返回示例數據
-        return jsonify({
-            "labels": ["雷暴警告", "雨量警告", "風暴警告"],
-            "data": [21, 1, 0]
-        })
-        
-    except Exception as e:
-        # 返回示例數據
-        return jsonify({
-            "labels": ["雷暴警告", "雨量警告", "風暴警告"],
-            "data": [21, 1, 0]
-        })
-
 @app.route("/api/warnings/seasonal", methods=["GET"])
 def get_seasonal_analysis():
-    """獲取季節性警告分析"""
-    global warning_analyzer
-    
-    if not warning_analysis_available or not warning_analyzer:
-        # 返回示例季節分析數據
+    """獲取季節性警告分析 - 使用真實數據"""
+    try:
+        conn = sqlite3.connect('warning_history.db')
+        cursor = conn.cursor()
+        
+        # 按季節統計警告數據
+        cursor.execute('''
+            SELECT season, category, COUNT(*) as count, AVG(impact_score) as avg_impact
+            FROM warning_records 
+            WHERE season IS NOT NULL
+            GROUP BY season, category
+            ORDER BY season, count DESC
+        ''')
+        
+        season_data = cursor.fetchall()
+        conn.close()
+        
+        # 組織季節數據
+        seasonal_breakdown = {
+            "winter": {"total_warnings": 0, "categories": {}},
+            "spring": {"total_warnings": 0, "categories": {}},
+            "summer": {"total_warnings": 0, "categories": {}},
+            "autumn": {"total_warnings": 0, "categories": {}}
+        }
+        
+        season_map = {
+            "winter": "冬季",
+            "spring": "春季", 
+            "summer": "夏季",
+            "autumn": "秋季"
+        }
+        
+        for season, category, count, avg_impact in season_data:
+            if season in seasonal_breakdown:
+                seasonal_breakdown[season]["total_warnings"] += count
+                seasonal_breakdown[season]["categories"][category] = {
+                    "count": count,
+                    "avg_impact": round(avg_impact, 2) if avg_impact else 0
+                }
+        
+        # 找出最活躍和最準確的季節
+        season_totals = {s: data["total_warnings"] for s, data in seasonal_breakdown.items()}
+        peak_season = max(season_totals, key=season_totals.get) if season_totals else "summer"
+        
+        # 轉換為中文
+        result_data = {}
+        for eng_season, chi_season in season_map.items():
+            data = seasonal_breakdown[eng_season]
+            result_data[chi_season] = {
+                "total_warnings": data["total_warnings"],
+                "most_common_categories": dict(list(data["categories"].items())[:3]),
+                "average_accuracy": round(sum(c["avg_impact"] for c in data["categories"].values()) / len(data["categories"]) * 2.5, 1) if data["categories"] else 0
+            }
+        
         return jsonify({
             "status": "success",
-            "data_source": "demo_seasonal",
+            "data_source": "real_database",
             "data": {
-                "seasonal_breakdown": {
-                    "春季": {
-                        "total_warnings": 18,
-                        "most_common_categories": {
-                            "暴雨警告": 8,
-                            "雷暴警告": 6,
-                            "大風警告": 4
-                        },
-                        "average_accuracy": 86.2,
-                        "characteristics": ["多雨量警告", "氣溫變化大"]
-                    },
-                    "夏季": {
-                        "total_warnings": 32,
-                        "most_common_categories": {
-                            "雷暴警告": 15,
-                            "酷熱警告": 10,
-                            "暴雨警告": 7
-                        },
-                        "average_accuracy": 88.5,
-                        "characteristics": ["雷暴活動頻繁", "酷熱天氣多"]
-                    },
-                    "秋季": {
-                        "total_warnings": 21,
-                        "most_common_categories": {
-                            "大風警告": 9,
-                            "雷暴警告": 7,
-                            "暴雨警告": 5
-                        },
-                        "average_accuracy": 84.7,
-                        "characteristics": ["颱風季節", "風暴頻繁"]
-                    },
-                    "冬季": {
-                        "total_warnings": 12,
-                        "most_common_categories": {
-                            "寒冷警告": 6,
-                            "大風警告": 4,
-                            "能見度警告": 2
-                        },
-                        "average_accuracy": 91.3,
-                        "characteristics": ["寒潮影響", "能見度較低"]
-                    }
-                },
+                "seasonal_breakdown": result_data,
                 "annual_trends": {
-                    "peak_season": "夏季",
-                    "lowest_season": "冬季",
-                    "most_accurate_season": "冬季",
-                    "total_annual_warnings": 83
+                    "peak_season": season_map.get(peak_season, "夏季"),
+                    "total_annual_warnings": sum(season_totals.values())
                 }
             },
-            "message": "基於示例數據的季節分析",
-            "generated_at": datetime.now().isoformat()
-        })
-    
-    try:
-        seasonal_analysis = warning_analyzer.analyze_seasonal_trends()
-        
-        # 使用 convert_numpy_types 修復 JSON 序列化問題
-        converted_data = convert_numpy_types(seasonal_analysis)
-        
-        return jsonify({
-            "status": "success",
-            "data": converted_data,
+            "message": "基於真實歷史數據的季節分析",
             "generated_at": datetime.now().isoformat()
         })
         
     except Exception as e:
+        print(f"❌ 季節分析錯誤: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "status": "error",
-            "message": f"季節性分析失敗: {str(e)}"
+            "message": f"季節分析失敗: {str(e)}"
         })
 
 @app.route("/api/warnings/insights", methods=["GET"])
@@ -4688,29 +5015,83 @@ def get_warning_insights():
 
 @app.route("/api/warnings/accuracy", methods=["GET"])
 def get_prediction_accuracy():
-    """獲取預測準確性評估"""
-    global warning_analyzer
-    
-    if not warning_analysis_available or not warning_analyzer:
-        return jsonify({
-            "status": "error", 
-            "message": "警告分析系統未可用"
-        })
-    
+    """獲取預測準確性評估 - 使用真實數據"""
     try:
         days_back = int(request.args.get('days', 7))
-        days_back = min(max(days_back, 1), 30)  # 限制在1-30天之間
+        days_back = min(max(days_back, 1), 30)
         
-        accuracy_analysis = warning_analyzer.evaluate_prediction_accuracy(days_back)
+        conn = sqlite3.connect('warning_history.db')
+        cursor = conn.cursor()
+        
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        
+        # 查詢預測記錄統計
+        cursor.execute('''
+            SELECT 
+                COUNT(*) as total,
+                AVG(warning_impact) as avg_impact,
+                AVG(warning_risk_impact) as avg_risk,
+                AVG(final_score) as avg_score
+            FROM prediction_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        stats = cursor.fetchone()
+        total_predictions = stats[0] if stats else 0
+        avg_impact = stats[1] if stats and stats[1] else 0
+        avg_risk = stats[2] if stats and stats[2] else 0
+        avg_score = stats[3] if stats and stats[3] else 0
+        
+        # 查詢有警告影響的預測數量
+        cursor.execute('''
+            SELECT COUNT(*) FROM prediction_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            AND warning_impact > 0
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        predictions_with_warnings = cursor.fetchone()[0]
+        
+        # 按預測類型統計
+        cursor.execute('''
+            SELECT 
+                prediction_type,
+                COUNT(*) as count,
+                AVG(warning_impact) as avg_impact,
+                AVG(final_score) as avg_score
+            FROM prediction_records 
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY prediction_type
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        type_data = cursor.fetchall()
+        conn.close()
+        
+        by_type = {}
+        for pred_type, count, impact, score in type_data:
+            by_type[pred_type] = {
+                "count": count,
+                "avg_warning_impact": round(impact, 2) if impact else 0,
+                "avg_score": round(score, 2) if score else 0
+            }
         
         return jsonify({
             "status": "success",
-            "data": accuracy_analysis,
+            "data_source": "real_database",
             "evaluation_period": f"{days_back}天",
+            "data": {
+                "total_predictions": total_predictions,
+                "predictions_with_warnings": predictions_with_warnings,
+                "average_warning_impact": round(avg_impact, 2),
+                "average_risk_impact": round(avg_risk, 2),
+                "average_final_score": round(avg_score, 2),
+                "by_prediction_type": by_type
+            },
             "generated_at": datetime.now().isoformat()
         })
         
     except Exception as e:
+        print(f"❌ 準確性評估錯誤: {e}")
         return jsonify({
             "status": "error",
             "message": f"準確性評估失敗: {str(e)}"
