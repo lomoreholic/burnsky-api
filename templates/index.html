@@ -1416,119 +1416,121 @@
                     </div>
                 </section>
 
-                <!-- 警告歷史分析區域 -->
-                <section class="main-card" aria-labelledby="warning-analysis-title" style="margin-top: 30px;" id="warningAnalysisSection">
-                    <div class="toggle-header" onclick="toggleWarningAnalysisSection()">
-                        <h2 id="warning-analysis-title" style="text-align: left; color: #333; margin: 0; font-size: 1.4rem;">⚠️ 警告歷史分析</h2>
+                <!-- 燒天歷史統計區域 -->
+                <section class="main-card" aria-labelledby="burnsky-history-title" style="margin-top: 30px;" id="burnskyHistorySection">
+                    <div class="toggle-header" onclick="toggleBurnskyHistorySection()">
+                        <h2 id="burnsky-history-title" style="text-align: left; color: #333; margin: 0; font-size: 1.4rem;">📊 燒天歷史統計</h2>
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-size: 0.9rem; padding: 6px 12px; background: rgba(102, 126, 234, 0.1); border-radius: 6px; transition: all 0.3s ease;" 
-                               onmouseover="this.style.background='rgba(102, 126, 234, 0.2)'" onmouseout="this.style.background='rgba(102, 126, 234, 0.1)'">
-                                📊 完整分析頁面
-                            </a>
-                            <div id="warningAnalysisToggleIcon" class="toggle-icon">🔽</div>
+                            <span style="color: #999; font-size: 0.85rem;">過去30天預測回顧</span>
+                            <div id="burnskyHistoryToggleIcon" class="toggle-icon">🔽</div>
                         </div>
                     </div>
-                    <div id="warningAnalysisContent" role="region" aria-live="polite" style="margin-top: 30px; display: none;">
+                    <div id="burnskyHistoryContent" role="region" aria-live="polite" style="margin-top: 30px; display: none;">
                         <!-- 選項卡導航 -->
                         <div class="tab-navigation" style="display: flex; justify-content: center; margin-bottom: 25px; border-bottom: 2px solid #e9ecef;">
-                            <button class="tab-btn active" onclick="switchWarningTab('overview')" data-tab="overview" style="padding: 12px 24px; border: none; background: none; color: #667eea; font-weight: 600; border-bottom: 2px solid #667eea; cursor: pointer; transition: all 0.3s ease;">
-                                📈 總覽
+                            <button class="tab-btn active" onclick="switchBurnskyTab('overview')" data-tab="overview" style="padding: 12px 24px; border: none; background: none; color: #667eea; font-weight: 600; border-bottom: 2px solid #667eea; cursor: pointer; transition: all 0.3s ease;">
+                                📊 統計總覽
                             </button>
-                            <button class="tab-btn" onclick="switchWarningTab('seasonal')" data-tab="seasonal" style="padding: 12px 24px; border: none; background: none; color: #666; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s ease;">
-                                🗓️ 季節趨勢
+                            <button class="tab-btn" onclick="switchBurnskyTab('trends')" data-tab="trends" style="padding: 12px 24px; border: none; background: none; color: #666; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s ease;">
+                                📈 評分趨勢
                             </button>
-                            <button class="tab-btn" onclick="switchWarningTab('accuracy')" data-tab="accuracy" style="padding: 12px 24px; border: none; background: none; color: #666; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s ease;">
-                                🎯 準確度
+                            <button class="tab-btn" onclick="switchBurnskyTab('comparison')" data-tab="comparison" style="padding: 12px 24px; border: none; background: none; color: #666; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s ease;">
+                                🌅 日出日落對比
                             </button>
-                            <button class="tab-btn" onclick="switchWarningTab('insights')" data-tab="insights" style="padding: 12px 24px; border: none; background: none; color: #666; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s ease;">
-                                💡 智能分析
+                            <button class="tab-btn" onclick="switchBurnskyTab('insights')" data-tab="insights" style="padding: 12px 24px; border: none; background: none; color: #666; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s ease;">
+                                💡 數據洞察
                             </button>
                         </div>
 
-                        <!-- 總覽選項卡 -->
+                        <!-- 統計總覽選項卡 -->
                         <div id="overviewTab" class="tab-content active" style="display: block;">
-                            <div class="warning-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
-                                <div class="warning-summary-card" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">🚨</div>
-                                    <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;" id="totalWarnings">-</div>
-                                    <div style="opacity: 0.9;">總警告次數</div>
+                            <div class="burnsky-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 10px;">🔮</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="totalPredictions">-</div>
+                                    <div style="opacity: 0.9;">總預測次數</div>
                                 </div>
-                                <div class="warning-summary-card" style="background: linear-gradient(135deg, #feca57, #ff9ff3); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">📊</div>
-                                    <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;" id="averageAccuracy">-</div>
-                                    <div style="opacity: 0.9;">平均準確度</div>
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 10px;">⭐</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="avgScore">-</div>
+                                    <div style="opacity: 0.9;">平均評分</div>
                                 </div>
-                                <div class="warning-summary-card" style="background: linear-gradient(135deg, #48dbfb, #0abde3); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">🏆</div>
-                                    <div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 5px;" id="bestCategory">-</div>
-                                    <div style="opacity: 0.9;">最準確類型</div>
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #fa709a, #fee140); color: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 10px;">🔥</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="highScoreCount">-</div>
+                                    <div style="opacity: 0.9;">高分次數(≥70)</div>
+                                </div>
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #feca57, #ff9ff3); color: white; border-radius: 16px; padding: 20px; text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 10px;">📈</div>
+                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="successRate">-</div>
+                                    <div style="opacity: 0.9;">成功率</div>
                                 </div>
                             </div>
                             
-                            <!-- 警告時間軸圖表 -->
+                            <!-- 評分分布圖 -->
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">⏰ 警告時間軸</h3>
-                                <div id="warningTimelineChart" style="min-height: 300px; position: relative;">
-                                    <canvas id="timelineChartCanvas"></canvas>
+                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📊 評分分布概覽</h3>
+                                <div id="scoreDistributionChart" style="min-height: 300px; position: relative;">
+                                    <canvas id="scoreDistChartCanvas"></canvas>
                                 </div>
                             </div>
                             
-                            <!-- 警告類別分布圖 -->
+                            <!-- 預測類型統計 -->
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📊 警告類別分布</h3>
-                                <div id="warningCategoryChart" style="min-height: 300px; position: relative;">
-                                    <canvas id="categoryChartCanvas"></canvas>
+                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">🌅 預測類型統計</h3>
+                                <div id="predictionTypeChart" style="min-height: 300px; position: relative;">
+                                    <canvas id="typeChartCanvas"></canvas>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 季節趨勢選項卡 -->
-                        <div id="seasonalTab" class="tab-content" style="display: none;">
+                        <!-- 評分趨勢選項卡 -->
+                        <div id="trendTab" class="tab-content" style="display: none;">
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">🗓️ 季節性警告趨勢</h3>
-                                <div id="seasonalChart" style="min-height: 400px; display: flex; align-items: center; justify-content: center; color: #666;">
-                                    載入中...
+                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📈 每日評分趨勢</h3>
+                                <div id="dailyTrendChart" style="min-height: 400px; position: relative;">
+                                    <canvas id="trendChartCanvas"></canvas>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 準確度選項卡 -->
-                        <div id="accuracyTab" class="tab-content" style="display: none;">
-                            <div class="accuracy-metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                        <!-- 日出日落對比選項卡 -->
+                        <div id="comparisonTab" class="tab-content" style="display: none;">
+                            <div class="comparison-metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
                                 <div class="metric-card" style="background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                    <div style="font-size: 1.5rem; margin-bottom: 10px;">🎯</div>
-                                    <div style="font-size: 1.3rem; font-weight: bold; color: #333; margin-bottom: 5px;" id="overallAccuracy">-</div>
-                                    <div style="color: #666;">整體準確度</div>
+                                    <div style="font-size: 1.5rem; margin-bottom: 10px;">🌅</div>
+                                    <div style="font-size: 1.3rem; font-weight: bold; color: #FF6B6B; margin-bottom: 5px;" id="sunriseAvg">-</div>
+                                    <div style="color: #666;">日出平均評分</div>
                                 </div>
                                 <div class="metric-card" style="background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                    <div style="font-size: 1.5rem; margin-bottom: 10px;">⏱️</div>
-                                    <div style="font-size: 1.3rem; font-weight: bold; color: #333; margin-bottom: 5px;" id="timelyAccuracy">-</div>
-                                    <div style="color: #666;">及時性準確度</div>
+                                    <div style="font-size: 1.5rem; margin-bottom: 10px;">🌇</div>
+                                    <div style="font-size: 1.3rem; font-weight: bold; color: #4ECDC4; margin-bottom: 5px;" id="sunsetAvg">-</div>
+                                    <div style="color: #666;">日落平均評分</div>
                                 </div>
                                 <div class="metric-card" style="background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                    <div style="font-size: 1.5rem; margin-bottom: 10px;">📈</div>
-                                    <div style="font-size: 1.3rem; font-weight: bold; color: #333; margin-bottom: 5px;" id="improvementTrend">-</div>
-                                    <div style="color: #666;">改善趨勢</div>
+                                    <div style="font-size: 1.5rem; margin-bottom: 10px;">🏆</div>
+                                    <div style="font-size: 1.3rem; font-weight: bold; color: #FFB6C1; margin-bottom: 5px;" id="betterType">-</div>
+                                    <div style="color: #666;">表現較佳</div>
                                 </div>
                             </div>
                             
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📈 準確度趨勢</h3>
-                                <div id="accuracyChart" style="min-height: 350px; display: flex; align-items: center; justify-content: center; color: #666;">
-                                    載入中...
+                                <h3 style="color: #333; margin-bottom: 15px; text-align: center;">🌅 vs 🌇 評分對比</h3>
+                                <div id="comparisonChart" style="min-height: 350px; position: relative;">
+                                    <canvas id="comparisonChartCanvas"></canvas>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 智能分析選項卡 -->
+                        <!-- 數據洞察選項卡 -->
                         <div id="insightsTab" class="tab-content" style="display: none;">
-                            <div id="insightsContent" style="display: grid; gap: 20px;">
+                            <div id="burnskyInsightsContent" style="display: grid; gap: 20px;">
                                 <div class="insight-card" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                     <h4 style="color: #333; margin-bottom: 15px; display: flex; align-items: center;">
-                                        <span style="margin-right: 10px;">🔍</span>
-                                        關鍵發現
+                                        <span style="margin-right: 10px;">🎯</span>
+                                        最佳拍攝時段
                                     </h4>
-                                    <div id="keyFindings" style="color: #666; line-height: 1.6;">
+                                    <div id="bestHoursInsight" style="color: #666; line-height: 1.6;">
                                         載入中...
                                     </div>
                                 </div>
@@ -1536,9 +1538,9 @@
                                 <div class="insight-card" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                     <h4 style="color: #333; margin-bottom: 15px; display: flex; align-items: center;">
                                         <span style="margin-right: 10px;">📊</span>
-                                        統計摘要
+                                        統計總結
                                     </h4>
-                                    <div id="statisticalSummary" style="color: #666; line-height: 1.6;">
+                                    <div id="statisticsSummary" style="color: #666; line-height: 1.6;">
                                         載入中...
                                     </div>
                                 </div>
@@ -1546,9 +1548,9 @@
                                 <div class="insight-card" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                     <h4 style="color: #333; margin-bottom: 15px; display: flex; align-items: center;">
                                         <span style="margin-right: 10px;">💡</span>
-                                        改進建議
+                                        AI 分析建議
                                     </h4>
-                                    <div id="recommendations" style="color: #666; line-height: 1.6;">
+                                    <div id="aiInsights" style="color: #666; line-height: 1.6;">
                                         載入中...
                                     </div>
                                 </div>
@@ -3593,10 +3595,10 @@
             }
         }
 
-        // 警告歷史分析相關功能
-        function toggleWarningAnalysisSection() {
-            const content = document.getElementById('warningAnalysisContent');
-            const icon = document.getElementById('warningAnalysisToggleIcon');
+        // 燒天歷史統計相關功能
+        function toggleBurnskyHistorySection() {
+            const content = document.getElementById('burnskyHistoryContent');
+            const icon = document.getElementById('burnskyHistoryToggleIcon');
             
             if (content.style.display === 'none' || content.style.display === '') {
                 // 收起狀態 -> 展開
@@ -3604,14 +3606,14 @@
                 icon.style.transform = 'rotate(180deg)';
                 icon.textContent = '🔼';
                 
-                // 載入警告分析數據
-                loadWarningAnalysisData();
+                // 載入燒天歷史數據
+                loadBurnskyHistoryData();
                 
-                // 載入警告圖表
-                loadWarningCharts();
+                // 載入燒天圖表
+                loadBurnskyCharts();
                 
                 // 儲存用戶偏好
-                localStorage.setItem('warningAnalysisExpanded', 'true');
+                localStorage.setItem('burnskyHistoryExpanded', 'true');
             } else {
                 // 展開狀態 -> 收起
                 content.style.display = 'none';
@@ -3619,11 +3621,11 @@
                 icon.textContent = '🔽';
                 
                 // 儲存用戶偏好
-                localStorage.setItem('warningAnalysisExpanded', 'false');
+                localStorage.setItem('burnskyHistoryExpanded', 'false');
             }
         }
 
-        function switchWarningTab(tabName) {
+        function switchBurnskyTab(tabName) {
             // 更新標籤按鈕狀態
             const tabBtns = document.querySelectorAll('.tab-btn');
             tabBtns.forEach(btn => {
@@ -3657,329 +3659,307 @@
             // 根據選項卡載入對應數據
             switch(tabName) {
                 case 'overview':
-                    loadWarningOverview();
-                    // 如果是總覽標籤，載入圖表
-                    loadWarningCharts();
+                    loadBurnskyOverview();
+                    loadBurnskyCharts();
                     break;
-                case 'seasonal':
-                    loadSeasonalTrends();
+                case 'trend':
+                    loadBurnskyTrends();
                     break;
-                case 'accuracy':
-                    loadAccuracyMetrics();
+                case 'comparison':
+                    loadBurnskyComparison();
                     break;
                 case 'insights':
-                    loadWarningInsights();
+                    loadBurnskyInsights();
                     break;
             }
         }
 
-        async function loadWarningAnalysisData() {
+        async function loadBurnskyHistoryData() {
             // 預設載入總覽數據
-            await loadWarningOverview();
+            await loadBurnskyOverview();
         }
 
-        async function loadWarningOverview() {
+        async function loadBurnskyOverview() {
             try {
-                // 強制刷新：添加緩存破壞參數
                 const timestamp = Date.now();
-                const data = await APIUtils.fetchAPI(`/api/warnings/history?_refresh=${timestamp}`);
+                const data = await APIUtils.fetchAPI(`/api/burnsky/history?_refresh=${timestamp}`);
                 
                 // 更新統計卡片
-                document.getElementById('totalWarnings').textContent = data.total_warnings || '22';
-                document.getElementById('averageAccuracy').textContent = data.average_accuracy ? `${data.average_accuracy}%` : '85%';
-                document.getElementById('bestCategory').textContent = data.best_category || '雷暴警告';
+                document.getElementById('totalPredictions').textContent = data.summary.total_predictions || '0';
+                document.getElementById('avgScore').textContent = data.summary.avg_score ? data.summary.avg_score.toFixed(1) : '-';
+                document.getElementById('highScoreCount').textContent = data.summary.high_score_count || '0';
+                document.getElementById('successRate').textContent = data.summary.success_rate ? `${data.summary.success_rate}%` : '-';
                 
             } catch (error) {
-                console.error('❌ 載入警告總覽數據失敗:', error);
-                APIUtils.showToast('警告總覽數據載入失敗', 'warning', 3000);
-                
-                // 顯示示例數據
-                document.getElementById('totalWarnings').textContent = '22';
-                document.getElementById('averageAccuracy').textContent = '85%';
-                document.getElementById('bestCategory').textContent = '雷暴警告';
-            }
-        }
-
-        function showSimplifiedCharts() {
-            // 時間軸圖表
-            document.getElementById('warningTimelineChart').innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">📈</div>
-                    <h4 style="color: #667eea; margin-bottom: 10px;">警告時間軸分析</h4>
-                    <p style="color: #666; margin-bottom: 15px;">顯示過去24小時的警告分布情況</p>
-                    <div style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
-                        <strong>最近警告：</strong> 今日凌晨4:26 雷暴警告<br>
-                        <strong>持續時間：</strong> 約11小時<br>
-                        <strong>警告頻率：</strong> 平均每日1.2次
-                    </div>
-                    <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                        📊 查看完整時間軸 →
-                    </a>
-                </div>
-            `;
-            
-            // 類別分布圖
-            document.getElementById('warningCategoryChart').innerHTML = `
-                <div style="text-align: center; padding: 40px;">
-                    <div style="font-size: 3rem; margin-bottom: 15px;">📊</div>
-                    <h4 style="color: #667eea; margin-bottom: 10px;">警告類別分布</h4>
-                    <p style="color: #666; margin-bottom: 15px;">分析不同類型警告的出現頻率</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
-                        <div style="background: rgba(255, 107, 107, 0.1); padding: 10px; border-radius: 8px;">
-                            <strong style="color: #ff6b6b;">⛈️ 雷暴警告</strong><br>
-                            <span style="font-size: 1.5rem; font-weight: bold;">95.5%</span>
-                        </div>
-                        <div style="background: rgba(254, 202, 87, 0.1); padding: 10px; border-radius: 8px;">
-                            <strong style="color: #feca57;">💨 烈風警告</strong><br>
-                            <span style="font-size: 1.5rem; font-weight: bold;">4.5%</span>
-                        </div>
-                    </div>
-                    <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                        📊 查看詳細分布 →
-                    </a>
-                </div>
-            `;
-        }
-
-
-
-        async function loadSeasonalTrends() {
-            try {
-                const data = await APIUtils.fetchAPI('/api/warnings/seasonal');
-                
-                const chartContainer = document.getElementById('seasonalChart');
-                
-                if (data.chart_url) {
-                    chartContainer.innerHTML = `<img src="${data.chart_url}" alt="季節性警告趨勢圖表" style="max-width: 100%; height: auto;">`;
-                } else {
-                    // 顯示季節性分析摘要
-                    chartContainer.innerHTML = `
-                        <div style="text-align: center; padding: 40px;">
-                            <div style="font-size: 3rem; margin-bottom: 15px;">🗓️</div>
-                            <h4 style="color: #667eea; margin-bottom: 15px;">季節性警告趨勢</h4>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
-                                <div style="background: rgba(255, 193, 7, 0.1); padding: 15px; border-radius: 10px;">
-                                    <h5 style="color: #ffc107; margin-bottom: 8px;">🌸 春季 (3-5月)</h5>
-                                    <p style="color: #666;">警告頻率: 中等<br>主要類型: 雷暴</p>
-                                </div>
-                                <div style="background: rgba(255, 107, 107, 0.1); padding: 15px; border-radius: 10px;">
-                                    <h5 style="color: #ff6b6b; margin-bottom: 8px;">☀️ 夏季 (6-8月)</h5>
-                                    <p style="color: #666;">警告頻率: 高<br>主要類型: 雷暴、暴雨</p>
-                                </div>
-                                <div style="background: rgba(74, 144, 226, 0.1); padding: 15px; border-radius: 10px;">
-                                    <h5 style="color: #4a90e2; margin-bottom: 8px;">🍂 秋季 (9-11月)</h5>
-                                    <p style="color: #666;">警告頻率: 中等<br>主要類型: 風暴</p>
-                                </div>
-                                <div style="background: rgba(108, 117, 125, 0.1); padding: 15px; border-radius: 10px;">
-                                    <h5 style="color: #6c757d; margin-bottom: 8px;">❄️ 冬季 (12-2月)</h5>
-                                    <p style="color: #666;">警告頻率: 低<br>主要類型: 寒冷</p>
-                                </div>
-                            </div>
-                            <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                                📊 查看詳細季節分析 →
-                            </a>
-                        </div>
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('❌ 載入季節趨勢失敗:', error);
-                APIUtils.showToast('季節趨勢數據載入失敗', 'warning', 3000);
-                
-                document.getElementById('seasonalChart').innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <div style="font-size: 3rem; margin-bottom: 15px;">🗓️</div>
-                        <h4 style="color: #667eea; margin-bottom: 15px;">季節性警告趨勢</h4>
-                        <p style="color: #666; margin-bottom: 20px;">當前正值夏季，雷暴警告頻率較高</p>
-                        <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                            📊 查看完整季節分析 →
-                        </a>
-                    </div>
-                `;
-            }
-        }
-
-        async function loadAccuracyMetrics() {
-            try {
-                const data = await APIUtils.fetchAPI('/api/warnings/accuracy');
-                
-                // 更新準確度指標
-                document.getElementById('overallAccuracy').textContent = data.overall_accuracy ? `${data.overall_accuracy}%` : '85%';
-                document.getElementById('timelyAccuracy').textContent = data.timely_accuracy ? `${data.timely_accuracy}%` : '92%';
-                document.getElementById('improvementTrend').textContent = data.improvement_trend || '+3.2%';
-                
-                // 載入準確度趨勢圖
-                const chartContainer = document.getElementById('accuracyChart');
-                
-                if (data.chart_url) {
-                    chartContainer.innerHTML = `<img src="${data.chart_url}" alt="準確度趨勢圖表" style="max-width: 100%; height: auto;">`;
-                } else {
-                    chartContainer.innerHTML = `
-                        <div style="text-align: center; padding: 40px;">
-                            <div style="font-size: 3rem; margin-bottom: 15px;">📈</div>
-                            <h4 style="color: #667eea; margin-bottom: 15px;">準確度趨勢分析</h4>
-                            <div style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 10px; margin: 20px 0;">
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 1.8rem; color: #28a745; font-weight: bold;">85%</div>
-                                        <div style="color: #666; font-size: 0.9rem;">整體準確度</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 1.8rem; color: #17a2b8; font-weight: bold;">92%</div>
-                                        <div style="color: #666; font-size: 0.9rem;">及時性準確度</div>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 1.8rem; color: #28a745; font-weight: bold;">+3.2%</div>
-                                        <div style="color: #666; font-size: 0.9rem;">本月改善</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <p style="color: #666; margin-bottom: 15px;">準確度持續提升，預測品質穩定</p>
-                            <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                                📊 查看詳細準確度分析 →
-                            </a>
-                        </div>
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('❌ 載入準確度指標失敗:', error);
-                APIUtils.showToast('準確度數據載入失敗', 'warning', 3000);
+                console.error('❌ 載入燒天歷史數據失敗:', error);
+                APIUtils.showToast('燒天歷史數據載入失敗', 'warning', 3000);
                 
                 // 顯示預設數據
-                document.getElementById('overallAccuracy').textContent = '85%';
-                document.getElementById('timelyAccuracy').textContent = '92%';
-                document.getElementById('improvementTrend').textContent = '+3.2%';
-                
-                document.getElementById('accuracyChart').innerHTML = `
-                    <div style="text-align: center; padding: 40px;">
-                        <div style="font-size: 3rem; margin-bottom: 15px;">📈</div>
-                        <h4 style="color: #667eea; margin-bottom: 15px;">準確度趨勢</h4>
-                        <p style="color: #666; margin-bottom: 20px;">系統準確度持續改善中</p>
-                        <a href="/warning-dashboard" style="color: #667eea; text-decoration: none; font-weight: 600;">
-                            📊 查看完整準確度分析 →
-                        </a>
-                    </div>
-                `;
+                document.getElementById('totalPredictions').textContent = '0';
+                document.getElementById('avgScore').textContent = '-';
+                document.getElementById('highScoreCount').textContent = '0';
+                document.getElementById('successRate').textContent = '-';
             }
         }
 
-        async function loadWarningInsights() {
+        async function loadBurnskyCharts() {
             try {
-                const data = await APIUtils.fetchAPI('/api/warnings/insights');
+                const data = await APIUtils.fetchAPI('/api/burnsky/history');
                 
-                // 更新智能分析內容
-                document.getElementById('keyFindings').innerHTML = formatInsightContent(data.key_findings) || getDefaultInsights().keyFindings;
-                document.getElementById('statisticalSummary').innerHTML = formatInsightContent(data.statistical_summary) || getDefaultInsights().statisticalSummary;
-                document.getElementById('recommendations').innerHTML = formatInsightContent(data.recommendations) || getDefaultInsights().recommendations;
+                // 評分分布圖
+                const scoreDistCanvas = document.getElementById('scoreDistChartCanvas');
+                if (scoreDistCanvas && data.summary) {
+                    new Chart(scoreDistCanvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['高分 (≥70)', '中分 (50-69)', '低分 (<50)'],
+                            datasets: [{
+                                data: [
+                                    data.summary.high_score_count || 0,
+                                    data.summary.medium_score_count || 0,
+                                    data.summary.low_score_count || 0
+                                ],
+                                backgroundColor: ['#4CAF50', '#FFC107', '#FF5252'],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { color: '#333', font: { size: 12 } }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // 預測類型統計圖
+                const typeCanvas = document.getElementById('typeChartCanvas');
+                if (typeCanvas && data.by_type) {
+                    const types = Object.keys(data.by_type);
+                    const counts = types.map(t => data.by_type[t].count);
+                    const avgScores = types.map(t => data.by_type[t].avg_score);
+                    
+                    new Chart(typeCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels: types.map(t => t === 'sunrise' ? '日出' : t === 'sunset' ? '日落' : '一般'),
+                            datasets: [
+                                {
+                                    label: '預測次數',
+                                    data: counts,
+                                    backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                                    borderColor: '#667eea',
+                                    borderWidth: 2,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: '平均評分',
+                                    data: avgScores,
+                                    type: 'line',
+                                    borderColor: '#ff6b6b',
+                                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                                    borderWidth: 3,
+                                    yAxisID: 'y1',
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left',
+                                    title: { display: true, text: '預測次數', color: '#666' }
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    title: { display: true, text: '平均評分', color: '#666' },
+                                    grid: { drawOnChartArea: false }
+                                }
+                            }
+                        }
+                    });
+                }
                 
             } catch (error) {
-                console.error('❌ 載入智能分析失敗:', error);
-                APIUtils.showToast('智能分析數據載入失敗', 'warning', 3000);
-                // 顯示預設的智能分析內容
-                const defaultInsights = getDefaultInsights();
-                document.getElementById('keyFindings').innerHTML = defaultInsights.keyFindings;
-                document.getElementById('statisticalSummary').innerHTML = defaultInsights.statisticalSummary;
-                document.getElementById('recommendations').innerHTML = defaultInsights.recommendations;
+                console.error('❌ 載入燒天圖表失敗:', error);
             }
         }
 
-        function getDefaultInsights() {
-            return {
-                keyFindings: `
-                    <ul style="padding-left: 20px;">
-                        <li style="margin-bottom: 8px;">過去24小時內共發出22次天氣警告</li>
-                        <li style="margin-bottom: 8px;">雷暴警告佔95.5%，為主要警告類型</li>
-                        <li style="margin-bottom: 8px;">警告持續時間平均為6.8小時</li>
-                        <li style="margin-bottom: 8px;">夜間警告頻率較日間高30%</li>
-                        <li style="margin-bottom: 8px;">預測準確度較上週提升3.2%</li>
-                    </ul>
-                `,
-                statisticalSummary: `
-                    <div style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; text-align: center;">
-                            <div>
-                                <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">22</div>
-                                <div style="font-size: 0.9rem; color: #666;">總警告數</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;">85%</div>
-                                <div style="font-size: 0.9rem; color: #666;">準確度</div>
-                            </div>
-                            <div>
-                                <div style="font-size: 1.5rem; font-weight: bold; color: #ffc107;">6.8h</div>
-                                <div style="font-size: 0.9rem; color: #666;">平均持續</div>
-                            </div>
-                        </div>
-                    </div>
-                    <p style="color: #666; line-height: 1.6;">
-                        統計顯示系統警告發佈及時，準確度維持在高水平。雷暴警告為最常見類型，
-                        反映當前季節性天氣特徵。系統持續學習優化中。
-                    </p>
-                `,
-                recommendations: `
-                    <ul style="padding-left: 20px;">
-                        <li style="margin-bottom: 8px;">💡 建議關注夜間時段的雷暴活動，準備相應防護措施</li>
-                        <li style="margin-bottom: 8px;">📊 可考慮增加風暴警告的預警時間，提升應變能力</li>
-                        <li style="margin-bottom: 8px;">🔄 持續收集用戶反饋，進一步優化預測算法</li>
-                        <li style="margin-bottom: 8px;">📱 建議開發移動端推送功能，提升警告及時性</li>
-                        <li style="margin-bottom: 8px;">📈 定期分析季節性模式，調整預測模型參數</li>
-                    </ul>
-                    <div style="margin-top: 15px; padding: 10px; background: rgba(40, 167, 69, 0.1); border-radius: 6px;">
-                        <strong style="color: #28a745;">✅ 系統表現良好</strong><br>
-                        <small style="color: #666;">當前警告系統運行穩定，建議繼續監控和優化</small>
-                    </div>
-                `
-            };
-        }
-
-        function formatInsightContent(content) {
-            if (!content) return '<p style="color: #999;">暫無數據</p>';
-            
-            if (Array.isArray(content)) {
-                return '<ul style="padding-left: 20px;">' + 
-                       content.map(item => `<li style="margin-bottom: 8px;">${item}</li>`).join('') + 
-                       '</ul>';
-            }
-            
-            return `<p>${content}</p>`;
-        }
-
-        function showWarningError(message) {
-            const errorHtml = `<div style="text-align: center; color: #e74c3c; padding: 20px;">
-                <div style="font-size: 2rem; margin-bottom: 10px;">⚠️</div>
-                <p>${message}</p>
-                <button onclick="loadWarningAnalysisData()" style="margin-top: 15px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    重新載入
-                </button>
-            </div>`;
-            
-            // 將錯誤訊息顯示在當前活動的選項卡中
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab) {
-                activeTab.innerHTML = errorHtml;
+        async function loadBurnskyTrends() {
+            try {
+                const data = await APIUtils.fetchAPI('/api/burnsky/history');
+                const trendCanvas = document.getElementById('trendChartCanvas');
+                
+                if (trendCanvas && data.daily_trends) {
+                    const dates = data.daily_trends.map(d => d.date);
+                    const scores = data.daily_trends.map(d => d.avg_score);
+                    
+                    new Chart(trendCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: dates,
+                            datasets: [{
+                                label: '每日平均評分',
+                                data: scores,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    title: { display: true, text: '評分', color: '#666' }
+                                },
+                                x: {
+                                    title: { display: true, text: '日期', color: '#666' }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+            } catch (error) {
+                console.error('❌ 載入評分趨勢失敗:', error);
+                APIUtils.showToast('評分趨勢載入失敗', 'warning', 3000);
             }
         }
 
-        // 初始化警告分析區塊狀態
-        function initializeWarningAnalysisSection() {
-            const content = document.getElementById('warningAnalysisContent');
-            const icon = document.getElementById('warningAnalysisToggleIcon');
-            const expanded = localStorage.getItem('warningAnalysisExpanded');
-            
-            // 預設收起，用戶點擊後才展開
-            if (expanded === 'true') {
-                content.style.display = 'block';
-                icon.style.transform = 'rotate(180deg)';
-                icon.textContent = '🔼';
-                // 如果展開了，載入圖表
-                loadWarningCharts();
-            } else {
-                content.style.display = 'none';
-                icon.style.transform = 'rotate(0deg)';
-                icon.textContent = '🔽';
+        async function loadBurnskyComparison() {
+            try {
+                const data = await APIUtils.fetchAPI('/api/burnsky/history');
+                
+                if (data.by_type) {
+                    const sunriseData = data.by_type.sunrise || {};
+                    const sunsetData = data.by_type.sunset || {};
+                    
+                    // 更新統計卡片
+                    document.getElementById('sunriseAvg').textContent = sunriseData.avg_score ? sunriseData.avg_score.toFixed(1) : '-';
+                    document.getElementById('sunsetAvg').textContent = sunsetData.avg_score ? sunsetData.avg_score.toFixed(1) : '-';
+                    
+                    const better = (sunriseData.avg_score || 0) > (sunsetData.avg_score || 0) ? '日出' : '日落';
+                    document.getElementById('betterType').textContent = better;
+                    
+                    // 載入對比圖表
+                    const compCanvas = document.getElementById('comparisonChartCanvas');
+                    if (compCanvas) {
+                        new Chart(compCanvas, {
+                            type: 'radar',
+                            data: {
+                                labels: ['平均評分', '最高評分', '預測次數', '高分率'],
+                                datasets: [
+                                    {
+                                        label: '日出',
+                                        data: [
+                                            sunriseData.avg_score || 0,
+                                            sunriseData.max_score || 0,
+                                            (sunriseData.count || 0) / 10,
+                                            ((sunriseData.high_score_count || 0) / (sunriseData.count || 1)) * 100
+                                        ],
+                                        borderColor: '#FF6B6B',
+                                        backgroundColor: 'rgba(255, 107, 107, 0.2)',
+                                        borderWidth: 2
+                                    },
+                                    {
+                                        label: '日落',
+                                        data: [
+                                            sunsetData.avg_score || 0,
+                                            sunsetData.max_score || 0,
+                                            (sunsetData.count || 0) / 10,
+                                            ((sunsetData.high_score_count || 0) / (sunsetData.count || 1)) * 100
+                                        ],
+                                        borderColor: '#4ECDC4',
+                                        backgroundColor: 'rgba(78, 205, 196, 0.2)',
+                                        borderWidth: 2
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    r: {
+                                        beginAtZero: true,
+                                        max: 100
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ 載入日出日落對比失敗:', error);
+                APIUtils.showToast('對比數據載入失敗', 'warning', 3000);
             }
         }
+
+        async function loadBurnskyInsights() {
+            try {
+                const data = await APIUtils.fetchAPI('/api/burnsky/history');
+                
+                // 最佳拍攝時段
+                if (data.best_hours) {
+                    const hours = data.best_hours.slice(0, 5);
+                    const hoursHtml = hours.map(h => 
+                        `<div style="padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 6px; margin-bottom: 8px;">
+                            <strong>${h.hour}:00</strong> - 平均評分: ${h.avg_score.toFixed(1)} (${h.count}次預測)
+                        </div>`
+                    ).join('');
+                    document.getElementById('bestHoursInsight').innerHTML = hoursHtml || '暫無數據';
+                }
+                
+                // 統計總結
+                if (data.summary) {
+                    const statsHtml = `
+                        <p>過去30天共進行了 <strong>${data.summary.total_predictions}</strong> 次燒天預測，
+                        平均評分為 <strong>${data.summary.avg_score.toFixed(1)}</strong>。
+                        其中有 <strong>${data.summary.high_score_count}</strong> 次獲得高分評價（≥70分），
+                        成功率達 <strong>${data.summary.success_rate}%</strong>。</p>
+                        <p>最高評分: <strong>${data.summary.max_score}</strong>，
+                        最低評分: <strong>${data.summary.min_score}</strong>。</p>
+                    `;
+                    document.getElementById('statisticsSummary').innerHTML = statsHtml;
+                }
+                
+                // AI 分析建議
+                if (data.insights && data.insights.length > 0) {
+                    const insightsHtml = '<ul style="padding-left: 20px;">' +
+                        data.insights.map(insight => `<li style="margin-bottom: 8px;">${insight}</li>`).join('') +
+                        '</ul>';
+                    document.getElementById('aiInsights').innerHTML = insightsHtml;
+                } else {
+                    document.getElementById('aiInsights').innerHTML = '<p style="color: #999;">暫無分析建議</p>';
+                }
+                
+            } catch (error) {
+                console.error('❌ 載入數據洞察失敗:', error);
+                APIUtils.showToast('數據洞察載入失敗', 'warning', 3000);
+            }
+        }
+
+
+
+        // (舊警告分析函數已刪除 - 已重構為燒天歷史分析)
 
         // 警告圖表變量
         let timelineChart = null;
@@ -4168,13 +4148,11 @@
                 // 初始化區塊狀態（同步操作，不耗時）
                 initializeFactorsSection();
                 initializeScoreReferenceSection();
-                initializeWarningAnalysisSection();
                 
                 // 並行載入所有數據
                 const requests = [
                     { name: '主預測數據', fn: () => loadPrediction() },
-                    { name: '照片案例數量', fn: () => loadPhotoCasesCount() },
-                    { name: '警告分析數據', fn: () => loadWarningAnalysisDataSilent() }
+                    { name: '照片案例數量', fn: () => loadPhotoCasesCount() }
                 ];
                 
                 APIUtils.updateLoadingProgress(0, requests.length);
@@ -4221,22 +4199,6 @@
                 APIUtils.hideGlobalLoading();
             }
         });
-        
-        // 靜默版本的警告分析載入（不顯示錯誤提示）
-        async function loadWarningAnalysisDataSilent() {
-            try {
-                const content = document.getElementById('warningAnalysisContent');
-                if (!content || content.style.display === 'none') {
-                    // 如果警告分析區塊未展開，跳過載入
-                    return;
-                }
-                
-                await loadWarningAnalysisData();
-            } catch (error) {
-                console.warn('警告分析數據載入失敗（靜默處理）:', error);
-                // 靜默處理，不顯示錯誤給用戶
-            }
-        }
         
         // 每5分鐘自動更新（同樣並行載入）
         setInterval(async () => {

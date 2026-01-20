@@ -2736,10 +2736,15 @@ def weather_terms():
     """天氣術語詞彙表 - SEO內容"""
     return render_template('weather_terms.html')
 
+@app.route("/burnsky-dashboard")
+def burnsky_dashboard():
+    """燒天歷史分析儀表板頁面"""
+    return render_template('burnsky_dashboard.html')
+
 @app.route("/warning-dashboard")
-def warning_dashboard():
-    """警告歷史分析儀表板頁面"""
-    return render_template('warning_dashboard.html')
+def warning_dashboard_redirect():
+    """舊警告台重定向到燒天儀表板"""
+    return redirect("/burnsky-dashboard", code=301)
 
 @app.route("/test_api.html")
 def test_api():
@@ -2751,9 +2756,9 @@ def chart_debug():
     """圖表調試頁面"""
     return send_from_directory('.', 'chart_debug.html')
 
-@app.route("/api/warning-dashboard-data")
-def warning_dashboard_data():
-    """警告台數據API - 提供動態數據"""
+@app.route("/api/burnsky-dashboard-data")
+def burnsky_dashboard_data():
+    """燒天歷史儀表板數據API"""
     try:
         conn = sqlite3.connect(PREDICTION_HISTORY_DB)
         cursor = conn.cursor()
@@ -2881,6 +2886,13 @@ def warning_dashboard_data():
                 'medium_warnings': medium_warnings,
                 'low_warnings': low_warnings
             },
+            'statistics': {
+                'total_warnings': total_warnings,
+                'high_severity': high_warnings,
+                'medium_severity': medium_warnings,
+                'low_severity': low_warnings,
+                'accuracy': round(accuracy_percentage, 1)
+            },
             'accuracy': {
                 'percentage': round(accuracy_percentage, 1),
                 'trend': 'up' if accuracy_percentage > 85 else 'stable'
@@ -2895,12 +2907,17 @@ def warning_dashboard_data():
                 'summer_probability': 23,
                 'current_trend': 'up'
             },
-            'monthly_timeline': [
+            'monthly_data': [
                 {
-                    'month': f"{i}月", 
-                    'total': 0, 
-                    'high': 0
+                    'month': i, 
+                    'total_count': 0, 
+                    'high_count': 0
                 } for i in range(1, 13)
+            ],
+            'severity_distribution': [
+                {'severity': '高分 (≥70)', 'count': high_warnings},
+                {'severity': '中分 (50-69)', 'count': medium_warnings},
+                {'severity': '低分 (<50)', 'count': low_warnings}
             ],
             'high_impact_warnings': high_impact_warnings[:4],
             'insights': [
@@ -2916,10 +2933,10 @@ def warning_dashboard_data():
         for month_data in monthly_data:
             month_num = int(month_data[0])
             if 1 <= month_num <= 12:
-                response_data['monthly_timeline'][month_num-1] = {
-                    'month': f"{month_num}月",
-                    'total': month_data[1],
-                    'high': month_data[2]
+                response_data['monthly_data'][month_num-1] = {
+                    'month': month_num,
+                    'total_count': month_data[1],
+                    'high_count': month_data[2]
                 }
         
         return jsonify(response_data)
@@ -2987,9 +3004,9 @@ def warning_dashboard_data():
         })
 
 @app.route("/warning_dashboard")
-def warning_dashboard_redirect():
+def old_warning_dashboard_underscore():
     """警告台頁面重定向（兼容下劃線格式）"""
-    return redirect("/warning-dashboard", code=301)
+    return redirect("/burnsky-dashboard", code=301)
 
 @app.route("/chart-test")
 def chart_test():
@@ -5408,6 +5425,172 @@ def ml_status():
             'status': 'error',
             'message': str(e)
         }), 500
+
+# ==================== 燒天歷史統計 API ====================
+@app.route("/api/burnsky/history", methods=["GET"])
+def get_burnsky_history():
+    """獲取燒天預測歷史統計"""
+    try:
+        days_back = int(request.args.get('days', 30))
+        days_back = min(max(days_back, 1), 365)
+        
+        conn = sqlite3.connect('prediction_history.db')
+        cursor = conn.cursor()
+        
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        
+        # 1. 總體統計
+        cursor.execute('''
+            SELECT 
+                COUNT(*) as total_predictions,
+                AVG(score) as avg_score,
+                MAX(score) as max_score,
+                MIN(score) as min_score,
+                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count,
+                COUNT(CASE WHEN score >= 50 AND score < 70 THEN 1 END) as medium_score_count,
+                COUNT(CASE WHEN score < 50 THEN 1 END) as low_score_count
+            FROM prediction_history
+            WHERE timestamp >= ? AND timestamp <= ?
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        overall = cursor.fetchone()
+        
+        # 2. 按類型統計（日出/日落）
+        cursor.execute('''
+            SELECT 
+                prediction_type,
+                COUNT(*) as count,
+                AVG(score) as avg_score,
+                MAX(score) as max_score,
+                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count
+            FROM prediction_history
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY prediction_type
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        by_type = {}
+        for row in cursor.fetchall():
+            pred_type, count, avg, max_s, high = row
+            by_type[pred_type] = {
+                'count': count,
+                'avg_score': round(avg, 1) if avg else 0,
+                'max_score': max_s if max_s else 0,
+                'high_score_count': high,
+                'success_rate': round((high / count * 100) if count > 0 else 0, 1)
+            }
+        
+        # 3. 每日趨勢（最近30天）
+        cursor.execute('''
+            SELECT 
+                DATE(timestamp) as date,
+                AVG(score) as avg_score,
+                MAX(score) as max_score,
+                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count
+            FROM prediction_history
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY DATE(timestamp)
+            ORDER BY date DESC
+            LIMIT 30
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        daily_trends = []
+        for row in cursor.fetchall():
+            date, avg, max_s, high = row
+            daily_trends.append({
+                'date': date,
+                'avg_score': round(avg, 1) if avg else 0,
+                'max_score': max_s if max_s else 0,
+                'high_score_count': high
+            })
+        
+        # 4. 最佳時段統計（按小時）
+        cursor.execute('''
+            SELECT 
+                CAST(strftime('%H', timestamp) AS INTEGER) as hour,
+                COUNT(*) as count,
+                AVG(score) as avg_score,
+                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count
+            FROM prediction_history
+            WHERE timestamp >= ? AND timestamp <= ?
+            GROUP BY hour
+            ORDER BY avg_score DESC
+        ''', (start_date.isoformat(), end_date.isoformat()))
+        
+        best_hours = []
+        for row in cursor.fetchall():
+            hour, count, avg, high = row
+            best_hours.append({
+                'hour': hour,
+                'count': count,
+                'avg_score': round(avg, 1) if avg else 0,
+                'high_score_count': high
+            })
+        
+        conn.close()
+        
+        # 組織返回數據
+        return jsonify({
+            'status': 'success',
+            'data_source': 'prediction_history',
+            'time_range': {
+                'days': days_back,
+                'start_date': start_date.strftime('%Y-%m-%d'),
+                'end_date': end_date.strftime('%Y-%m-%d')
+            },
+            'summary': {
+                'total_predictions': overall[0] or 0,
+                'avg_score': round(overall[1], 1) if overall[1] else 0,
+                'max_score': overall[2] if overall[2] else 0,
+                'min_score': overall[3] if overall[3] else 0,
+                'high_score_count': overall[4] or 0,
+                'medium_score_count': overall[5] or 0,
+                'low_score_count': overall[6] or 0,
+                'success_rate': round((overall[4] / overall[0] * 100) if overall[0] else 0, 1)
+            },
+            'by_type': by_type,
+            'daily_trends': daily_trends,
+            'best_hours': best_hours[:5],  # 前5個最佳時段
+            'insights': generate_burnsky_insights(overall, by_type, best_hours)
+        })
+        
+    except Exception as e:
+        print(f"❌ 燒天歷史統計錯誤: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+def generate_burnsky_insights(overall, by_type, best_hours):
+    """生成燒天歷史洞察"""
+    insights = []
+    
+    if overall[0] > 0:
+        success_rate = (overall[4] / overall[0] * 100) if overall[0] else 0
+        insights.append(f"過去期間共進行 {overall[0]} 次預測，高分（≥70分）出現率為 {success_rate:.1f}%")
+        
+        if overall[1]:
+            insights.append(f"平均燒天評分為 {overall[1]:.1f} 分")
+        
+        if overall[2] and overall[2] >= 80:
+            insights.append(f"最高評分達到 {overall[2]:.0f} 分，出現極佳燒天條件")
+    
+    # 日出日落對比
+    if 'sunrise' in by_type and 'sunset' in by_type:
+        sunrise_rate = by_type['sunrise']['success_rate']
+        sunset_rate = by_type['sunset']['success_rate']
+        if sunrise_rate > sunset_rate:
+            insights.append(f"日出的燒天成功率（{sunrise_rate}%）高於日落（{sunset_rate}%）")
+        else:
+            insights.append(f"日落的燒天成功率（{sunset_rate}%）高於日出（{sunrise_rate}%）")
+    
+    # 最佳時段
+    if best_hours:
+        best = best_hours[0]
+        time_label = '凌晨' if best['hour'] < 6 else '早晨' if best['hour'] < 12 else '下午' if best['hour'] < 18 else '晚間'
+        insights.append(f"{time_label}時段（{best['hour']}:00）的燒天評分最高，平均 {best['avg_score']} 分")
+    
+    return insights
 
 # 啟動每小時預測保存排程
 start_hourly_scheduler()
