@@ -1470,26 +1470,26 @@
                             <!-- 評分分布圖 -->
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                 <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📊 評分分布概覽</h3>
-                                <div id="scoreDistributionChart" style="min-height: 300px; position: relative;">
-                                    <canvas id="scoreDistChartCanvas"></canvas>
+                                <div id="scoreDistributionChart" style="height: 300px; position: relative;">
+                                    <canvas id="scoreDistChartCanvas" style="width: 100%; height: 100%;"></canvas>
                                 </div>
                             </div>
                             
                             <!-- 預測類型統計 -->
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                 <h3 style="color: #333; margin-bottom: 15px; text-align: center;">🌅 預測類型統計</h3>
-                                <div id="predictionTypeChart" style="min-height: 300px; position: relative;">
-                                    <canvas id="typeChartCanvas"></canvas>
+                                <div id="predictionTypeChart" style="height: 300px; position: relative;">
+                                    <canvas id="typeChartCanvas" style="width: 100%; height: 100%;"></canvas>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 評分趨勢選項卡 -->
-                        <div id="trendTab" class="tab-content" style="display: none;">
+                        <div id="trendsTab" class="tab-content" style="display: none;">
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                 <h3 style="color: #333; margin-bottom: 15px; text-align: center;">📈 每日評分趨勢</h3>
-                                <div id="dailyTrendChart" style="min-height: 400px; position: relative;">
-                                    <canvas id="trendChartCanvas"></canvas>
+                                <div id="dailyTrendChart" style="height: 400px; position: relative;">
+                                    <canvas id="trendChartCanvas" style="width: 100%; height: 100%;"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -1516,8 +1516,8 @@
                             
                             <div class="chart-container" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                                 <h3 style="color: #333; margin-bottom: 15px; text-align: center;">🌅 vs 🌇 評分對比</h3>
-                                <div id="comparisonChart" style="min-height: 350px; position: relative;">
-                                    <canvas id="comparisonChartCanvas"></canvas>
+                                <div id="comparisonChart" style="height: 350px; position: relative;">
+                                    <canvas id="comparisonChartCanvas" style="width: 100%; height: 100%;"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -3596,6 +3596,14 @@
         }
 
         // 燒天歷史統計相關功能
+        // 保存圖表實例以便銷毀重建
+        let burnskyCharts = {
+            scoreDistChart: null,
+            typeChart: null,
+            trendChart: null,
+            comparisonChart: null
+        };
+        
         function toggleBurnskyHistorySection() {
             const content = document.getElementById('burnskyHistoryContent');
             const icon = document.getElementById('burnskyHistoryToggleIcon');
@@ -3606,11 +3614,8 @@
                 icon.style.transform = 'rotate(180deg)';
                 icon.textContent = '🔼';
                 
-                // 載入燒天歷史數據
-                loadBurnskyHistoryData();
-                
-                // 載入燒天圖表
-                loadBurnskyCharts();
+                // 切換到總覽標籤（會自動載入數據和圖表）
+                switchBurnskyTab('overview');
                 
                 // 儲存用戶偏好
                 localStorage.setItem('burnskyHistoryExpanded', 'true');
@@ -3660,9 +3665,9 @@
             switch(tabName) {
                 case 'overview':
                     loadBurnskyOverview();
-                    loadBurnskyCharts();
+                    setTimeout(() => loadBurnskyCharts(), 100);
                     break;
-                case 'trend':
+                case 'trends':
                     loadBurnskyTrends();
                     break;
                 case 'comparison':
@@ -3672,11 +3677,6 @@
                     loadBurnskyInsights();
                     break;
             }
-        }
-
-        async function loadBurnskyHistoryData() {
-            // 預設載入總覽數據
-            await loadBurnskyOverview();
         }
 
         async function loadBurnskyOverview() {
@@ -3692,9 +3692,6 @@
                 
             } catch (error) {
                 console.error('❌ 載入燒天歷史數據失敗:', error);
-                APIUtils.showToast('燒天歷史數據載入失敗', 'warning', 3000);
-                
-                // 顯示預設數據
                 document.getElementById('totalPredictions').textContent = '0';
                 document.getElementById('avgScore').textContent = '-';
                 document.getElementById('highScoreCount').textContent = '0';
@@ -3707,9 +3704,14 @@
                 const data = await APIUtils.fetchAPI('/api/burnsky/history');
                 
                 // 評分分布圖
-                const scoreDistCanvas = document.getElementById('scoreDistChartCanvas');
-                if (scoreDistCanvas && data.summary) {
-                    new Chart(scoreDistCanvas, {
+                const scoreDistContainer = document.getElementById('scoreDistributionChart');
+                if (scoreDistContainer && data.summary) {
+                    // 重新創建canvas元素以徹底清除Chart.js狀態
+                    scoreDistContainer.innerHTML = '<canvas id="scoreDistChartCanvas" style="width: 100%; height: 100%;"></canvas>';
+                    const scoreDistCanvas = document.getElementById('scoreDistChartCanvas');
+                    
+                    const ctx = scoreDistCanvas.getContext('2d');
+                    burnskyCharts.scoreDistChart = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
                             labels: ['高分 (≥70)', '中分 (50-69)', '低分 (<50)'],
@@ -3738,13 +3740,18 @@
                 }
                 
                 // 預測類型統計圖
-                const typeCanvas = document.getElementById('typeChartCanvas');
-                if (typeCanvas && data.by_type) {
+                const typeContainer = document.getElementById('predictionTypeChart');
+                if (typeContainer && data.by_type) {
+                    // 重新創建canvas元素以徹底清除Chart.js狀態
+                    typeContainer.innerHTML = '<canvas id="typeChartCanvas" style="width: 100%; height: 100%;"></canvas>';
+                    const typeCanvas = document.getElementById('typeChartCanvas');
+                    
                     const types = Object.keys(data.by_type);
                     const counts = types.map(t => data.by_type[t].count);
                     const avgScores = types.map(t => data.by_type[t].avg_score);
                     
-                    new Chart(typeCanvas, {
+                    const ctx = typeCanvas.getContext('2d');
+                    burnskyCharts.typeChart = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: types.map(t => t === 'sunrise' ? '日出' : t === 'sunset' ? '日落' : '一般'),
@@ -3798,14 +3805,41 @@
 
         async function loadBurnskyTrends() {
             try {
+                console.log('🔍 開始載入評分趨勢...');
                 const data = await APIUtils.fetchAPI('/api/burnsky/history');
+                console.log('📊 收到數據:', data);
+                
+                const trendContainer = document.getElementById('dailyTrendChart');
+                console.log('📦 容器元素:', trendContainer);
+                
+                if (!trendContainer) {
+                    console.error('❌ 容器元素不存在!');
+                    return;
+                }
+                
+                if (!data.daily_trends || data.daily_trends.length === 0) {
+                    console.warn('⚠️ 沒有趨勢數據');
+                    trendContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: #999;">暫無評分趨勢數據</div>';
+                    return;
+                }
+                
+                // 重新創建canvas
+                trendContainer.innerHTML = '<canvas id="trendChartCanvas" style="width: 100%; height: 100%;"></canvas>';
                 const trendCanvas = document.getElementById('trendChartCanvas');
                 
-                if (trendCanvas && data.daily_trends) {
-                    const dates = data.daily_trends.map(d => d.date);
-                    const scores = data.daily_trends.map(d => d.avg_score);
+                const dates = data.daily_trends.map(d => d.date).reverse();
+                const scores = data.daily_trends.map(d => d.avg_score).reverse();
+                console.log('📅 日期:', dates);
+                console.log('📈 分數:', scores);
+                
+                // 確保canvas已可見再渲染
+                setTimeout(() => {
+                    console.log('🎨 開始渲染圖表...');
+                    console.log('Canvas寬度:', trendCanvas.width, '高度:', trendCanvas.height);
+                    console.log('Canvas offsetWidth:', trendCanvas.offsetWidth, 'offsetHeight:', trendCanvas.offsetHeight);
                     
-                    new Chart(trendCanvas, {
+                    const ctx = trendCanvas.getContext('2d');
+                    burnskyCharts.trendChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: dates,
@@ -3833,12 +3867,17 @@
                                 x: {
                                     title: { display: true, text: '日期', color: '#666' }
                                 }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    labels: { color: '#333', font: { size: 12 } }
+                                }
                             }
                         }
                     });
-                }
-                
-            } catch (error) {
+                    console.log('✅ 圖表渲染完成!', burnskyCharts.trendChart);
+                }, 200);
                 console.error('❌ 載入評分趨勢失敗:', error);
                 APIUtils.showToast('評分趨勢載入失敗', 'warning', 3000);
             }
@@ -3846,11 +3885,15 @@
 
         async function loadBurnskyComparison() {
             try {
+                console.log('🔍 開始載入日出日落對比...');
                 const data = await APIUtils.fetchAPI('/api/burnsky/history');
+                console.log('📊 收到數據:', data);
                 
                 if (data.by_type) {
                     const sunriseData = data.by_type.sunrise || {};
                     const sunsetData = data.by_type.sunset || {};
+                    console.log('🌅 日出數據:', sunriseData);
+                    console.log('🌇 日落數據:', sunsetData);
                     
                     // 更新統計卡片
                     document.getElementById('sunriseAvg').textContent = sunriseData.avg_score ? sunriseData.avg_score.toFixed(1) : '-';
@@ -3858,11 +3901,22 @@
                     
                     const better = (sunriseData.avg_score || 0) > (sunsetData.avg_score || 0) ? '日出' : '日落';
                     document.getElementById('betterType').textContent = better;
+                    console.log('🏆 表現較佳:', better);
                     
                     // 載入對比圖表
-                    const compCanvas = document.getElementById('comparisonChartCanvas');
-                    if (compCanvas) {
-                        new Chart(compCanvas, {
+                    const compContainer = document.getElementById('comparisonChart');
+                    console.log('📦 對比容器元素:', compContainer);
+                    
+                    if (compContainer) {
+                        // 延遲渲染確保canvas可見
+                        setTimeout(() => {
+                            // 重新創建canvas
+                            compContainer.innerHTML = '<canvas id="comparisonChartCanvas" style="width: 100%; height: 100%;"></canvas>';
+                            const compCanvas = document.getElementById('comparisonChartCanvas');
+                            
+                            console.log('🎨 開始渲染對比圖表...');
+                            const ctx = compCanvas.getContext('2d');
+                            burnskyCharts.comparisonChart = new Chart(ctx, {
                             type: 'radar',
                             data: {
                                 labels: ['平均評分', '最高評分', '預測次數', '高分率'],
@@ -3904,6 +3958,8 @@
                                 }
                             }
                         });
+                        console.log('✅ 對比圖表渲染完成!');
+                        }, 100); // 延遲100ms確保DOM已渲染
                     }
                 }
                 

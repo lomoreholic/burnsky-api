@@ -5623,6 +5623,10 @@ def get_burnsky_history():
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_back)
         
+        # 轉換為 SQLite 格式（空格分隔）
+        start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
+        end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        
         # 1. 總體統計
         cursor.execute('''
             SELECT 
@@ -5635,7 +5639,7 @@ def get_burnsky_history():
                 COUNT(CASE WHEN score < 50 THEN 1 END) as low_score_count
             FROM prediction_history
             WHERE timestamp >= ? AND timestamp <= ?
-        ''', (start_date.isoformat(), end_date.isoformat()))
+        ''', (start_date_str, end_date_str))
         
         overall = cursor.fetchone()
         
@@ -5650,7 +5654,7 @@ def get_burnsky_history():
             FROM prediction_history
             WHERE timestamp >= ? AND timestamp <= ?
             GROUP BY prediction_type
-        ''', (start_date.isoformat(), end_date.isoformat()))
+        ''', (start_date_str, end_date_str))
         
         by_type = {}
         for row in cursor.fetchall():
@@ -5675,7 +5679,7 @@ def get_burnsky_history():
             GROUP BY DATE(timestamp)
             ORDER BY date DESC
             LIMIT 30
-        ''', (start_date.isoformat(), end_date.isoformat()))
+        ''', (start_date_str, end_date_str))
         
         daily_trends = []
         for row in cursor.fetchall():
@@ -5698,7 +5702,7 @@ def get_burnsky_history():
             WHERE timestamp >= ? AND timestamp <= ?
             GROUP BY hour
             ORDER BY avg_score DESC
-        ''', (start_date.isoformat(), end_date.isoformat()))
+        ''', (start_date_str, end_date_str))
         
         best_hours = []
         for row in cursor.fetchall():
