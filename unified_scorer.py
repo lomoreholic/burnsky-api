@@ -23,19 +23,19 @@ class UnifiedBurnskyScorer:
         self.advanced_predictor = AdvancedBurnskyPredictor()
         self.air_quality_fetcher = AirQualityFetcher()
         
-        # 計分配置
+        # 評分系統配置（已修正）
         self.SCORING_CONFIG = {
-            # 各因子最大分數
+            # 配置各因子的最大分數
             'factor_max_scores': {
-                'time': 25,          # 時間因子
-                'temperature': 15,    # 溫度因子
-                'humidity': 20,       # 濕度因子
-                'visibility': 15,     # 能見度因子
-                'cloud': 25,          # 雲層因子 (最重要)
-                'pressure': 10,       # 氣壓因子
-                'uv': 10,             # UV指數因子
-                'wind': 15,           # 風速因子
-                'air_quality': 15     # 空氣品質因子
+                'time': 18,           # 時間因子 (12% - 從16.7%降低)
+                'temperature': 15,    # 溫度因子 (10% - 不變)
+                'humidity': 20,       # 濕度因子 (13.3% - 不變)
+                'visibility': 20,     # 能見度因子 (13.3% - 從10%提高)
+                'cloud': 35,          # 雲層因子 (23.3% - 從16.7%提高，最重要)
+                'pressure': 10,       # 氣壓因子 (6.7% - 不變)
+                'uv': 2,              # UV指數因子 (1.3% - 從6.7%大幅降低)
+                'wind': 15,           # 風速因子 (10% - 不變)
+                'air_quality': 15     # 空氣品質因子 (10% - 不變)
             },
             
             # 權重配置
@@ -193,15 +193,17 @@ class UnifiedBurnskyScorer:
                 temps = [record['value'] for record in weather_data['temperature']['data']]
                 hko_temp = sum(temps) / len(temps) if temps else 25
             
-            # 溫度評分邏輯
-            if 25 <= hko_temp <= 32:
-                return 15  # 理想溫度
+            # 溫度評分邏輯（收緊標準）
+            if 26 <= hko_temp <= 31:
+                return 15  # 理想溫度（最佳燒天溫度）
+            elif 24 <= hko_temp <= 33:
+                return 12  # 適合溫度
             elif 20 <= hko_temp <= 35:
-                return 10  # 適合溫度
+                return 7   # 可接受溫度
             elif 15 <= hko_temp <= 38:
-                return 5   # 可接受溫度
+                return 3   # 邊緣條件
             else:
-                return 2   # 過高或過低
+                return 1   # 過高或過低
                 
         except:
             return 0
@@ -222,23 +224,27 @@ class UnifiedBurnskyScorer:
             if hko_humidity is None:
                 return 0
             
-            # 濕度評分邏輯
-            if 50 <= hko_humidity <= 70:
-                return 20  # 理想濕度
-            elif 40 <= hko_humidity <= 80:
-                return 15  # 良好濕度
+            # 濕度評分邏輯（收緊標準）
+            if 55 <= hko_humidity <= 70:
+                return 20  # 理想濕度（最佳燒天濕度）
+            elif 50 <= hko_humidity <= 75:
+                return 16  # 良好濕度
+            elif 45 <= hko_humidity <= 80:
+                return 12  # 可接受濕度
+            elif 40 <= hko_humidity <= 85:
+                return 7   # 邊緣條件
             elif 30 <= hko_humidity <= 90:
-                return 10  # 可接受濕度
+                return 3   # 過高或過低
             else:
-                return 5   # 過高或過低
+                return 1   # 極端濕度
                 
         except:
             return 0
     
     def _calculate_visibility_factor(self, weather_data):
-        """計算能見度因子 (0-15分)"""
+        """計算能見度因子 (0-20分) - 提高重要性"""
         try:
-            score = 10  # 基礎分數
+            score = 4  # 基礎分數（降低預設值）
             
             # 檢查降雨量
             if 'rainfall' in weather_data and 'data' in weather_data['rainfall']:
@@ -248,23 +254,27 @@ class UnifiedBurnskyScorer:
                         total_rainfall += r['value']
                 
                 if total_rainfall == 0:
-                    score = 15  # 無降雨，能見度佳
+                    score = 20  # 無降雨，能見度佳（滿分）
+                elif total_rainfall < 2:
+                    score = 15  # 極輕微降雨
                 elif total_rainfall < 5:
-                    score = 12  # 輕微降雨
+                    score = 10  # 輕微降雨
+                elif total_rainfall < 10:
+                    score = 6   # 中度降雨
                 elif total_rainfall < 20:
-                    score = 8   # 中度降雨
+                    score = 3   # 大雨
                 else:
-                    score = 3   # 大雨，能見度差
+                    score = 1   # 暴雨，能見度極差
             
             return score
             
         except:
-            return 5
+            return 3  # 降低錯誤時的預設值
     
     def _calculate_pressure_factor(self, weather_data):
         """計算氣壓因子 (0-10分)"""
         if not weather_data:
-            return 5  # 預設值
+            return 3  # 預設值（降低）
         
         try:
             # 檢查簡化數據格式
@@ -289,86 +299,90 @@ class UnifiedBurnskyScorer:
             return score
             
         except:
-            return 5  # 錯誤時返回預設值
+            return 3  # 錯誤時返回預設值（降低）
     
     def _calculate_cloud_factor(self, forecast_data):
-        """計算雲層因子 (0-25分) - 最重要因子"""
+        """計算雲層因子 (0-35分) - 最重要因子（已修正邏輯）"""
         if not forecast_data or 'forecastDesc' not in forecast_data:
             return 0
         
         try:
             desc = forecast_data['forecastDesc'].lower()
             
-            # 雲層評分邏輯
-            if '晴朗' in desc or '天晴' in desc:
-                return 25
-            elif '大致天晴' in desc:
-                return 22
-            elif '部分時間有陽光' in desc:
-                return 20
+            # 雲層評分邏輯（修正：多雲才高分，晴天低分）
+            # 燒天需要雲層！無雲=無燒天
+            if '部分時間有陽光' in desc:
+                return 35  # 理想：有雲有陽光（滿分）
             elif '短暫時間有陽光' in desc:
-                return 18
-            elif '多雲' in desc:
-                return 15
+                return 32  # 優秀：較多雲有陽光
             elif '大致多雲' in desc:
-                return 12
+                return 28  # 良好：多雲
+            elif '多雲' in desc:
+                return 25  # 適合：多雲
+            elif '大致天晴' in desc:
+                return 18  # 可接受：少量雲
             elif '密雲' in desc or '陰天' in desc:
-                return 8
+                return 12  # 太多雲，光線不足
+            elif '晴朗' in desc or '天晴' in desc:
+                return 3   # 無雲無燒天！
             elif '有雨' in desc:
-                return 5
+                return 2   # 下雨影響拍攝
             elif '大雨' in desc or '暴雨' in desc:
-                return 2
+                return 1   # 大雨完全無法拍攝
             else:
-                return 10  # 預設值
+                return 5   # 預設值（降低）
                 
         except:
             return 0
     
     def _calculate_uv_factor(self, weather_data):
-        """計算UV指數因子 (0-10分)"""
+        """計算UV指數因子 (0-2分) - 降低重要性"""
         if not weather_data or 'uvindex' not in weather_data:
-            return 5  # 預設值
+            return 1  # 預設值（降低）
         
         try:
             uv_data = weather_data['uvindex']['data'][0]
             uv_value = uv_data['value']
             
-            # UV指數評分邏輯
-            if uv_value >= 8:
-                return 10  # 高UV，天氣晴朗
-            elif uv_value >= 6:
-                return 8
+            # UV指數評分邏輯（降低分數範圍）
+            # UV只是參考指標，不是決定性因素
+            if uv_value >= 5:
+                return 2   # 有陽光
             elif uv_value >= 3:
-                return 6
+                return 1.5
             elif uv_value >= 1:
-                return 4
+                return 1
             else:
-                return 2   # 極低UV，可能陰天
+                return 0.5 # 陰天
                 
         except:
-            return 5
+            return 1  # 降低錯誤時預設值
     
     def _calculate_wind_factor(self, weather_data):
         """計算風速因子 (0-15分)"""
         if not weather_data or 'wind' not in weather_data:
-            return 8  # 預設值
+            return 5  # 預設值（降低）
         
         try:
             wind_data = weather_data['wind']
             wind_speed = wind_data.get('speed', 0)
             
-            # 風速評分邏輯 (適中風速最佳)
-            if 5 <= wind_speed <= 15:
-                return 15  # 理想風速
-            elif 2 <= wind_speed <= 20:
+            # 風速評分邏輯（收緊標準）
+            if 6 <= wind_speed <= 12:
+                return 15  # 理想風速（微風擴散雲層）
+            elif 4 <= wind_speed <= 16:
                 return 12  # 良好風速
+            elif 2 <= wind_speed <= 20:
+                return 9   # 可接受風速
             elif wind_speed <= 25:
-                return 8   # 可接受風速
+                return 5   # 風速偏大
+            elif wind_speed <= 30:
+                return 2   # 強風影響拍攝
             else:
-                return 3   # 強風不利拍攝
+                return 1   # 烈風不利拍攝
                 
         except:
-            return 8
+            return 5  # 降低錯誤時預設值
     
     def _calculate_air_quality_factor(self, weather_data):
         """計算空氣品質因子 (0-15分)"""
@@ -390,7 +404,7 @@ class UnifiedBurnskyScorer:
                 return 2   # 極差空氣
                 
         except:
-            return 10  # 預設值
+            return 5  # 預設值（降低）
     
     def _get_ml_score(self, weather_data, forecast_data):
         """獲取機器學習分數"""

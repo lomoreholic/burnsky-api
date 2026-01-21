@@ -237,18 +237,18 @@ class AdvancedBurnskyPredictor:
             else:
                 time_desc = f"{time_label}已過 {minutes}分鐘"
         
-        # 評分邏輯 - 基於預測時間是否接近燒天最佳時段
+        # 評分邏輯 - 調整為18分滿分（降低時間因子權重）
         if time_diff_minutes <= 30:  # 目標時間前後30分鐘
-            score = 20
+            score = 15
             description = f"黃金時段！{time_desc}({time_str})"
         elif time_diff_minutes <= 60:  # 目標時間前後1小時
-            score = 15
+            score = 12
             description = f"良好時段，{time_desc}({time_str})"
         elif time_diff_minutes <= 120:  # 目標時間前後2小時
-            score = 10
+            score = 8
             description = f"可接受時段，{time_desc}({time_str})"
         else:
-            score = 5
+            score = 4
             description = f"非理想時段，{time_desc}({time_str})"
         
         # 額外加分：最佳時段 - 優化日落前1小時預測
@@ -256,41 +256,34 @@ class AdvancedBurnskyPredictor:
             # 日落前1小時到日落後45分鐘為最佳，日落前1小時特別加分
             if -90 <= -time_diff_signed <= 45:  
                 if -90 <= -time_diff_signed <= -45:  # 日落前1.5小時到45分鐘，黃金預測時段
-                    score += 10  # 大幅加分
+                    score += 3  # 適度加分（降低至18分滿分範圍）
                     description += " ⭐黃金預測時段⭐"
                 elif -45 <= -time_diff_signed <= 0:  # 日落前45分鐘到日落
-                    score += 7
+                    score += 3  # 降低加分（18分滿分）
                     description += " (最佳燒天時段)"
                 else:  # 日落後
-                    score += 4
+                    score += 2  # 降低加分（18分滿分）
                     description += " (燒天持續時段)"
         else:  # sunrise
             # 日出前1小時到日出後15分鐘為最佳，日出前1小時特別加分
             if -90 <= -time_diff_signed <= 15:  
                 if -90 <= -time_diff_signed <= -45:  # 日出前1.5小時到45分鐘，黃金預測時段
-                    score += 10  # 大幅加分，與日落保持一致
+                    score += 3  # 降低加分（18分滿分）
                     description += " ⭐黃金預測時段⭐"
                 elif -45 <= -time_diff_signed <= 0:  # 日出前45分鐘到日出
-                    score += 7
+                    score += 3  # 降低加分（18分滿分）
                     description += " (最佳燒天時段)"
                 else:  # 日出後
-                    score += 4
+                    score += 2  # 降低加分（18分滿分）
                     description += " (燒天持續時段)"
         
-        # 早晨專屬加分 - 日出前特殊條件
+        # 早晨專屬加分 - 日出前特殊條件（移除額外加分，保持18分上限）
         if prediction_type == 'sunrise':
-            # 檢查是否為最佳早晨時段（6:00-7:30）
-            if 6 <= prediction_time.hour <= 7 and prediction_time.minute <= 30:
-                score += 2
-                description += " 🌅"
-            
-            # 日出前1小時15分鐘到45分鐘是最理想的預測時段
-            if -75 <= -time_diff_signed <= -45:
-                score += 3
-                description += " (超級預測時段)"
+            # 日出前1小時15分鐘到45分鐘是最理想的預測時段（移除額外加分）
+            pass
         
         return {
-            'score': round(min(18, score)),  # 限制最高分數為18分，符合前端設定
+            'score': round(min(18, score)),  # 限制最高分數為18分（已調整）
             'description': description,
             'target_time': time_str,
             'target_type': time_label,

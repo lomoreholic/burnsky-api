@@ -2207,8 +2207,8 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     def build_factor_info(factor_name, score, max_score=None):
         """構建因子詳情"""
         if max_score is None:
-            max_score = {'time': 25, 'temperature': 15, 'humidity': 20, 'visibility': 15, 
-                        'pressure': 10, 'cloud': 25, 'uv': 10, 'wind': 15, 'air_quality': 15}.get(factor_name, 100)
+            max_score = {'time': 18, 'temperature': 15, 'humidity': 20, 'visibility': 20, 
+                        'pressure': 10, 'cloud': 35, 'uv': 2, 'wind': 15, 'air_quality': 15}.get(factor_name, 100)
         
         factor_data = {
             'score': round(score, 1),
@@ -2272,14 +2272,14 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
             "has_future_risks": warning_risk_score > 0,  # 🔮 新增：是否有未來風險
             "detailed_analysis": warning_analysis  # 🆕 新增：詳細警告分析
         },
-        # 構建各個因子的詳細信息
-        "time_factor": build_factor_info('time', factor_scores.get('time', 0), 25),
+        # 構建各個因子的詳細信息（已修正分數）
+        "time_factor": build_factor_info('time', factor_scores.get('time', 0), 18),
         "temperature_factor": build_factor_info('temperature', factor_scores.get('temperature', 0), 15),
         "humidity_factor": build_factor_info('humidity', factor_scores.get('humidity', 0), 20),
-        "visibility_factor": build_factor_info('visibility', factor_scores.get('visibility', 0), 15),
+        "visibility_factor": build_factor_info('visibility', factor_scores.get('visibility', 0), 20),
         "pressure_factor": build_factor_info('pressure', factor_scores.get('pressure', 0), 10),
-        "cloud_analysis_factor": build_factor_info('cloud', factor_scores.get('cloud', 0), 25),
-        "uv_factor": build_factor_info('uv', factor_scores.get('uv', 0), 10),
+        "cloud_analysis_factor": build_factor_info('cloud', factor_scores.get('cloud', 0), 35),
+        "uv_factor": build_factor_info('uv', factor_scores.get('uv', 0), 2),
         "wind_factor": build_factor_info('wind', factor_scores.get('wind', 0), 15),
         "air_quality_factor": build_factor_info('air_quality', factor_scores.get('air_quality', 0), 15),
         # 添加機器學習特徵分析
