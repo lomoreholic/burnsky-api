@@ -708,30 +708,104 @@ def init_warning_analysis():
 # 初始化警告分析系統
 init_warning_analysis()
 
-def get_optimal_sunset_time():
-    """獲取當月實際日落時間"""
+def get_seasonal_sun_times(date=None):
+    """
+    四季日出日落時間自動調整系統
+    使用 astral 庫計算精確的日出日落時間，並根據四季自動調整
+    """
     from datetime import datetime
-    month = datetime.now().month
+    import pytz
     
-    # 香港實際日落時間（太陽完全消失）
-    actual_sunset_times = {
-        1: "18:00", 2: "18:20", 3: "18:35", 4: "18:50",
-        5: "19:05", 6: "19:15", 7: "19:30", 8: "19:00",  # 7月修正為19:30
-        9: "18:35", 10: "18:05", 11: "17:45", 12: "17:40"
-    }
+    if date is None:
+        hk_tz = pytz.timezone('Asia/Hong_Kong')
+        date = datetime.now(hk_tz).date()
     
-    return actual_sunset_times.get(month, "18:30")
+    try:
+        # 嘗試使用 astral 庫計算精確時間
+        from astral import LocationInfo
+        from astral.sun import sun
+        
+        hong_kong = LocationInfo("Hong Kong", "Hong Kong", "Asia/Hong_Kong", 22.3193, 114.1694)
+        hk_tz = pytz.timezone('Asia/Hong_Kong')
+        s = sun(hong_kong.observer, date=date)
+        
+        # 轉換為香港時間並移除時區信息
+        sunset_time = s['sunset'].astimezone(hk_tz).replace(tzinfo=None)
+        sunrise_time = s['sunrise'].astimezone(hk_tz).replace(tzinfo=None)
+        
+        # 確保時間在正確的日期
+        if sunset_time.date() != date:
+            sunset_time = datetime.combine(date, sunset_time.time())
+        if sunrise_time.date() != date:
+            sunrise_time = datetime.combine(date, sunrise_time.time())
+        
+        return {
+            'sunset': sunset_time.strftime('%H:%M'),
+            'sunrise': sunrise_time.strftime('%H:%M'),
+            'sunset_dt': sunset_time,
+            'sunrise_dt': sunrise_time,
+            'method': 'astral'
+        }
+    except:
+        # 備用方案：使用更精確的月度時間表（基於香港天文台數據）
+        month = date.month if hasattr(date, 'month') else datetime.now().month
+        
+        # 香港實際日落時間（基於天文台觀測數據）
+        sunset_times = {
+            1: "17:55", 2: "18:20", 3: "18:40", 4: "18:55",
+            5: "19:10", 6: "19:20", 7: "19:18", 8: "19:00",
+            9: "18:30", 10: "18:00", 11: "17:40", 12: "17:40"
+        }
+        
+        # 香港實際日出時間
+        sunrise_times = {
+            1: "07:05", 2: "06:55", 3: "06:30", 4: "06:00",
+            5: "05:40", 6: "05:35", 7: "05:45", 8: "06:00",
+            9: "06:15", 10: "06:30", 11: "06:45", 12: "07:00"
+        }
+        
+        sunset_str = sunset_times.get(month, "18:30")
+        sunrise_str = sunrise_times.get(month, "06:30")
+        
+        return {
+            'sunset': sunset_str,
+            'sunrise': sunrise_str,
+            'sunset_dt': datetime.combine(date, datetime.strptime(sunset_str, "%H:%M").time()),
+            'sunrise_dt': datetime.combine(date, datetime.strptime(sunrise_str, "%H:%M").time()),
+            'method': 'monthly_table'
+        }
+
+def get_optimal_sunset_time():
+    """獲取當月實際日落時間（向後兼容）"""
+    sun_times = get_seasonal_sun_times()
+    return sun_times['sunset']
+
+def get_optimal_sunrise_time():
+    """獲取當月實際日出時間"""
+    sun_times = get_seasonal_sun_times()
+    return sun_times['sunrise']
 
 def get_optimal_burnsky_time():
     """獲取最佳燒天時間（日落前40分鐘）"""
-    from datetime import datetime, timedelta
+    from datetime import timedelta
     
-    # 獲取實際日落時間
-    sunset_time_str = get_optimal_sunset_time()
-    sunset_time = datetime.strptime(sunset_time_str, "%H:%M").time()
+    sun_times = get_seasonal_sun_times()
+    sunset_dt = sun_times['sunset_dt']
     
     # 燒天最佳時間 = 日落前40分鐘
-    optimal_dt = (datetime.combine(datetime.now().date(), sunset_time) - timedelta(minutes=40)).time()
+    optimal_dt = sunset_dt - timedelta(minutes=40)
+    
+    return optimal_dt.strftime("%H:%M")
+
+def get_optimal_sunrise_burnsky_time():
+    """獲取最佳日出燒天時間（日出後10分鐘）"""
+    from datetime import timedelta
+    
+    sun_times = get_seasonal_sun_times()
+    sunrise_dt = sun_times['sunrise_dt']
+    
+    # 日出燒天最佳時間 = 日出後10分鐘
+    optimal_dt = sunrise_dt + timedelta(minutes=10)
     
     return optimal_dt.strftime("%H:%M")
 
@@ -2345,6 +2419,115 @@ def api_info():
 def api_docs_page():
     """API 文檔頁面"""
     return render_template("api_docs.html")
+
+@app.route("/api/sun-times")
+@flask_cache.cached(timeout=1800)  # 30分鐘快取
+def get_sun_times_api():
+    """
+    四季日出日落時間自動調整 API
+    提供精確的日出日落時間及最佳拍攝時段
+    """
+    from datetime import date, timedelta
+    
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    
+    # 使用四季自動調整系統獲取精確時間
+    today_sun = get_seasonal_sun_times(today)
+    tomorrow_sun = get_seasonal_sun_times(tomorrow)
+    
+    # 計算今日黃金時段（日落前30分鐘）
+    today_golden_hour_dt = today_sun['sunset_dt'] - timedelta(minutes=30)
+    today_golden_hour = today_golden_hour_dt.strftime("%H:%M")
+    
+    # 計算明日黃金時段
+    tomorrow_golden_hour_dt = tomorrow_sun['sunset_dt'] - timedelta(minutes=30)
+    tomorrow_golden_hour = tomorrow_golden_hour_dt.strftime("%H:%M")
+    
+    # 計算日出燒天時段（日出後10分鐘）
+    today_sunrise_golden_dt = today_sun['sunrise_dt'] + timedelta(minutes=10)
+    today_sunrise_golden = today_sunrise_golden_dt.strftime("%H:%M")
+    
+    tomorrow_sunrise_golden_dt = tomorrow_sun['sunrise_dt'] + timedelta(minutes=10)
+    tomorrow_sunrise_golden = tomorrow_sunrise_golden_dt.strftime("%H:%M")
+    
+    # 計算最佳燒天時段（日落前40分鐘）
+    today_burnsky_optimal_dt = today_sun['sunset_dt'] - timedelta(minutes=40)
+    today_burnsky_optimal = today_burnsky_optimal_dt.strftime("%H:%M")
+    
+    tomorrow_burnsky_optimal_dt = tomorrow_sun['sunset_dt'] - timedelta(minutes=40)
+    tomorrow_burnsky_optimal = tomorrow_burnsky_optimal_dt.strftime("%H:%M")
+    
+    # 判斷當前季節
+    month = today.month
+    if month in [12, 1, 2]:
+        season = "冬季"
+        season_note = "冬季日照時間短，日落較早，燒天機率較高"
+        season_emoji = "❄️"
+    elif month in [3, 4, 5]:
+        season = "春季"
+        season_note = "春季天氣多變，雲層變化豐富，適合拍攝"
+        season_emoji = "🌸"
+    elif month in [6, 7, 8]:
+        season = "夏季"
+        season_note = "夏季日照時間長，日落較晚，午後雷雨需注意"
+        season_emoji = "☀️"
+    else:
+        season = "秋季"
+        season_note = "秋季天氣穩定，能見度佳，是燒天攝影黃金季節"
+        season_emoji = "🍂"
+    
+    # 計算日照時間
+    today_daylight_duration = today_sun['sunset_dt'] - today_sun['sunrise_dt']
+    daylight_hours = today_daylight_duration.seconds // 3600
+    daylight_minutes = (today_daylight_duration.seconds % 3600) // 60
+    
+    return jsonify({
+        "status": "success",
+        "calculation_method": today_sun['method'],
+        "calculation_note": "使用" + ("天文計算精確時間" if today_sun['method'] == 'astral' else "月度時間表近似值"),
+        "today": {
+            "date": today.isoformat(),
+            "day_of_week": ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"][today.weekday()],
+            "sunrise": today_sun['sunrise'],
+            "sunset": today_sun['sunset'],
+            "golden_hour": today_golden_hour,
+            "sunrise_golden": today_sunrise_golden,
+            "burnsky_optimal": today_burnsky_optimal,
+            "daylight_duration": f"{daylight_hours}小時{daylight_minutes}分鐘"
+        },
+        "tomorrow": {
+            "date": tomorrow.isoformat(),
+            "day_of_week": ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"][tomorrow.weekday()],
+            "sunrise": tomorrow_sun['sunrise'],
+            "sunset": tomorrow_sun['sunset'],
+            "golden_hour": tomorrow_golden_hour,
+            "sunrise_golden": tomorrow_sunrise_golden,
+            "burnsky_optimal": tomorrow_burnsky_optimal
+        },
+        "season": {
+            "name": season,
+            "emoji": season_emoji,
+            "note": season_note,
+            "month": month
+        },
+        "photography_guide": {
+            "sunset_burnsky": {
+                "start_time": today_burnsky_optimal,
+                "peak_time": today_golden_hour,
+                "end_time": today_sun['sunset'],
+                "duration": "約70分鐘黃金拍攝時段"
+            },
+            "sunrise_burnsky": {
+                "start_time": today_sun['sunrise'],
+                "peak_time": today_sunrise_golden,
+                "end_time": (today_sun['sunrise_dt'] + timedelta(minutes=30)).strftime("%H:%M"),
+                "duration": "約30分鐘黃金拍攝時段"
+            }
+        },
+        "location": "Hong Kong (22.3193°N, 114.1694°E)",
+        "timezone": "Asia/Hong_Kong (UTC+8)"
+    })
 
 @app.route("/api/webcam/current", methods=["GET"])
 @flask_cache.cached(timeout=120, query_string=True)  # 2分鐘快取，攝影機狀態變化較快
