@@ -3706,10 +3706,20 @@
                 // 評分分布圖
                 const scoreDistContainer = document.getElementById('scoreDistributionChart');
                 if (scoreDistContainer && data.summary) {
-                    // 重新創建canvas元素以徹底清除Chart.js狀態
-                    scoreDistContainer.innerHTML = '<canvas id="scoreDistChartCanvas" style="width: 100%; height: 100%;"></canvas>';
-                    const scoreDistCanvas = document.getElementById('scoreDistChartCanvas');
+                    // 先銷毀所有圖表實例
+                    if (burnskyCharts.scoreDistChart) {
+                        try { burnskyCharts.scoreDistChart.destroy(); } catch(e) {}
+                        burnskyCharts.scoreDistChart = null;
+                    }
                     
+                    // 使用時間戳創建唯一ID避免Chart.js追蹤衝突
+                    const canvasId = 'scoreDistChartCanvas_' + Date.now();
+                    scoreDistContainer.innerHTML = `<canvas id="${canvasId}" style="width: 100%; height: 100%;"></canvas>`;
+                    
+                    // 等待DOM更新
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                    
+                    const scoreDistCanvas = document.getElementById(canvasId);
                     const ctx = scoreDistCanvas.getContext('2d');
                     burnskyCharts.scoreDistChart = new Chart(ctx, {
                         type: 'doughnut',
@@ -3742,10 +3752,20 @@
                 // 預測類型統計圖
                 const typeContainer = document.getElementById('predictionTypeChart');
                 if (typeContainer && data.by_type) {
-                    // 重新創建canvas元素以徹底清除Chart.js狀態
-                    typeContainer.innerHTML = '<canvas id="typeChartCanvas" style="width: 100%; height: 100%;"></canvas>';
-                    const typeCanvas = document.getElementById('typeChartCanvas');
+                    // 先銷毀所有圖表實例
+                    if (burnskyCharts.typeChart) {
+                        try { burnskyCharts.typeChart.destroy(); } catch(e) {}
+                        burnskyCharts.typeChart = null;
+                    }
                     
+                    // 使用時間戳創建唯一ID
+                    const canvasId = 'typeChartCanvas_' + Date.now();
+                    typeContainer.innerHTML = `<canvas id="${canvasId}" style="width: 100%; height: 100%;"></canvas>`;
+                    
+                    // 等待DOM更新
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                    
+                    const typeCanvas = document.getElementById(canvasId);
                     const types = Object.keys(data.by_type);
                     const counts = types.map(t => data.by_type[t].count);
                     const avgScores = types.map(t => data.by_type[t].avg_score);
@@ -3823,9 +3843,14 @@
                     return;
                 }
                 
-                // 重新創建canvas
-                trendContainer.innerHTML = '<canvas id="trendChartCanvas" style="width: 100%; height: 100%;"></canvas>';
-                const trendCanvas = document.getElementById('trendChartCanvas');
+                // 重新創建canvas（使用唯一ID）
+                const canvasId = 'trendChartCanvas_' + Date.now();
+                trendContainer.innerHTML = `<canvas id="${canvasId}" style="width: 100%; height: 100%;"></canvas>`;
+                
+                // 等待DOM更新
+                await new Promise(resolve => setTimeout(resolve, 10));
+                
+                const trendCanvas = document.getElementById(canvasId);
                 
                 const dates = data.daily_trends.map(d => d.date).reverse();
                 const scores = data.daily_trends.map(d => d.avg_score).reverse();
@@ -3908,11 +3933,22 @@
                     console.log('📦 對比容器元素:', compContainer);
                     
                     if (compContainer) {
+                        // 先銷毀舊圖表
+                        if (burnskyCharts.comparisonChart) {
+                            try { burnskyCharts.comparisonChart.destroy(); } catch(e) {}
+                            burnskyCharts.comparisonChart = null;
+                        }
+                        
                         // 延遲渲染確保canvas可見
-                        setTimeout(() => {
-                            // 重新創建canvas
-                            compContainer.innerHTML = '<canvas id="comparisonChartCanvas" style="width: 100%; height: 100%;"></canvas>';
-                            const compCanvas = document.getElementById('comparisonChartCanvas');
+                        setTimeout(async () => {
+                            // 重新創建canvas（使用唯一ID）
+                            const canvasId = 'comparisonChartCanvas_' + Date.now();
+                            compContainer.innerHTML = `<canvas id="${canvasId}" style="width: 100%; height: 100%;"></canvas>`;
+                            
+                            // 等待DOM更新
+                            await new Promise(resolve => setTimeout(resolve, 10));
+                            
+                            const compCanvas = document.getElementById(canvasId);
                             
                             console.log('🎨 開始渲染對比圖表...');
                             const ctx = compCanvas.getContext('2d');
