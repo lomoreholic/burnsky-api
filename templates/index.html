@@ -3903,6 +3903,7 @@
                     });
                     console.log('✅ 圖表渲染完成!', burnskyCharts.trendChart);
                 }, 200);
+            } catch (error) {
                 console.error('❌ 載入評分趨勢失敗:', error);
                 APIUtils.showToast('評分趨勢載入失敗', 'warning', 3000);
             }
