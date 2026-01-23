@@ -2665,17 +2665,18 @@ def get_current_webcam_conditions():
             for cam_id, analysis_data in conditions['individual_analyses'].items():
                 analysis = analysis_data.get('analysis', {})
                 sunset_data = analysis.get('sunset_potential', {})
+                factors = sunset_data.get('factors', {})
                 
                 response_data['webcam_data'][cam_id] = {
                     'name': analysis_data.get('location', cam_id),
                     'direction': analysis_data.get('direction', 'N/A'),
                     'analysis': {
                         'sunset_potential': sunset_data.get('score', 0),
-                        'status': analysis.get('status', 'unknown'),
-                        'color_richness': analysis.get('color_richness', 0),
+                        'status': 'success' if sunset_data.get('score', 0) > 0 else 'unknown',
+                        'color_richness': factors.get('color_richness', 0),
                         'cloud_coverage': analysis.get('cloud_coverage', 0),
-                        'visibility': analysis.get('visibility', 0),
-                        'brightness': analysis.get('brightness', 0)
+                        'visibility': factors.get('visibility', 0),
+                        'brightness': factors.get('brightness', 0)
                     },
                     'capture_time': analysis_data.get('capture_time', datetime.now().isoformat())
                 }
