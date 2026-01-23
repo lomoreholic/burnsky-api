@@ -2693,13 +2693,13 @@ def get_current_webcam_conditions():
 @app.route("/api/webcam/image/<location_id>", methods=["GET"])
 def get_webcam_image(location_id):
     """
-    獲取指定攝影機的最新圖片
+    獲取指定攝影機的最新圖片（作為圖片代理）
     
     Args:
         location_id: 攝影機位置ID (如 HK_HKO, HK_VPB 等)
         
     Query Parameters:
-        format: 返回格式 (base64, url)
+        format: 返回格式 (image, json, url) - 默認 image
         analyze: 是否進行分析 (true/false)
         
     Returns:
@@ -2710,7 +2710,7 @@ def get_webcam_image(location_id):
         analyzer = WebcamImageAnalyzer()
         
         # 檢查參數
-        return_format = request.args.get('format', 'base64')
+        return_format = request.args.get('format', 'image')
         analyze = request.args.get('analyze', 'false').lower() == 'true'
         
         # 獲取圖片
@@ -2731,15 +2731,27 @@ def get_webcam_image(location_id):
                     'message': f'未知的攝影機位置: {location_id}'
                 }), 400
         
-        # 獲取圖片數據
-        webcam_data = fetcher.fetch_webcam_image(location_id, return_format='base64')
+        # 獲取圖片數據（bytes格式用於直接返回）
+        webcam_data = fetcher.fetch_webcam_image(location_id, return_format='bytes')
         
         if not webcam_data:
             return jsonify({
                 'status': 'error',
                 'message': f'無法獲取攝影機 {location_id} 的圖片'
             }), 404
+        
+        # 如果要求返回實際圖片（作為代理）
+        if return_format == 'image':
+            from flask import send_file
+            import io
+            return send_file(
+                io.BytesIO(webcam_data['image']),
+                mimetype='image/jpeg',
+                as_attachment=False,
+                download_name=f'{location_id}.jpg'
+            )
             
+        # JSON格式（包含base64編碼）
         result = {
             'status': 'success',
             'location_id': location_id,
@@ -2749,11 +2761,13 @@ def get_webcam_image(location_id):
             'image_size': webcam_data['image_size']
         }
         
-        if return_format == 'base64':
-            result['image_data'] = webcam_data['image']
+        if return_format == 'json':
+            # 轉換為base64
+            import base64
+            result['image_data'] = base64.b64encode(webcam_data['image']).decode()
             
         # 如果需要分析
-        if analyze and 'image' in webcam_data:
+        if analyze:
             # 重新獲取PIL格式進行分析
             pil_data = fetcher.fetch_webcam_image(location_id, return_format='pil')
             if pil_data:

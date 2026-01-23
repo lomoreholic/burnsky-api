@@ -476,10 +476,9 @@
                         <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">朝向: ${direction}</div>
                         
                         <div style="position: relative;">
-                            <img src="${hkoUrl}?t=${Date.now()}" 
+                            <img src="/api/webcam/image/${locationId}?format=image&t=${Date.now()}" 
                                  alt="${data.name}" 
                                  class="webcam-image" 
-                                 crossorigin="anonymous"
                                  style="width: 100%; height: auto; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
                                  onclick="window.open('${hkoUrl}', '_blank')"
                                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E圖片載入失敗%3C/text%3E%3C/svg%3E'">
