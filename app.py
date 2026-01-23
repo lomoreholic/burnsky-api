@@ -2652,22 +2652,32 @@ def get_current_webcam_conditions():
         # 獲取當前狀況
         conditions = webcam_monitor.get_current_conditions(detailed=detailed)
         
-        # 轉換數據結構以符合前端期望
+        # 轉換數據結構以符合前端期望，並添加更多詳細信息
         response_data = {
             'overall_sunset_potential': conditions.get('overall_sunset_potential', 0),
             'analysis_status': conditions.get('status', 'unknown'),
+            'analysis_time': conditions.get('analysis_time', datetime.now().isoformat()),
             'webcam_data': {}
         }
         
-        # 轉換個別分析結果
+        # 轉換個別分析結果，包含更多細節
         if 'individual_analyses' in conditions:
             for cam_id, analysis_data in conditions['individual_analyses'].items():
+                analysis = analysis_data.get('analysis', {})
+                sunset_data = analysis.get('sunset_potential', {})
+                
                 response_data['webcam_data'][cam_id] = {
                     'name': analysis_data.get('location', cam_id),
+                    'direction': analysis_data.get('direction', 'N/A'),
                     'analysis': {
-                        'sunset_potential': analysis_data.get('analysis', {}).get('sunset_potential', {}).get('score', 0),
-                        'status': analysis_data.get('analysis', {}).get('status', 'unknown')
-                    }
+                        'sunset_potential': sunset_data.get('score', 0),
+                        'status': analysis.get('status', 'unknown'),
+                        'color_richness': analysis.get('color_richness', 0),
+                        'cloud_coverage': analysis.get('cloud_coverage', 0),
+                        'visibility': analysis.get('visibility', 0),
+                        'brightness': analysis.get('brightness', 0)
+                    },
+                    'capture_time': analysis_data.get('capture_time', datetime.now().isoformat())
                 }
         
         return jsonify(response_data)
