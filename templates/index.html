@@ -1444,26 +1444,26 @@
 
                         <!-- 統計總覽選項卡 -->
                         <div id="overviewTab" class="tab-content active" style="display: block;">
-                            <div class="burnsky-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
-                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">🔮</div>
-                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="totalPredictions">-</div>
-                                    <div style="opacity: 0.9;">總預測次數</div>
+                            <div class="burnsky-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                                    <div style="font-size: 2.5rem; margin-bottom: 10px;">📊</div>
+                                    <div style="font-size: 2.2rem; font-weight: bold; margin-bottom: 8px;" id="totalPredictions">-</div>
+                                    <div style="opacity: 0.95; font-size: 1rem; font-weight: 500;">總預測次數</div>
                                 </div>
-                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">⭐</div>
-                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="avgScore">-</div>
-                                    <div style="opacity: 0.9;">平均評分</div>
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);">
+                                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🔥</div>
+                                    <div style="font-size: 2.2rem; font-weight: bold; margin-bottom: 8px;" id="highScoreCount">-</div>
+                                    <div style="opacity: 0.95; font-size: 1rem; font-weight: 500;">高分預測 (≥70)</div>
                                 </div>
-                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #fa709a, #fee140); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">🔥</div>
-                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="highScoreCount">-</div>
-                                    <div style="opacity: 0.9;">高分次數(≥70)</div>
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #a855f7, #ec4899); color: white; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);">
+                                    <div style="font-size: 2.5rem; margin-bottom: 10px;">💜</div>
+                                    <div style="font-size: 2.2rem; font-weight: bold; margin-bottom: 8px;" id="mediumScoreCount">-</div>
+                                    <div style="opacity: 0.95; font-size: 1rem; font-weight: 500;">中分預測 (50-69)</div>
                                 </div>
-                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #feca57, #ff9ff3); color: white; border-radius: 16px; padding: 20px; text-align: center;">
-                                    <div style="font-size: 2rem; margin-bottom: 10px;">📈</div>
-                                    <div style="font-size: 1.8rem; font-weight: bold; margin-bottom: 5px;" id="successRate">-</div>
-                                    <div style="opacity: 0.9;">成功率</div>
+                                <div class="burnsky-summary-card" style="background: linear-gradient(135deg, #feca57, #ff9ff3); color: white; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 15px rgba(254, 202, 87, 0.3);">
+                                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🎯</div>
+                                    <div style="font-size: 2.2rem; font-weight: bold; margin-bottom: 8px;" id="successRate">-</div>
+                                    <div style="opacity: 0.95; font-size: 1rem; font-weight: 500;">高分成功率</div>
                                 </div>
                             </div>
                             
@@ -3688,13 +3688,14 @@
                 document.getElementById('totalPredictions').textContent = data.summary.total_predictions || '0';
                 document.getElementById('avgScore').textContent = data.summary.avg_score ? data.summary.avg_score.toFixed(1) : '-';
                 document.getElementById('highScoreCount').textContent = data.summary.high_score_count || '0';
+                document.getElementById('mediumScoreCount').textContent = data.summary.medium_score_count || '0';
                 document.getElementById('successRate').textContent = data.summary.success_rate ? `${data.summary.success_rate}%` : '-';
                 
             } catch (error) {
                 console.error('❌ 載入燒天歷史數據失敗:', error);
                 document.getElementById('totalPredictions').textContent = '0';
-                document.getElementById('avgScore').textContent = '-';
                 document.getElementById('highScoreCount').textContent = '0';
+                document.getElementById('mediumScoreCount').textContent = '0';
                 document.getElementById('successRate').textContent = '-';
             }
         }
@@ -3731,7 +3732,7 @@
                                     data.summary.medium_score_count || 0,
                                     data.summary.low_score_count || 0
                                 ],
-                                backgroundColor: ['#4CAF50', '#FFC107', '#FF5252'],
+                                backgroundColor: ['#4CAF50', '#a855f7', '#FF5252'],
                                 borderWidth: 2,
                                 borderColor: '#fff'
                             }]
