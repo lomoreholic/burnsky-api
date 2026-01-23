@@ -345,12 +345,12 @@ class WebcamImageAnalyzer:
         # 能見度評分（正規化）
         visibility_score = min(100, visibility)
         
-        # 綜合評分（修正權重，全天候分析）
+        # 綜合評分（修正權重，全天候分析）- 所有因子統一為0-100分，然後按權重加權
         base_score = (
-            color_richness * 25 +           # 顏色豐富度 25%
-            optimal_cloud_score * 0.35 +    # 雲覆蓋度 35%
-            visibility_score * 0.25 +       # 能見度 25%
-            time_weight * 15                 # 時間因素 15%
+            color_richness * 2.5 +          # 顏色豐富度 25% (0-100分 * 0.25)
+            optimal_cloud_score * 0.35 +    # 雲覆蓋度 35% (0-100分 * 0.35)
+            visibility_score * 0.25 +       # 能見度 25% (0-100分 * 0.25)
+            time_weight * 0.15              # 時間因素 15% (0-100分 * 0.15)
         )
         
         # 如果不在燒天時段，分數打折但不歸零
