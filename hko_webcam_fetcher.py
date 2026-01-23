@@ -306,7 +306,7 @@ class WebcamImageAnalyzer:
         return visibility
         
     def _evaluate_sunset_potential(self, mean_rgb: np.ndarray, cloud_coverage: float, visibility: float) -> Dict:
-        """評估燒天潛力（全天候分析，根據時間調整權重）"""
+        """評估燒天潛力（只在合理時段分析，夜間直接返回0分）"""
         from datetime import datetime
         
         current_time = datetime.now()
@@ -315,9 +315,23 @@ class WebcamImageAnalyzer:
         
         red, green, blue = mean_rgb
         
+        # 檢查是否為夜間時段（晚上9點到早上6點）
+        if hour >= 21 or hour < 6:
+            return {
+                'score': 0.0,
+                'level': 'night_time',
+                'factors': {
+                    'color_richness': 0.0,
+                    'optimal_cloud': 0.0, 
+                    'visibility': 0.0,
+                    'brightness': float((red + green + blue) / 3)
+                },
+                'message': f'夜間時段，不適合燒天預測 (現在是 {hour}點)'
+            }
+        
         # 檢查是否為夜間圖片（整體亮度太低）
         avg_brightness = (red + green + blue) / 3
-        if avg_brightness < 30:  # 太暗，可能是夜間圖片
+        if avg_brightness < 40:  # 提高亮度閾值
             return {
                 'score': 0.0,
                 'level': 'too_dark',
@@ -353,11 +367,11 @@ class WebcamImageAnalyzer:
             time_weight * 0.15              # 時間因素 15% (0-100分 * 0.15)
         )
         
-        # 如果不在燒天時段，分數打折但不歸零
-        if not is_sunset_time:
-            potential_score = base_score * 0.3  # 非燒天時段打3折
-        else:
+        # 只在燒天時段給予滿分，其他時段直接歸零
+        if is_sunset_time:
             potential_score = base_score
+        else:
+            potential_score = 0.0  # 非燒天時段直接歸零
         
         # 正規化到0-100
         potential_score = min(100, max(0, potential_score))
