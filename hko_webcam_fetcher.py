@@ -136,6 +136,24 @@ class HKOWebcamFetcher:
                 if len(image_data) < 1000:  # 太小可能是錯誤頁面
                     raise ValueError("Image data too small")
                     
+                # 獲取照片實際更新時間（從HTTP header）
+                capture_time = datetime.now()
+                if 'Last-Modified' in response.headers:
+                    try:
+                        from email.utils import parsedate_to_datetime
+                        last_modified = response.headers['Last-Modified']
+                        capture_time = parsedate_to_datetime(last_modified)
+                        # 轉換為本地時區（香港時間）
+                        import pytz
+                        hk_tz = pytz.timezone('Asia/Hong_Kong')
+                        if capture_time.tzinfo is None:
+                            # 如果沒有時區信息，假設是UTC
+                            capture_time = pytz.utc.localize(capture_time)
+                        capture_time = capture_time.astimezone(hk_tz)
+                    except Exception as e:
+                        self.logger.warning(f"Failed to parse Last-Modified header: {e}")
+                        capture_time = datetime.now()
+                
                 # 轉換圖片格式
                 pil_image = Image.open(io.BytesIO(image_data))
                 
@@ -145,7 +163,7 @@ class HKOWebcamFetcher:
                     'direction': location_info['direction'],
                     'latitude': location_info['latitude'],
                     'longitude': location_info['longitude'],
-                    'capture_time': datetime.now(),
+                    'capture_time': capture_time,
                     'image_size': pil_image.size,
                     'priority': location_info['priority']
                 }
