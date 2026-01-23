@@ -474,35 +474,46 @@
                 
                 // 格式化拍攝時間
                 let captureTimeStr = '';
+                let isStale = false;
                 if (data.capture_time) {
                     try {
                         const captureDate = new Date(data.capture_time);
+                        const now = new Date();
+                        const ageMinutes = Math.floor((now - captureDate) / 60000);
+                        
                         captureTimeStr = captureDate.toLocaleString('zh-TW', {
                             month: 'numeric',
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
                         });
+                        
+                        // 如果超過15分鐘沒更新，標記為過期
+                        if (ageMinutes > 15) {
+                            captureTimeStr += ` (${ageMinutes}分鐘前)`;
+                            isStale = true;
+                        }
                     } catch (e) {
                         captureTimeStr = '未知';
                     }
                 }
                 
-                // 判斷是否為舊照片（需要警告）
-                const isOutdated = level === 'outdated_image' || level === 'night_time';
+                // 判斷是否需要警告
+                const isOutdated = isStale || level === 'outdated_image';
                 const warningStyle = isOutdated ? 'background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-bottom: 10px; border-radius: 4px;' : '';
+                const timeStyle = isStale ? 'color: #d9534f; font-weight: 600;' : '';
                 
                 html += `
                     <div class="webcam-card">
                         <h4 style="margin-bottom: 8px;">📍 ${data.name || locationId}</h4>
-                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px; ${timeStyle}">
                             朝向: ${direction} ${captureTimeStr ? `| 📅 ${captureTimeStr}` : ''}
                         </div>
                         
                         ${message && isOutdated ? `
                             <div style="${warningStyle}">
                                 <div style="font-size: 0.8rem; color: #856404;">
-                                    ⚠️ ${message}
+                                    ⚠️ 照片超過15分鐘未更新，資料可能不準確
                                 </div>
                             </div>
                         ` : ''}

@@ -303,6 +303,7 @@ class WebcamImageAnalyzer:
                 },
                 'cloud_coverage': float(cloud_coverage),
                 'visibility': float(visibility),
+                'brightness': float((mean_rgb[0] + mean_rgb[1] + mean_rgb[2]) / 3),
                 'sunset_potential': sunset_potential,
                 'analysis_time': datetime.now().isoformat()
             }
@@ -323,8 +324,7 @@ class WebcamImageAnalyzer:
         visibility = min(100, max(0, laplacian_var / 10))
         return visibility
         
-    def _evaluate_sunset_potential(self, mean_rgb: np.ndarray, cloud_coverage: float, visibility: float) -> Dict:
-        """評估燒天潛力（只在合理時段分析，夜間直接返回0分）"""
+    def _evaluate_根據時段和照片內容判斷）"""
         from datetime import datetime
         
         current_time = datetime.now()
@@ -333,34 +333,6 @@ class WebcamImageAnalyzer:
         
         red, green, blue = mean_rgb
         avg_brightness = (red + green + blue) / 3
-        
-        # 檢查是否為夜間時段（晚上9點到早上6點）
-        if hour >= 21 or hour < 6:
-            # 夜間時段，檢查圖片亮度判斷是否為舊照片
-            if avg_brightness > 60:
-                return {
-                    'score': 0.0,
-                    'level': 'outdated_image',
-                    'factors': {
-                        'color_richness': 0.0,
-                        'optimal_cloud': 0.0, 
-                        'visibility': 0.0,
-                        'brightness': float(avg_brightness)
-                    },
-                    'message': f'夜間時段顯示白天照片 - 圖片可能未更新 (現在{hour}點，亮度{avg_brightness:.1f})'
-                }
-            else:
-                return {
-                    'score': 0.0,
-                    'level': 'night_time',
-                    'factors': {
-                        'color_richness': 0.0,
-                        'optimal_cloud': 0.0, 
-                        'visibility': 0.0,
-                        'brightness': float(avg_brightness)
-                    },
-                    'message': f'夜間時段，不適合燒天預測 (現在是 {hour}點)'
-                }
         
         # 檢查是否為夜間圖片（整體亮度太低）
         if avg_brightness < 40:
@@ -373,6 +345,25 @@ class WebcamImageAnalyzer:
                     'visibility': 0.0,
                     'brightness': float(avg_brightness)
                 },
+                'message': f'夜間照片，光線不足 (亮度: {avg_brightness:.1f})'
+            }
+        
+        # 計算時間權重
+        time_weight = self._calculate_time_weight(hour, month)
+        is_sunset_time = self._is_sunset_time(hour, month)
+        
+        # 如果不在燒天時段，直接返回0分（但不說照片有問題）
+        if not is_sunset_time:
+            return {
+                'score': 0.0,
+                'level': 'non_sunset_time',
+                'factors': {
+                    'color_richness': 0.0,
+                    'optimal_cloud': 0.0,
+                    'visibility': 0.0,
+                    'brightness': float(avg_brightness)
+                },
+                'message': f'非燒天時段 (現在是 {hour}點
                 'message': f'光線太暗，無法分析 (平均亮度: {avg_brightness:.1f})'
             }
         
