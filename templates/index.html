@@ -2006,7 +2006,7 @@
                         <div class="factor-score">${Math.round(breakdown.final_weighted_score)}分</div>
                     </div>
                     <div class="factor-description">
-                        傳統算法: ${Math.round(breakdown.traditional_score)}分<br>
+                        傳統算法: ${Math.round(breakdown.traditional_normalized || breakdown.traditional_score)}分<br>
                         機器學習: ${Math.round(breakdown.ml_score)}分<br>
                         加權結果: ${Math.round(breakdown.final_weighted_score)}分<br>
                         ${breakdown.weight_explanation ? `<small style="color: #007acc; font-weight: 500;">💡 ${breakdown.weight_explanation}</small><br>` : ''}

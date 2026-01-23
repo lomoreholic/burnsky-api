@@ -2199,6 +2199,12 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     
     # 復用統一計分器中的雲層厚度分析結果，避免重複計算
     cloud_thickness_analysis = unified_result.get('cloud_thickness_analysis', {})
+    
+    # 🔥 重新計算燒天強度等級（使用警告調整後的最終分數）
+    from advanced_predictor import AdvancedBurnskyPredictor
+    advanced_predictor_temp = AdvancedBurnskyPredictor()
+    final_intensity_prediction = advanced_predictor_temp.predict_burnsky_intensity(score)
+    final_color_prediction = advanced_predictor_temp.predict_burnsky_colors(future_weather_data, forecast_data, score)
 
     # 構建前端兼容的分析詳情格式
     factor_scores = unified_result.get('factor_scores', {})
@@ -2258,7 +2264,7 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         "top_factors": unified_result['analysis'].get('top_factors', []),
         # 添加前端期望的因子數據 - 將字串摘要轉換為陣列格式
         "analysis_summary": [part.strip() for part in unified_result['analysis'].get('summary', '基於統一計分系統的綜合分析').split('|')],
-        "intensity_prediction": unified_result['intensity_prediction'],
+        "intensity_prediction": final_intensity_prediction,  # 使用警告調整後的強度預測
         "cloud_visibility_analysis": cloud_thickness_analysis,
         # 🚨 增強版警告相關信息
         "weather_warnings": {
@@ -2294,8 +2300,8 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         "advance_hours": advance_hours,
         "unified_analysis": unified_result,  # 完整的統一分析結果
         "analysis_details": analysis_details,  # 前端兼容格式
-        "intensity_prediction": unified_result['intensity_prediction'],
-        "color_prediction": unified_result['color_prediction'],
+        "intensity_prediction": final_intensity_prediction,  # 使用警告調整後的強度預測
+        "color_prediction": final_color_prediction,  # 使用警告調整後的顏色預測
         "cloud_thickness_analysis": cloud_thickness_analysis,
         "weather_data": future_weather_data,
         "original_weather_data": weather_data if advance_hours > 0 else None,
