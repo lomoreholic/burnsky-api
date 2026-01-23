@@ -314,24 +314,38 @@ class WebcamImageAnalyzer:
         month = current_time.month
         
         red, green, blue = mean_rgb
+        avg_brightness = (red + green + blue) / 3
         
         # 檢查是否為夜間時段（晚上9點到早上6點）
         if hour >= 21 or hour < 6:
-            return {
-                'score': 0.0,
-                'level': 'night_time',
-                'factors': {
-                    'color_richness': 0.0,
-                    'optimal_cloud': 0.0, 
-                    'visibility': 0.0,
-                    'brightness': float((red + green + blue) / 3)
-                },
-                'message': f'夜間時段，不適合燒天預測 (現在是 {hour}點)'
-            }
+            # 夜間時段，檢查圖片亮度判斷是否為舊照片
+            if avg_brightness > 60:
+                return {
+                    'score': 0.0,
+                    'level': 'outdated_image',
+                    'factors': {
+                        'color_richness': 0.0,
+                        'optimal_cloud': 0.0, 
+                        'visibility': 0.0,
+                        'brightness': float(avg_brightness)
+                    },
+                    'message': f'夜間時段顯示白天照片 - 圖片可能未更新 (現在{hour}點，亮度{avg_brightness:.1f})'
+                }
+            else:
+                return {
+                    'score': 0.0,
+                    'level': 'night_time',
+                    'factors': {
+                        'color_richness': 0.0,
+                        'optimal_cloud': 0.0, 
+                        'visibility': 0.0,
+                        'brightness': float(avg_brightness)
+                    },
+                    'message': f'夜間時段，不適合燒天預測 (現在是 {hour}點)'
+                }
         
         # 檢查是否為夜間圖片（整體亮度太低）
-        avg_brightness = (red + green + blue) / 3
-        if avg_brightness < 40:  # 提高亮度閾值
+        if avg_brightness < 40:
             return {
                 'score': 0.0,
                 'level': 'too_dark',
