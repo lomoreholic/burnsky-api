@@ -348,23 +348,25 @@ class WebcamImageAnalyzer:
         time_weight = self._calculate_time_weight(hour, month)
         is_sunset_time = self._is_sunset_time(hour, month)
         
-        # 顏色豐富度（紅色vs藍色比例，但要考慮整體亮度）
-        color_richness = (red / (blue + 1)) if blue > 0 else 0
-        # 調整顏色豐富度，考慮亮度因素
-        color_richness = color_richness * min(1.0, avg_brightness / 80)
+        # 顏色豐富度（紅色vs藍色比例）- 正規化到0-100
+        red_blue_ratio = (red / (blue + 1)) if blue > 0 else 0
+        # 理想的燒天照片紅藍比約1.5-3.0，正規化到0-100分
+        color_richness_raw = min(100, max(0, (red_blue_ratio - 0.8) * 50))  # 0.8以下=0分，2.8以上=100分
+        # 考慮亮度因素調整
+        color_richness = color_richness_raw * min(1.0, avg_brightness / 100)
         
-        # 最佳雲覆蓋度（30-70%為佳）
+        # 最佳雲覆蓋度（30-70%為佳）- 已經是0-100分
         optimal_cloud_score = max(0, 100 - abs(cloud_coverage - 50) * 2)
         
-        # 能見度評分（正規化）
+        # 能見度評分（正規化）- 已經是0-100分
         visibility_score = min(100, visibility)
         
-        # 綜合評分（修正權重，全天候分析）- 所有因子統一為0-100分，然後按權重加權
+        # 綜合評分 - 所有因子都是0-100分，按權重加權
         base_score = (
-            color_richness * 2.5 +          # 顏色豐富度 25% (0-100分 * 0.25)
-            optimal_cloud_score * 0.35 +    # 雲覆蓋度 35% (0-100分 * 0.35)
-            visibility_score * 0.25 +       # 能見度 25% (0-100分 * 0.25)
-            time_weight * 0.15              # 時間因素 15% (0-100分 * 0.15)
+            color_richness * 0.25 +         # 顏色豐富度 25%
+            optimal_cloud_score * 0.35 +    # 雲覆蓋度 35%
+            visibility_score * 0.25 +       # 能見度 25%
+            time_weight * 0.15              # 時間因素 15%
         )
         
         # 只在燒天時段給予滿分，其他時段直接歸零
