@@ -815,47 +815,4 @@
                 grid-template-columns: 1fr;
             }
         }
-    </style>
-</head>
-<body>
-    <div class="nav-container">
-        <nav class="nav-grid">
-            <a href="/" class="nav-link">🏠 主頁</a>
-            <a href="/predict" class="nav-link">🌅 日出預測</a>
-            <a href="/predict/sunset" class="nav-link">🌇 日落預測</a>
-            <a href="/api" class="nav-link">🔗 API</a>
-            <a href="/photo-analysis" class="nav-link">📷 照片分析</a>
-            <a href="/sunrise-time" class="nav-link">⏰ 日出時間</a>
-            <a href="/sunset-time" class="nav-link">🌅 日落時間</a>
-            <a href="/weather-trend" class="nav-link">📈 天氣趨勢</a>
-            <a href="/photography-guide" class="nav-link">📸 攝影指南</a>
-            <a href="/webcam-analysis" class="nav-link">📹 即時攝影機</a>
-            <a href="/ml-test" class="nav-link">🤖 ML測試</a>
-        </nav>
-    </div>
-
-    <div class="container">
-        <div class="header">
-            <h1>🎥 即時攝影機天氣分析</h1>
-            <p>香港天文台攝影機即時圖片分析與燒天預測</p>
-        </div>
-
-        <div class="controls">
-            <button class="btn" onclick="loadWebcamAnalysis()">🔄 更新分析</button>
-            <button class="btn" onclick="toggleAutoRefresh()">⏰ 自動更新</button>
-            <span id="autoRefreshStatus">已關閉</span>
-        </div>
-
-        <div id="loadingIndicator" class="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>正在獲取攝影機數據...</p>
-        </div>
-
-        <div id="overallScore" class="overall-score" style="display: none;">
-            <h2>整體燒天潛力</h2>
-            <div id="scoreDisplay" class="score-display">--</div>
-            <div id="scoreLevel">評估中...</div>
-        </div>
-
-</body>
-</html>
+        </script>
