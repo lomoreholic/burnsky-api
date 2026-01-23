@@ -2673,6 +2673,8 @@ def get_current_webcam_conditions():
                     'analysis': {
                         'sunset_potential': sunset_data.get('score', 0),
                         'status': 'success' if sunset_data.get('score', 0) > 0 else 'unknown',
+                        'level': sunset_data.get('level', 'unknown'),
+                        'message': sunset_data.get('message', ''),
                         'color_richness': factors.get('color_richness', 0),
                         'cloud_coverage': analysis.get('cloud_coverage', 0),
                         'visibility': factors.get('visibility', 0),

@@ -461,6 +461,8 @@
             for (const [locationId, data] of Object.entries(webcamData)) {
                 const score = data.analysis?.sunset_potential || 0;
                 const status = data.analysis?.status || 'unknown';
+                const level = data.analysis?.level || '';
+                const message = data.analysis?.message || '';
                 const hkoUrl = hkoUrls[locationId] || '#';
                 
                 // 獲取詳細分析數據
@@ -470,10 +472,40 @@
                 const brightness = data.analysis?.brightness || 0;
                 const direction = data.direction || 'N/A';
                 
+                // 格式化拍攝時間
+                let captureTimeStr = '';
+                if (data.capture_time) {
+                    try {
+                        const captureDate = new Date(data.capture_time);
+                        captureTimeStr = captureDate.toLocaleString('zh-TW', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    } catch (e) {
+                        captureTimeStr = '未知';
+                    }
+                }
+                
+                // 判斷是否為舊照片（需要警告）
+                const isOutdated = level === 'outdated_image' || level === 'night_time';
+                const warningStyle = isOutdated ? 'background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-bottom: 10px; border-radius: 4px;' : '';
+                
                 html += `
                     <div class="webcam-card">
                         <h4 style="margin-bottom: 8px;">📍 ${data.name || locationId}</h4>
-                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">朝向: ${direction}</div>
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">
+                            朝向: ${direction} ${captureTimeStr ? `| 📅 ${captureTimeStr}` : ''}
+                        </div>
+                        
+                        ${message && isOutdated ? `
+                            <div style="${warningStyle}">
+                                <div style="font-size: 0.8rem; color: #856404;">
+                                    ⚠️ ${message}
+                                </div>
+                            </div>
+                        ` : ''}
                         
                         <div style="position: relative;">
                             <img src="/api/webcam/image/${locationId}?format=image&t=${Date.now()}" 
