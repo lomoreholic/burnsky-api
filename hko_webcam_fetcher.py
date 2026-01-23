@@ -501,6 +501,7 @@ class RealTimeWebcamMonitor:
                 analysis_results[cam_id] = {
                     'location': cam_data['location_name'],
                     'direction': cam_data['direction'],
+                    'capture_time': cam_data.get('capture_time', datetime.now()).isoformat(),  # 保留照片實際拍攝時間
                     'analysis': analysis
                 }
                 
