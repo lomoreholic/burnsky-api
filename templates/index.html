@@ -3772,7 +3772,6 @@
                 
                 // 更新統計卡片
                 document.getElementById('totalPredictions').textContent = data.summary.total_predictions || '0';
-                document.getElementById('avgScore').textContent = data.summary.avg_score ? data.summary.avg_score.toFixed(1) : '-';
                 document.getElementById('highScoreCount').textContent = data.summary.high_score_count || '0';
                 document.getElementById('mediumScoreCount').textContent = data.summary.medium_score_count || '0';
                 document.getElementById('successRate').textContent = data.summary.success_rate ? `${data.summary.success_rate}%` : '-';
