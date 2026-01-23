@@ -2167,6 +2167,27 @@
                 grid.appendChild(intensityCard);
             }
             
+            // 添加即時相片交叉驗證卡片
+            const crossCheckCard = document.createElement('div');
+            crossCheckCard.className = 'factor-card';
+            crossCheckCard.style.borderLeft = '4px solid #00b894';
+            crossCheckCard.innerHTML = `
+                <div class="factor-header">
+                    <div class="factor-name">
+                        📷 即時相片驗證 <span style="opacity: 0.6; font-size: 0.8em;">🔄</span>
+                    </div>
+                    <div class="factor-score" id="crossCheckScore">載入中...</div>
+                </div>
+                <div class="factor-description" id="crossCheckContent">
+                    <small style="color: #888;">正在分析天文台即時相片...</small>
+                </div>
+            `;
+            addMobileToggle(crossCheckCard);
+            grid.appendChild(crossCheckCard);
+            
+            // 異步載入cross check數據
+            loadCrossCheckData();
+            
             // 添加雲層厚度與顏色可見度分析卡片
             if (details.cloud_visibility_analysis) {
                 const cloudVisibilityCard = document.createElement('div');
@@ -3287,6 +3308,71 @@
                 }
             } catch (error) {
                 console.error('❌ 載入案例數量錯誤:', error);
+            }
+        }
+        
+        // 載入即時相片交叉驗證數據
+        async function loadCrossCheckData() {
+            try {
+                const data = await APIUtils.fetchAPI('/api/prediction/cross-check');
+                
+                if (data.status === 'success') {
+                    const crossCheck = data.cross_check;
+                    const webcam = data.webcam_data;
+                    
+                    // 更新分數顯示
+                    const scoreElement = document.getElementById('crossCheckScore');
+                    const contentElement = document.getElementById('crossCheckContent');
+                    
+                    if (scoreElement && contentElement) {
+                        // 根據一致性設定顏色
+                        let consistencyColor = '#00b894';
+                        if (crossCheck.consistency === 'excellent') consistencyColor = '#00b894';
+                        else if (crossCheck.consistency === 'good') consistencyColor = '#fdcb6e';
+                        else if (crossCheck.consistency === 'fair') consistencyColor = '#e17055';
+                        else consistencyColor = '#d63031';
+                        
+                        scoreElement.textContent = crossCheck.consistency_text;
+                        scoreElement.style.color = consistencyColor;
+                        
+                        // 構建內容
+                        let content = `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+                                <div style="text-align: center; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">${crossCheck.prediction_score}</div>
+                                    <div style="font-size: 0.85rem; color: #666;">算法預測</div>
+                                </div>
+                                <div style="text-align: center; padding: 10px; background: rgba(0, 184, 148, 0.1); border-radius: 8px;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #00b894;">${crossCheck.webcam_score}</div>
+                                    <div style="font-size: 0.85rem; color: #666;">即時相片</div>
+                                </div>
+                            </div>
+                            <div style="margin: 10px 0; padding: 10px; background: rgba(${consistencyColor === '#00b894' ? '0, 184, 148' : consistencyColor === '#fdcb6e' ? '253, 203, 110' : '214, 48, 49'}, 0.1); border-radius: 8px; border-left: 3px solid ${consistencyColor};">
+                                <strong>評估：</strong>${crossCheck.consistency_text}<br>
+                                <small>分數差異: ${crossCheck.score_difference}分</small>
+                            </div>
+                        `;
+                        
+                        if (!webcam.is_sunset_time) {
+                            content += `<small style="color: #e17055;">⏰ 當前非燒天時段，實況分數已調整</small><br>`;
+                        }
+                        
+                        if (data.analysis_notes && data.analysis_notes.length > 0) {
+                            content += `<small style="color: #666;">💡 ${data.analysis_notes.join(' | ')}</small><br>`;
+                        }
+                        
+                        content += `<br><small style="color: #888; font-style: italic;">📊 ${data.recommendation}</small>`;
+                        content += `<br><br><small style="color: #999;">已分析 ${webcam.webcam_count} 個攝影機位置</small>`;
+                        
+                        contentElement.innerHTML = content;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 載入交叉驗證失敗:', error);
+                const scoreElement = document.getElementById('crossCheckScore');
+                const contentElement = document.getElementById('crossCheckContent');
+                if (scoreElement) scoreElement.textContent = '載入失敗';
+                if (contentElement) contentElement.innerHTML = '<small style="color: #999;">無法載入即時相片分析</small>';
             }
         }
 

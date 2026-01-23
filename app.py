@@ -2535,6 +2535,107 @@ def get_sun_times_api():
         "timezone": "Asia/Hong_Kong (UTC+8)"
     })
 
+@app.route("/api/prediction/cross-check", methods=["GET"])
+@flask_cache.cached(timeout=120, query_string=True)
+def cross_check_prediction_with_webcam():
+    """
+    交叉驗證預測與即時攝影機分析
+    
+    對比算法預測分數與即時相片分析結果，提供準確度參考
+    """
+    try:
+        # 獲取當前預測
+        prediction_result = predict_burnsky_core('sunset', 0)
+        prediction_score = prediction_result.get('burnsky_score', 0)
+        
+        # 獲取即時攝影機分析
+        webcam_conditions = webcam_monitor.get_current_conditions(detailed=True)
+        webcam_score = webcam_conditions.get('overall_sunset_potential', 0)
+        
+        # 計算差異
+        score_diff = abs(prediction_score - webcam_score)
+        
+        # 判斷一致性
+        if score_diff <= 10:
+            consistency = 'excellent'
+            consistency_text = '預測與實況高度一致'
+        elif score_diff <= 20:
+            consistency = 'good'
+            consistency_text = '預測與實況基本一致'
+        elif score_diff <= 30:
+            consistency = 'fair'
+            consistency_text = '預測與實況有些差異'
+        else:
+            consistency = 'poor'
+            consistency_text = '預測與實況差異較大'
+        
+        # 分析差異原因
+        analysis_notes = []
+        if prediction_score > webcam_score + 15:
+            analysis_notes.append('算法預測較樂觀，實際天空狀況可能不如預期')
+        elif webcam_score > prediction_score + 15:
+            analysis_notes.append('實際天空狀況優於預測，可能出現驚喜')
+        
+        # 檢查是否在燒天時段
+        webcam_analyses = webcam_conditions.get('individual_analyses', {})
+        is_sunset_time = False
+        if webcam_analyses:
+            first_analysis = next(iter(webcam_analyses.values()))
+            is_sunset_time = first_analysis.get('analysis', {}).get('sunset_potential', {}).get('is_sunset_time', False)
+        
+        if not is_sunset_time:
+            analysis_notes.append('當前非燒天時段，實況分數已調整降低')
+        
+        return jsonify({
+            'status': 'success',
+            'cross_check': {
+                'prediction_score': round(prediction_score, 1),
+                'webcam_score': round(webcam_score, 1),
+                'score_difference': round(score_diff, 1),
+                'consistency': consistency,
+                'consistency_text': consistency_text
+            },
+            'prediction_data': {
+                'score': prediction_score,
+                'level': prediction_result.get('prediction_level', 'Unknown'),
+                'method': prediction_result.get('scoring_method', 'unified')
+            },
+            'webcam_data': {
+                'overall_score': webcam_score,
+                'webcam_count': webcam_conditions.get('webcam_count', 0),
+                'locations': webcam_conditions.get('recommended_locations', []),
+                'is_sunset_time': is_sunset_time
+            },
+            'analysis_notes': analysis_notes,
+            'timestamp': datetime.now().isoformat(),
+            'recommendation': _generate_cross_check_recommendation(
+                prediction_score, webcam_score, is_sunset_time
+            )
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'交叉驗證失敗: {str(e)}',
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+def _generate_cross_check_recommendation(prediction_score, webcam_score, is_sunset_time):
+    """生成交叉驗證建議"""
+    avg_score = (prediction_score + webcam_score) / 2
+    
+    if not is_sunset_time:
+        return '當前非燒天時段，建議稍後再查看或關注即將到來的燒天時段'
+    
+    if avg_score >= 65:
+        return '✅ 預測與實況均顯示良好條件，建議立即前往拍攝'
+    elif avg_score >= 50:
+        return '⚠️ 條件尚可，建議密切觀察天空變化'
+    elif avg_score >= 35:
+        return '📊 條件一般，可考慮等待更好時機'
+    else:
+        return '❌ 當前條件不佳，建議等待明天或其他時段'
+
 @app.route("/api/webcam/current", methods=["GET"])
 @flask_cache.cached(timeout=120, query_string=True)  # 2分鐘快取，攝影機狀態變化較快
 def get_current_webcam_conditions():

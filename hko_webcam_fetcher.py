@@ -306,28 +306,12 @@ class WebcamImageAnalyzer:
         return visibility
         
     def _evaluate_sunset_potential(self, mean_rgb: np.ndarray, cloud_coverage: float, visibility: float) -> Dict:
-        """評估燒天潛力"""
+        """評估燒天潛力（全天候分析，根據時間調整權重）"""
         from datetime import datetime
         
         current_time = datetime.now()
         hour = current_time.hour
         month = current_time.month
-        
-        # 首先檢查是否在燒天時間範圍內
-        is_sunset_time = self._is_sunset_time(hour, month)
-        
-        if not is_sunset_time:
-            return {
-                'score': 0.0,
-                'level': 'not_applicable',
-                'factors': {
-                    'color_richness': 0.0,
-                    'optimal_cloud': 0.0, 
-                    'visibility': 0.0,
-                    'time_factor': 0.0
-                },
-                'message': f'非燒天時段 (當前時間: {hour:02d}:00)'
-            }
         
         red, green, blue = mean_rgb
         
@@ -346,8 +330,9 @@ class WebcamImageAnalyzer:
                 'message': f'光線太暗，無法分析 (平均亮度: {avg_brightness:.1f})'
             }
         
-        # 計算時間權重
+        # 計算時間權重（全天候，但燒天時段權重更高）
         time_weight = self._calculate_time_weight(hour, month)
+        is_sunset_time = self._is_sunset_time(hour, month)
         
         # 顏色豐富度（紅色vs藍色比例，但要考慮整體亮度）
         color_richness = (red / (blue + 1)) if blue > 0 else 0
@@ -360,13 +345,19 @@ class WebcamImageAnalyzer:
         # 能見度評分（正規化）
         visibility_score = min(100, visibility)
         
-        # 綜合評分（修正權重）
-        potential_score = (
+        # 綜合評分（修正權重，全天候分析）
+        base_score = (
             color_richness * 25 +           # 顏色豐富度 25%
             optimal_cloud_score * 0.35 +    # 雲覆蓋度 35%
             visibility_score * 0.25 +       # 能見度 25%
             time_weight * 15                 # 時間因素 15%
         )
+        
+        # 如果不在燒天時段，分數打折但不歸零
+        if not is_sunset_time:
+            potential_score = base_score * 0.3  # 非燒天時段打3折
+        else:
+            potential_score = base_score
         
         # 正規化到0-100
         potential_score = min(100, max(0, potential_score))
@@ -386,13 +377,16 @@ class WebcamImageAnalyzer:
         return {
             'score': float(potential_score),
             'level': level,
+            'is_sunset_time': is_sunset_time,
+            'current_hour': hour,
             'factors': {
                 'color_richness': float(color_richness),
                 'optimal_cloud': float(optimal_cloud_score), 
                 'visibility': float(visibility_score),
                 'time_factor': float(time_weight),
                 'brightness': float(avg_brightness)
-            }
+            },
+            'message': '燒天時段' if is_sunset_time else f'非燒天時段 (分數已調整)'
         }
     
     def _is_sunset_time(self, hour: int, month: int) -> bool:
