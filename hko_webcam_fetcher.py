@@ -324,7 +324,8 @@ class WebcamImageAnalyzer:
         visibility = min(100, max(0, laplacian_var / 10))
         return visibility
         
-    def _evaluate_根據時段和照片內容判斷）"""
+    def _evaluate_sunset_potential(self, mean_rgb: np.ndarray, cloud_coverage: float, visibility: float) -> Dict:
+        """評估燒天潛力（根據時段和照片內容判斷）"""
         from datetime import datetime
         
         current_time = datetime.now()
@@ -363,8 +364,7 @@ class WebcamImageAnalyzer:
                     'visibility': 0.0,
                     'brightness': float(avg_brightness)
                 },
-                'message': f'非燒天時段 (現在是 {hour}點
-                'message': f'光線太暗，無法分析 (平均亮度: {avg_brightness:.1f})'
+                'message': f'非燒天時段 (現在是 {hour}點)'
             }
         
         # 計算時間權重（全天候，但燒天時段權重更高）
