@@ -495,5 +495,46 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
+    
+    <!-- 🔗 優化導航頁尾 - 按重要性分組 (4個分類) -->
+    <div style="margin-top: 30px; padding: 35px 25px; background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.08) 100%); border-radius: 15px; backdrop-filter: blur(10px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); border-top: 1px solid rgba(255,255,255,0.2);">
+        <div style="max-width: 900px; margin: 0 auto;">
+            <div style="margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h4 style="color: white; font-size: 1rem; font-weight: 600; margin-bottom: 15px;">⭐ 核心功能</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <a href="/" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(102, 126, 234, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">🏠 主頁</a>
+                    <a href="/photo-analysis" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(102, 126, 234, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">📸 照片分析</a>
+                    <a href="/warning-dashboard" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(102, 126, 234, 0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">⚠️ 警告台</a>
+                </div>
+            </div>
+            <div style="margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h4 style="color: white; font-size: 1rem; font-weight: 600; margin-bottom: 15px;">🛠️ 實用工具</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <a href="/best-locations" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(255, 165, 0, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">📍 最佳地點</a>
+                    <a href="/photography-guide" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(255, 165, 0, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">📷 攝影指南</a>
+                    <a href="/weather-terms" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(255, 165, 0, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">📚 天氣術語</a>
+                </div>
+            </div>
+            <div style="margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <h4 style="color: white; font-size: 1rem; font-weight: 600; margin-bottom: 15px;">ℹ️ 信息中心</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <a href="/faq" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(240, 147, 251, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">❓ 常見問題</a>
+                    <a href="/api-docs" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(240, 147, 251, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">📋 API 文檔</a>
+                    <a href="/ml-test" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(240, 147, 251, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">🤖 ML 測試</a>
+                </div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: white; font-size: 1rem; font-weight: 600; margin-bottom: 15px;">⚖️ 法律和公司</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                    <a href="/privacy" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(100, 150, 200, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">🔒 私隱政策</a>
+                    <a href="/terms" style="color: white; text-decoration: none; padding: 10px 16px; background: rgba(100, 150, 200, 0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; gap: 8px;">📄 使用條款</a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; padding-top: 25px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.15);">
+            <p style="color: rgba(255,255,255,0.85); font-size: 0.9em; margin: 0 0 8px 0;">© 2025 BurnSky 燒天預測系統 | 基於香港天文台開放數據</p>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.85em; margin: 0;">🌅 讓科技與自然美景相遇 | Made with ❤️ in Hong Kong</p>
+        </div>
+    </div>
 </body>
 </html>
