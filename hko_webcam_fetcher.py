@@ -325,7 +325,11 @@ class WebcamImageAnalyzer:
         return visibility
         
     def _evaluate_sunset_potential(self, mean_rgb: np.ndarray, cloud_coverage: float, visibility: float) -> Dict:
-        """評估燒天潛力（根據時段和照片內容判斷）"""
+        """
+        評估燒天潛力（方案 B：智能混合模式）
+        - 燒天時段：基於相片特徵 + 時間權重
+        - 非燒天時段：基於相片特徵（日出/早晨/全天任何時間都可能有好天空）
+        """
         from datetime import datetime
         
         current_time = datetime.now()
@@ -340,6 +344,7 @@ class WebcamImageAnalyzer:
             return {
                 'score': 0.0,
                 'level': 'too_dark',
+                'time_period': 'night',
                 'factors': {
                     'color_richness': 0.0,
                     'optimal_cloud': 0.0, 
@@ -349,26 +354,8 @@ class WebcamImageAnalyzer:
                 'message': f'夜間照片，光線不足 (亮度: {avg_brightness:.1f})'
             }
         
-        # 計算時間權重
-        time_weight = self._calculate_time_weight(hour, month)
-        is_sunset_time = self._is_sunset_time(hour, month)
-        
-        # 如果不在燒天時段，直接返回0分（但不說照片有問題）
-        if not is_sunset_time:
-            return {
-                'score': 0.0,
-                'level': 'non_sunset_time',
-                'factors': {
-                    'color_richness': 0.0,
-                    'optimal_cloud': 0.0,
-                    'visibility': 0.0,
-                    'brightness': float(avg_brightness)
-                },
-                'message': f'非燒天時段 (現在是 {hour}點)'
-            }
-        
-        # 計算時間權重（全天候，但燒天時段權重更高）
-        time_weight = self._calculate_time_weight(hour, month)
+        # 判斷當前時段（日出、白天、燒天、日落、夜間）
+        time_period = self._get_time_period(hour, month)
         is_sunset_time = self._is_sunset_time(hour, month)
         
         # 顏色豐富度（紅色vs藍色比例）- 正規化到0-100
@@ -384,19 +371,49 @@ class WebcamImageAnalyzer:
         # 能見度評分（正規化）- 已經是0-100分
         visibility_score = min(100, visibility)
         
+        # 計算時間權重（全天時都有權重，但燒天時段最高）
+        time_weight = self._calculate_time_weight(hour, month)
+        
+        # 【方案 B 核心邏輯】根據時段調整權重
+        if is_sunset_time:
+            # 燒天時段：時間權重 15%
+            weight_time = 0.15
+            time_note = '燒天時段'
+        elif time_period == 'sunrise':
+            # 日出時段：時間權重 10%（降低，但仍有評分）
+            weight_time = 0.10
+            time_note = '日出時段'
+            # 日出期間降低顏色豐富度的期望值（通常偏紅）
+            color_richness = color_richness * 1.1  # 輕微加成
+        elif time_period == 'morning':
+            # 早晨時段：時間權重 5%
+            weight_time = 0.05
+            time_note = '早晨時段'
+        else:
+            # 其他時段（白天、日落後）：時間權重 2%
+            weight_time = 0.02
+            time_note = f'其他時段 ({hour}點)'
+        
         # 綜合評分 - 所有因子都是0-100分，按權重加權
         base_score = (
             color_richness * 0.25 +         # 顏色豐富度 25%
             optimal_cloud_score * 0.35 +    # 雲覆蓋度 35%
             visibility_score * 0.25 +       # 能見度 25%
-            time_weight * 0.15              # 時間因素 15%
+            time_weight * weight_time       # 時間因素（變動）
         )
         
-        # 只在燒天時段給予滿分，其他時段直接歸零
+        # 【智能混合】：始終計算分數，不再完全歸零
+        # 只在燒天時段使用完整權重，其他時段按比例降低
         if is_sunset_time:
             potential_score = base_score
         else:
-            potential_score = 0.0  # 非燒天時段直接歸零
+            # 非燒天時段：應用係數，允許有基礎分數
+            # 如果有良好的顏色豐富度和雲量，即使不在燒天時段也可以得分
+            feature_strength = (color_richness + optimal_cloud_score + visibility_score) / 3
+            if feature_strength > 50:  # 特徵評分超過 50 分
+                potential_score = base_score * 0.6  # 給予 60% 的分數
+            else:
+                potential_score = base_score * 0.3  # 給予 30% 的分數
         
         # 正規化到0-100
         potential_score = min(100, max(0, potential_score))
@@ -417,6 +434,7 @@ class WebcamImageAnalyzer:
             'score': float(potential_score),
             'level': level,
             'is_sunset_time': is_sunset_time,
+            'time_period': time_period,
             'current_hour': hour,
             'factors': {
                 'color_richness': float(color_richness),
@@ -425,7 +443,7 @@ class WebcamImageAnalyzer:
                 'time_factor': float(time_weight),
                 'brightness': float(avg_brightness)
             },
-            'message': '燒天時段' if is_sunset_time else f'非燒天時段 (分數已調整)'
+            'message': time_note
         }
     
     def _is_sunset_time(self, hour: int, month: int) -> bool:
@@ -458,6 +476,23 @@ class WebcamImageAnalyzer:
         hour_diff = abs(hour - optimal_hour)
         weight = max(0, 100 - hour_diff * 20)  # 每小時相差減20分
         return weight
+    
+    def _get_time_period(self, hour: int, month: int) -> str:
+        """
+        分類當前時段
+        返回: 'sunrise' (日出 5-7點), 'morning' (早晨 7-11點), 'afternoon' (下午 11-16點),
+              'sunset' (燒天 見 _is_sunset_time), 'night' (夜間 20-5點)
+        """
+        if hour >= 5 and hour < 7:
+            return 'sunrise'
+        elif hour >= 7 and hour < 11:
+            return 'morning'
+        elif hour >= 11 and hour < 16:
+            return 'afternoon'
+        elif self._is_sunset_time(hour, month):
+            return 'sunset'
+        else:
+            return 'night'
 
 
 class RealTimeWebcamMonitor:
