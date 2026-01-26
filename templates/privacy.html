@@ -63,53 +63,7 @@
             transform: translateY(-2px);
         }
 
-        /* 手機版響應式導航 - 4+4+3 格式 */
-        @media (max-width: 768px) {
-            .nav-container {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 8px !important;
-            }
-
-            .nav-row {
-                display: grid !important;
-                gap: 8px !important;
-                margin-bottom: 0 !important;
-            }
-            
-            /* 第一行和第二行：4個項目 */
-            .nav-row:nth-child(1),
-            .nav-row:nth-child(2) {
-                grid-template-columns: repeat(4, 1fr) !important;
-            }
-            
-            /* 第三行：3個項目 */
-            .nav-row:nth-child(3) {
-                grid-template-columns: repeat(3, 1fr) !important;
-                justify-self: center !important;
-                max-width: 75% !important;
-                margin: 0 auto !important;
-            }
-
-            .nav-row a {
-                padding: 6px 8px !important;
-                font-size: 12px !important;
-                text-align: center !important;
-                border-radius: 6px !important;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .nav-container {
-                padding: 0 10px !important;
-            }
-
-            .nav-row a {
-                padding: 5px 4px !important;
-                font-size: 11px !important;
-            }
-        }
-
+        
         .container {
             max-width: 1000px;
             margin: 0 auto;
