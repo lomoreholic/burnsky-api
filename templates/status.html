@@ -193,25 +193,7 @@
     </style>
 </head>
 <body>
-    <nav class="top-nav">
-        <div class="nav-container">
-            <div class="nav-row">
-                <a href="/" class="nav-link">📊 即時數據</a>
-                <a href="/history" class="nav-link">� 歷史趨勢</a>
-                <a href="/warning" class="nav-link">⚠️ 警告台</a>
-            </div>
-            <div class="nav-row">
-                <a href="/photo_analysis" class="nav-link">� 照片分析</a>
-                <a href="/best_locations" class="nav-link">🏔️ 最佳位置</a>
-                <a href="/photography_guide" class="nav-link">� 攝影指南</a>
-            </div>
-            <div class="nav-row">
-                <a href="/weather_terms" class="nav-link">🌤️ 天氣術語</a>
-                <a href="/faq" class="nav-link">❓ 常見問答</a>
-                <a href="/api_docs" class="nav-link">📚 API 文檔</a>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav_fragment.html' %}
 
     <div class="container">
         <div class="header">
