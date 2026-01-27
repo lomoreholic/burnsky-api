@@ -3150,6 +3150,57 @@ def burnsky_dashboard_data():
         ''')
         seasonal_data = cursor.fetchall()
         
+        # 分析季節性模式（使用真實數據）
+        season_names = {'winter': '冬季', 'spring': '春季', 'summer': '夏季', 'autumn': '秋季'}
+        season_scores = {row[0]: {'avg': row[1], 'count': row[2]} for row in seasonal_data}
+        best_season = max(season_scores.items(), key=lambda x: x[1]['avg']) if season_scores else ('winter', {'avg': 0, 'count': 0})
+        seasonal_insight = f"{season_names.get(best_season[0], '冬季')}燒天機率最高（平均分數 {best_season[1]['avg']:.1f}），共 {best_season[1]['count']} 次記錄"
+        
+        # 分析濕度影響（從 factors JSON 中提取）
+        cursor.execute('''
+            SELECT factors FROM prediction_history 
+            WHERE score >= 60 AND factors IS NOT NULL
+            LIMIT 200
+        ''')
+        factors_data = cursor.fetchall()
+        
+        import json
+        humidity_scores = []
+        for row in factors_data:
+            try:
+                factors = json.loads(row[0]) if row[0] else {}
+                humidity = factors.get('humidity', {}).get('value', 0)
+                if 40 <= humidity <= 100:
+                    humidity_scores.append(humidity)
+            except:
+                continue
+        
+        if humidity_scores:
+            avg_humidity = sum(humidity_scores) / len(humidity_scores)
+            humidity_insight = f"高分預測的平均濕度為 {avg_humidity:.0f}%（基於 {len(humidity_scores)} 筆數據）"
+        else:
+            humidity_insight = "濕度數據收集中，暫無統計結果"
+        
+        # 分析風向影響（從 factors JSON 中提取）
+        wind_directions = []
+        for row in factors_data:
+            try:
+                factors = json.loads(row[0]) if row[0] else {}
+                wind_dir = factors.get('wind_direction', {}).get('value', '')
+                if wind_dir:
+                    wind_directions.append(wind_dir)
+            except:
+                continue
+        
+        if wind_directions:
+            from collections import Counter
+            wind_counter = Counter(wind_directions)
+            most_common_wind = wind_counter.most_common(1)[0]
+            wind_percentage = (most_common_wind[1] / len(wind_directions)) * 100
+            wind_insight = f"{most_common_wind[0]}風最常見於高分預測（佔 {wind_percentage:.0f}%，共 {most_common_wind[1]} 次）"
+        else:
+            wind_insight = "風向數據收集中，暫無統計結果"
+        
         conn.close()
         
         # 處理高影響警告數據
@@ -3237,13 +3288,12 @@ def burnsky_dashboard_data():
                 {'severity': '低分 (<50)', 'count': low_warnings}
             ],
             'high_impact_warnings': high_impact_warnings[:4],
-            'insights': [
-                "冬季月份 (12-2月) 燒天機率最高，建議重點關注",
-                f"下午 {peak_hour} 是燒天預警高峰時段", 
-                "濕度 60-80% 範圍內燒天發生機率增加 35%",
-                "東北風天氣型態下燒天預測準確率達 91%",
-                "建議在預測評分 >70 時提前 30 分鐘前往拍攝地點"
-            ]
+            'insights': {
+                'seasonal': seasonal_insight,
+                'peak_time': f"{peak_hour} 是燒天預警高峰時段",
+                'humidity': humidity_insight,
+                'wind': wind_insight
+            }
         }
         
         # 填充月度數據
