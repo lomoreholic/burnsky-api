@@ -365,64 +365,139 @@
                 container.innerHTML = '<div class="error">沒有可用的攝影機資料</div>';
                 return;
             }
+            
+            // 完整32個攝影機的 HKO 圖片 URL
             const hkoUrls = {
-                'HK_HKO': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hko/latest_HKO.jpg',
-                'HK_HK2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hk2/latest_HK2.jpg',
-                'HK_VPB': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/vpb/latest_VPB.jpg',
-                'HK_VPA': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/vpa/latest_VPA.jpg',
+                // 新界 (11個)
+                'HK_LFS': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/lfs/latest_LFS.jpg',
+                'HK_WLP': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wlp/latest_WLP.jpg',
+                'HK_ELC': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/elc/latest_ELC.jpg',
+                'HK_KFB': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/kfb/latest_KFB.jpg',
+                'HK_TPK': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tpk/latest_TPK.jpg',
+                'HK_TLC': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tlc/latest_TLC.jpg',
+                'HK_SK2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/sk2/latest_SK2.jpg',
+                'HK_SKG': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/skg/latest_SKG.jpg',
+                'HK_CWB': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cwb/latest_CWB.jpg',
+                'HK_CWA': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cwa/latest_CWA.jpg',
+                'HK_KS2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/ks2/latest_KS2.jpg',
                 'HK_TM2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tm2/latest_TM2.jpg',
                 'HK_TM3': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tm3/latest_TM3.jpg',
-                'HK_WGL': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wgl/latest_WGL.jpg',
-                'HK_SLW': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/slw/latest_SLW.jpg'
+                // 九龍 (5個)
+                'HK_KLT': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/klt/latest_KLT.jpg',
+                'HK_HK2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hk2/latest_HK2.jpg',
+                'HK_HKO': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hko/latest_HKO.jpg',
+                'HK_IC2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/ic2/latest_IC2.jpg',
+                'HK_IC1': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/ic1/latest_IC1.jpg',
+                // 香港島 (6個)
+                'HK_CP1': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cp1/latest_CP1.jpg',
+                'HK_HMM': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hmm/latest_HMM.jpg',
+                'HK_VPB': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/vpb/latest_VPB.jpg',
+                'HK_VPA': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/vpa/latest_VPA.jpg',
+                'HK_GSI': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/gsi/latest_GSI.jpg',
+                'HK_SWH': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/swh/latest_SWH.jpg',
+                // 大嶼山及離島 (10個)
+                'HK_SLW': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/slw/latest_SLW.jpg',
+                'HK_DNL': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/dnl/latest_DNL.jpg',
+                'HK_PE2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/pe2/latest_PE2.jpg',
+                'HK_CS1': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cs1/latest_CS1.jpg',
+                'HK_CS2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cs2/latest_CS2.jpg',
+                'HK_CCH': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cch/latest_CCH.jpg',
+                'HK_CCE': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cce/latest_CCE.jpg',
+                'HK_LAM': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/lam/latest_LAM.jpg',
+                'HK_WL2': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wl2/latest_WL2.jpg',
+                'HK_WGL': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wgl/latest_WGL.jpg'
             };
-            let html = '<div class="webcam-grid">';
+            
+            // 按地區分類攝影機
+            const regionOrder = ['新界', '九龍', '香港島', '大嶼山及離島'];
+            const regionEmoji = {'新界': '🏔️', '九龍': '🏙️', '香港島': '🏝️', '大嶼山及離島': '🌊'};
+            const webcamsByRegion = {};
+            
             for (const [locationId, data] of Object.entries(webcamData)) {
-                const score = data.analysis?.sunset_potential || 0;
-                const status = data.analysis?.status || 'unknown';
-                const level = data.analysis?.level || '';
-                const hkoUrl = hkoUrls[locationId] || '#';
-                const colorRichness = data.analysis?.color_richness || 0;
-                const cloudCoverage = data.analysis?.cloud_coverage || 0;
-                const visibility = data.analysis?.visibility || 0;
-                const brightness = data.analysis?.brightness || 0;
-                const direction = data.direction || 'N/A';
-                let captureTimeStr = '', isStale = false;
-                if (data.capture_time) {
-                    try {
-                        const captureDate = new Date(data.capture_time);
-                        const ageMinutes = Math.floor((new Date() - captureDate) / 60000);
-                        captureTimeStr = captureDate.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'});
-                        if (ageMinutes > 15) { captureTimeStr += ` (${ageMinutes}分鐘前)`; isStale = true; }
-                    } catch (e) { captureTimeStr = '未知'; }
-                }
-                const isOutdated = isStale || level === 'outdated_image';
-                const warningStyle = isOutdated ? 'background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-bottom: 10px; border-radius: 4px;' : '';
-                const timeStyle = isStale ? 'color: #d9534f; font-weight: 600;' : '';
-                html += `<div class="webcam-card">
-                    <h4 style="margin-bottom: 8px;">📍 ${data.name || locationId}</h4>
-                    <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px; ${timeStyle}">朝向: ${direction} ${captureTimeStr ? `| 📅 ${captureTimeStr}` : ''}</div>
-                    ${isOutdated ? `<div style="${warningStyle}"><div style="font-size: 0.8rem; color: #856404;">⚠️ 照片超過15分鐘未更新，資料可能不準確</div></div>` : ''}
-                    <div style="position: relative;">
-                        <img src="/api/webcam/image/${locationId}?format=image&t=${Date.now()}" alt="${data.name}" class="webcam-image" 
-                             style="width: 100%; height: auto; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
-                             onclick="window.open('${hkoUrl}', '_blank')"
-                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E圖片載入失敗%3C/text%3E%3C/svg%3E'">
-                        <a href="${hkoUrl}" target="_blank" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.75rem; backdrop-filter: blur(5px); font-weight: 500;" title="在香港天文台官網查看原圖">🔗 查看HKO原圖</a>
-                    </div>
-                    <div style="margin-top: 15px;">
-                        <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(score)}; margin-bottom: 5px;">${score.toFixed(1)}</div>
-                        <div style="color: #666; font-size: 1rem; font-weight: 500; margin-bottom: 12px;">${getScoreLevel(score)}</div>
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 0.85rem;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">🎨 色彩豐富度:</span><span style="font-weight: 600; color: ${getDetailColor(colorRichness)};">${colorRichness.toFixed(1)}</span></div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">☁️ 雲量覆蓋:</span><span style="font-weight: 600; color: ${getDetailColor(100 - cloudCoverage)};">${cloudCoverage.toFixed(1)}%</span></div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">👁️ 能見度:</span><span style="font-weight: 600; color: ${getDetailColor(visibility)};">${visibility.toFixed(1)}</span></div>
-                            <div style="display: flex; justify-content: space-between;"><span style="color: #666;">💡 亮度:</span><span style="font-weight: 600; color: ${getDetailColor(brightness)};">${brightness.toFixed(1)}</span></div>
-                        </div>
-                        <div style="font-size: 0.8rem; color: #999; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; text-align: center;">狀態: ${translateStatus(status)}</div>
-                    </div>
-                </div>`;
+                const region = data.region || '其他';
+                if (!webcamsByRegion[region]) webcamsByRegion[region] = [];
+                webcamsByRegion[region].push({ locationId, data });
             }
-            html += '</div>';
+            
+            let html = '';
+            
+            // 按地區順序顯示
+            for (const region of regionOrder) {
+                if (!webcamsByRegion[region] || webcamsByRegion[region].length === 0) continue;
+                
+                const emoji = regionEmoji[region] || '📍';
+                html += `<div class="region-section" style="margin-bottom: 30px;">
+                    <h3 style="color: #333; margin-bottom: 15px; padding: 10px 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 10px; font-size: 1.2rem;">
+                        ${emoji} ${region} <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(${webcamsByRegion[region].length}個攝影機)</span>
+                    </h3>
+                    <div class="webcam-grid">`;
+                
+                for (const { locationId, data } of webcamsByRegion[region]) {
+                    const score = data.analysis?.sunset_potential || 0;
+                    const status = data.analysis?.status || 'unknown';
+                    const level = data.analysis?.level || '';
+                    const hkoUrl = hkoUrls[locationId] || '#';
+                    const colorRichness = data.analysis?.color_richness || 0;
+                    const cloudCoverage = data.analysis?.cloud_coverage || 0;
+                    const visibility = data.analysis?.visibility || 0;
+                    const brightness = data.analysis?.brightness || 0;
+                    const direction = data.direction || 'N/A';
+                    let captureTimeStr = '', isStale = false;
+                    if (data.capture_time) {
+                        try {
+                            const captureDate = new Date(data.capture_time);
+                            const ageMinutes = Math.floor((new Date() - captureDate) / 60000);
+                            captureTimeStr = captureDate.toLocaleString('zh-TW', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'});
+                            if (ageMinutes > 15) { captureTimeStr += ` (${ageMinutes}分鐘前)`; isStale = true; }
+                        } catch (e) { captureTimeStr = '未知'; }
+                    }
+                    const isOutdated = isStale || level === 'outdated_image';
+                    const warningStyle = isOutdated ? 'background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-bottom: 10px; border-radius: 4px;' : '';
+                    const timeStyle = isStale ? 'color: #d9534f; font-weight: 600;' : '';
+                    html += `<div class="webcam-card">
+                        <h4 style="margin-bottom: 8px;">📍 ${data.name || locationId}</h4>
+                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px; ${timeStyle}">朝向: ${direction} ${captureTimeStr ? `| 📅 ${captureTimeStr}` : ''}</div>
+                        ${isOutdated ? `<div style="${warningStyle}"><div style="font-size: 0.8rem; color: #856404;">⚠️ 照片超過15分鐘未更新，資料可能不準確</div></div>` : ''}
+                        <div style="position: relative;">
+                            <img src="/api/webcam/image/${locationId}?format=image&t=${Date.now()}" alt="${data.name}" class="webcam-image" 
+                                 style="width: 100%; height: auto; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                                 onclick="window.open('${hkoUrl}', '_blank')"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E圖片載入失敗%3C/text%3E%3C/svg%3E'">
+                            <a href="${hkoUrl}" target="_blank" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.75rem; backdrop-filter: blur(5px); font-weight: 500;" title="在香港天文台官網查看原圖">🔗 HKO原圖</a>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(score)}; margin-bottom: 5px;">${score.toFixed(1)}</div>
+                            <div style="color: #666; font-size: 1rem; font-weight: 500; margin-bottom: 12px;">${getScoreLevel(score)}</div>
+                            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 0.85rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">🎨 色彩豐富度:</span><span style="font-weight: 600; color: ${getDetailColor(colorRichness)};">${colorRichness.toFixed(1)}</span></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">☁️ 雲量覆蓋:</span><span style="font-weight: 600; color: ${getDetailColor(100 - cloudCoverage)};">${cloudCoverage.toFixed(1)}%</span></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">👁️ 能見度:</span><span style="font-weight: 600; color: ${getDetailColor(visibility)};">${visibility.toFixed(1)}</span></div>
+                                <div style="display: flex; justify-content: space-between;"><span style="color: #666;">💡 亮度:</span><span style="font-weight: 600; color: ${getDetailColor(brightness)};">${brightness.toFixed(1)}</span></div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #999; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; text-align: center;">狀態: ${translateStatus(status)}</div>
+                        </div>
+                    </div>`;
+                }
+                html += '</div></div>';
+            }
+            
+            // 顯示未分類的攝影機（如果有）
+            if (webcamsByRegion['其他'] && webcamsByRegion['其他'].length > 0) {
+                html += `<div class="region-section" style="margin-bottom: 30px;">
+                    <h3 style="color: #333; margin-bottom: 15px; padding: 10px 15px; background: rgba(150, 150, 150, 0.1); border-radius: 10px;">📍 其他地區</h3>
+                    <div class="webcam-grid">`;
+                for (const { locationId, data } of webcamsByRegion['其他']) {
+                    // 重複上面的卡片代碼...
+                    const score = data.analysis?.sunset_potential || 0;
+                    const hkoUrl = hkoUrls[locationId] || '#';
+                    html += `<div class="webcam-card">
+                        <h4>📍 ${data.name || locationId}</h4>
+                        <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(score)};">${score.toFixed(1)}</div>
+                    </div>`;
+                }
+                html += '</div></div>';
+            }
+            
             container.innerHTML = html;
         }
 

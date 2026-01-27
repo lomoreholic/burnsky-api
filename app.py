@@ -2670,6 +2670,7 @@ def get_current_webcam_conditions():
                 response_data['webcam_data'][cam_id] = {
                     'name': analysis_data.get('location', cam_id),
                     'direction': analysis_data.get('direction', 'N/A'),
+                    'region': analysis_data.get('region', '其他'),  # 添加地區信息
                     'analysis': {
                         'sunset_potential': sunset_data.get('score', 0),
                         'status': 'success' if sunset_data.get('score', 0) > 0 else 'unknown',

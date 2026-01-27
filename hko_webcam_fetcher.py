@@ -18,17 +18,120 @@ class HKOWebcamFetcher:
     """香港天文台網路攝影機圖片獲取器"""
     
     # 香港天文台攝影機基礎URL
-    BASE_URL = "https://www.hko.gov.hk/wxinfo/ts/webcam"
+    BASE_URL = "https://www.hko.gov.hk/wxinfo/aws/hko_mica"
     
-    # 攝影機位置清單（根據tw.live和HKO官網整理）
+    # 完整32個攝影機位置清單（根據HKO官網 https://www.hko.gov.hk/tc/wxinfo/ts/index_webcam.htm）
     WEBCAM_LOCATIONS = {
-        'HK_HKO': {
-            'name': '尖沙咀(望向東面)',
-            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hko/latest_HKO.jpg',
+        # ========== 新界 (11個) ==========
+        'HK_LFS': {
+            'name': '流浮山(望向西面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/lfs/latest_LFS.jpg',
+            'direction': 'West',
+            'latitude': 22.4689,
+            'longitude': 113.9892,
+            'region': '新界',
+            'priority': 'high'  # 日落西面視野佳
+        },
+        'HK_WLP': {
+            'name': '濕地公園(望向東北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wlp/latest_WLP.jpg',
+            'direction': 'Northeast',
+            'latitude': 22.4667,
+            'longitude': 114.0167,
+            'region': '新界',
+            'priority': 'medium'
+        },
+        'HK_ELC': {
+            'name': '上水風采中學(望向西北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/elc/latest_ELC.jpg',
+            'direction': 'Northwest',
+            'latitude': 22.5033,
+            'longitude': 114.1283,
+            'region': '新界',
+            'priority': 'medium'
+        },
+        'HK_KFB': {
+            'name': '嘉道理農場暨植物園(遠眺新界西部)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/kfb/latest_KFB.jpg',
+            'direction': 'West',
+            'latitude': 22.4333,
+            'longitude': 114.1167,
+            'region': '新界',
+            'priority': 'high'  # 高地視野佳
+        },
+        'HK_TPK': {
+            'name': '大埔滘(望向東北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tpk/latest_TPK.jpg',
+            'direction': 'Northeast',
+            'latitude': 22.4333,
+            'longitude': 114.1833,
+            'region': '新界',
+            'priority': 'medium'
+        },
+        'HK_TLC': {
+            'name': '大欖涌(遠眺大嶼山北部)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tlc/latest_TLC.jpg',
+            'direction': 'Southwest',
+            'latitude': 22.3667,
+            'longitude': 114.0500,
+            'region': '新界',
+            'priority': 'high'  # 西南面日落視野
+        },
+        'HK_SK2': {
+            'name': '西貢水警東警署(望向東北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/sk2/latest_SK2.jpg',
+            'direction': 'Northeast',
+            'latitude': 22.3833,
+            'longitude': 114.2667,
+            'region': '新界',
+            'priority': 'medium'
+        },
+        'HK_SKG': {
+            'name': '西貢水警東警署(望向東南面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/skg/latest_SKG.jpg',
+            'direction': 'Southeast',
+            'latitude': 22.3833,
+            'longitude': 114.2667,
+            'region': '新界',
+            'priority': 'medium'
+        },
+        'HK_CWB': {
+            'name': '清水灣(望向西南面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cwb/latest_CWB.jpg',
+            'direction': 'Southwest',
+            'latitude': 22.2667,
+            'longitude': 114.3000,
+            'region': '新界',
+            'priority': 'high'  # 西南面日落視野
+        },
+        'HK_CWA': {
+            'name': '清水灣(望向東面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cwa/latest_CWA.jpg',
             'direction': 'East',
-            'latitude': 22.2975,
-            'longitude': 114.1717,
-            'priority': 'high'  # 主要觀測點
+            'latitude': 22.2667,
+            'longitude': 114.3000,
+            'region': '新界',
+            'priority': 'high'  # 日出東面視野
+        },
+        'HK_KS2': {
+            'name': '滘西洲(望向西北偏西面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/ks2/latest_KS2.jpg',
+            'direction': 'Northwest',
+            'latitude': 22.3667,
+            'longitude': 114.3167,
+            'region': '新界',
+            'priority': 'high'  # 海上視野佳
+        },
+        
+        # ========== 九龍 (2個) ==========
+        'HK_KLT': {
+            'name': '九龍城(望向東九龍及港島東部)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/klt/latest_KLT.jpg',
+            'direction': 'East',
+            'latitude': 22.3317,
+            'longitude': 114.1867,
+            'region': '九龍',
+            'priority': 'high'  # 日出東面視野
         },
         'HK_HK2': {
             'name': '尖沙咀(望向西面)', 
@@ -36,7 +139,55 @@ class HKOWebcamFetcher:
             'direction': 'West',
             'latitude': 22.2975,
             'longitude': 114.1717,
-            'priority': 'high'
+            'region': '九龍',
+            'priority': 'high'  # 日落西面視野
+        },
+        'HK_HKO': {
+            'name': '尖沙咀(望向東面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hko/latest_HKO.jpg',
+            'direction': 'East',
+            'latitude': 22.2975,
+            'longitude': 114.1717,
+            'region': '九龍',
+            'priority': 'high'  # 日出東面視野
+        },
+        'HK_IC2': {
+            'name': '環球貿易廣場(望向西南面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/ic2/latest_IC2.jpg',
+            'direction': 'Southwest',
+            'latitude': 22.3033,
+            'longitude': 114.1600,
+            'region': '九龍',
+            'priority': 'high'  # 高空西南面日落視野
+        },
+        'HK_IC1': {
+            'name': '環球貿易廣場(望向東南面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/ic1/latest_IC1.jpg',
+            'direction': 'Southeast',
+            'latitude': 22.3033,
+            'longitude': 114.1600,
+            'region': '九龍',
+            'priority': 'high'  # 高空維港視野
+        },
+        
+        # ========== 香港島 (7個) ==========
+        'HK_CP1': {
+            'name': '中環碼頭(望向維多利亞港)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cp1/latest_CP1.jpg',
+            'direction': 'North',
+            'latitude': 22.2867,
+            'longitude': 114.1600,
+            'region': '香港島',
+            'priority': 'high'  # 維港標誌性視野
+        },
+        'HK_HMM': {
+            'name': '香港海事博物館(望向維多利亞港)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hmm/latest_HMM.jpg',
+            'direction': 'North',
+            'latitude': 22.2850,
+            'longitude': 114.1533,
+            'region': '香港島',
+            'priority': 'high'  # 維港視野
         },
         'HK_VPB': {
             'name': '太平山(望向東北偏北面)',
@@ -44,7 +195,8 @@ class HKOWebcamFetcher:
             'direction': 'Northeast',
             'latitude': 22.2703,
             'longitude': 114.1489,
-            'priority': 'high'
+            'region': '香港島',
+            'priority': 'high'  # 太平山高空視野
         },
         'HK_VPA': {
             'name': '太平山(望向東面)',
@@ -52,23 +204,109 @@ class HKOWebcamFetcher:
             'direction': 'East',
             'latitude': 22.2703,
             'longitude': 114.1489,
-            'priority': 'high'
+            'region': '香港島',
+            'priority': 'high'  # 太平山日出視野
         },
-        'HK_TM2': {
-            'name': '大帽山(望向西南面)',
-            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tm2/latest_TM2.jpg',
-            'direction': 'Southwest',
-            'latitude': 22.4055,
-            'longitude': 114.1253,
+        'HK_GSI': {
+            'name': '德瑞國際學校(遠眺海洋公園及香港仔)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/gsi/latest_GSI.jpg',
+            'direction': 'South',
+            'latitude': 22.2617,
+            'longitude': 114.1917,
+            'region': '香港島',
             'priority': 'medium'
         },
-        'HK_TM3': {
-            'name': '大帽山(望向東北面)',
-            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tm3/latest_TM3.jpg',
-            'direction': 'Northeast',
-            'latitude': 22.4055,
-            'longitude': 114.1253,
+        'HK_SWH': {
+            'name': '西灣河(望向東面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/swh/latest_SWH.jpg',
+            'direction': 'East',
+            'latitude': 22.2833,
+            'longitude': 114.2167,
+            'region': '香港島',
+            'priority': 'high'  # 日出東面視野
+        },
+        
+        # ========== 大嶼山及離島 (10個) ==========
+        'HK_SLW': {
+            'name': '沙螺灣(遠眺香港國際機場)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/slw/latest_SLW.jpg',
+            'direction': 'North',
+            'latitude': 22.3456,
+            'longitude': 113.9492,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 機場及日落視野
+        },
+        'HK_DNL': {
+            'name': '坪洲(遠眺竹篙灣)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/dnl/latest_DNL.jpg',
+            'direction': 'West',
+            'latitude': 22.2833,
+            'longitude': 114.0333,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 西面日落視野
+        },
+        'HK_PE2': {
+            'name': '坪洲(遠眺維多利亞港)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/pe2/latest_PE2.jpg',
+            'direction': 'East',
+            'latitude': 22.2833,
+            'longitude': 114.0333,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 維港及日出視野
+        },
+        'HK_CS1': {
+            'name': '長沙(望向西北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cs1/latest_CS1.jpg',
+            'direction': 'Northwest',
+            'latitude': 22.2333,
+            'longitude': 113.9500,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 西北日落視野
+        },
+        'HK_CS2': {
+            'name': '長沙(望向北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cs2/latest_CS2.jpg',
+            'direction': 'North',
+            'latitude': 22.2333,
+            'longitude': 113.9500,
+            'region': '大嶼山及離島',
             'priority': 'medium'
+        },
+        'HK_CCH': {
+            'name': '長洲(望向北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cch/latest_CCH.jpg',
+            'direction': 'North',
+            'latitude': 22.2000,
+            'longitude': 114.0333,
+            'region': '大嶼山及離島',
+            'priority': 'medium'
+        },
+        'HK_CCE': {
+            'name': '長洲東灣(望向東面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cce/latest_CCE.jpg',
+            'direction': 'East',
+            'latitude': 22.2000,
+            'longitude': 114.0333,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 日出東面視野
+        },
+        'HK_LAM': {
+            'name': '南丫島(望向西北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/lam/latest_LAM.jpg',
+            'direction': 'Northwest',
+            'latitude': 22.2167,
+            'longitude': 114.1167,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 西北日落視野
+        },
+        'HK_WL2': {
+            'name': '橫瀾島(望向西北偏北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wl2/latest_WL2.jpg',
+            'direction': 'Northwest',
+            'latitude': 22.1833,
+            'longitude': 114.3000,
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 海上開闊視野
         },
         'HK_WGL': {
             'name': '橫瀾島(望向西面)',
@@ -76,14 +314,27 @@ class HKOWebcamFetcher:
             'direction': 'West',
             'latitude': 22.1833,
             'longitude': 114.3000,
-            'priority': 'high'  # 海上視野佳
+            'region': '大嶼山及離島',
+            'priority': 'high'  # 海上日落視野
         },
-        'HK_SLW': {
-            'name': '沙螺灣(遠眺香港國際機場)',
-            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/slw/latest_SLW.jpg',
-            'direction': 'North',
-            'latitude': 22.3456,
-            'longitude': 113.9492,
+        
+        # ========== 大帽山 (2個，補充) ==========
+        'HK_TM2': {
+            'name': '大帽山(望向西南面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tm2/latest_TM2.jpg',
+            'direction': 'Southwest',
+            'latitude': 22.4055,
+            'longitude': 114.1253,
+            'region': '新界',
+            'priority': 'high'  # 最高點西南日落視野
+        },
+        'HK_TM3': {
+            'name': '大帽山(望向東北面)',
+            'url': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tm3/latest_TM3.jpg',
+            'direction': 'Northeast',
+            'latitude': 22.4055,
+            'longitude': 114.1253,
+            'region': '新界',
             'priority': 'medium'
         }
     }
@@ -163,6 +414,7 @@ class HKOWebcamFetcher:
                     'direction': location_info['direction'],
                     'latitude': location_info['latitude'],
                     'longitude': location_info['longitude'],
+                    'region': location_info.get('region', '其他'),  # 添加地區信息
                     'capture_time': capture_time,
                     'image_size': pil_image.size,
                     'priority': location_info['priority']
@@ -503,21 +755,26 @@ class RealTimeWebcamMonitor:
         self.analyzer = WebcamImageAnalyzer()
         self.logger = logging.getLogger(__name__)
         
-    def get_current_conditions(self, detailed: bool = True) -> Dict:
+    def get_current_conditions(self, detailed: bool = True, all_cameras: bool = True) -> Dict:
         """
         獲取當前天氣狀況
         
         Args:
             detailed: 是否進行詳細分析
+            all_cameras: 是否獲取所有32個攝影機（默認True）
             
         Returns:
             當前狀況報告
         """
-        # 獲取推薦的攝影機
-        recommended_cams = self.fetcher.get_best_sunset_webcams()
+        if all_cameras:
+            # 獲取所有32個攝影機
+            location_ids = list(self.fetcher.WEBCAM_LOCATIONS.keys())
+        else:
+            # 只獲取推薦的攝影機
+            location_ids = self.fetcher.get_best_sunset_webcams()[:3]
         
         # 獲取圖片
-        webcam_data = self.fetcher.fetch_multiple_webcams(recommended_cams[:3])  # 前3個
+        webcam_data = self.fetcher.fetch_multiple_webcams(location_ids)
         
         if not webcam_data:
             return {
@@ -536,7 +793,8 @@ class RealTimeWebcamMonitor:
                 analysis_results[cam_id] = {
                     'location': cam_data['location_name'],
                     'direction': cam_data['direction'],
-                    'capture_time': cam_data.get('capture_time', datetime.now()).isoformat(),  # 保留照片實際拍攝時間
+                    'region': cam_data.get('region', '其他'),  # 添加地區信息
+                    'capture_time': cam_data.get('capture_time', datetime.now()).isoformat(),
                     'analysis': analysis
                 }
                 
@@ -550,13 +808,11 @@ class RealTimeWebcamMonitor:
             'status': 'success',
             'overall_sunset_potential': float(overall_score),
             'webcam_count': len(webcam_data),
+            'total_cameras': len(self.fetcher.WEBCAM_LOCATIONS),
             'individual_analyses': analysis_results,
             'timestamp': datetime.now().isoformat(),
-            'recommended_locations': [
-                webcam_data[cam_id]['location_name'] 
-                for cam_id in recommended_cams[:3] 
-                if cam_id in webcam_data
-            ]
+            'analysis_time': datetime.now().isoformat(),
+            'recommended_locations': self.fetcher.get_best_sunset_webcams()[:5]
         }
 
 
