@@ -32,12 +32,14 @@
             min-height: 100vh;
             color: var(--text-light);
             line-height: 1.6;
+            padding: 0;
+            margin: 0;
         }
 
         .container {
             max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 20px auto;
+            padding: 0 20px 20px 20px;
         }
 
         .glass-card {
@@ -161,18 +163,9 @@
         }
 
         @media (max-width: 768px) {
-            .nav-row {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-
-            .nav-row a {
-                font-size: 12px;
-                padding: 6px 10px;
-            }
-
             .container {
-                padding: 15px;
+                padding: 0 15px 15px 15px;
+                margin: 15px auto;
             }
 
             .dashboard-grid {
