@@ -1293,6 +1293,43 @@
                     </div>
                 </section>
 
+                <!-- 用戶反饋區域 -->
+                <section class="main-card" aria-labelledby="feedback-title" style="margin-top: 30px; background: #fff3cd; border-left: 4px solid #ffc107;" id="feedbackSection">
+                    <h2 id="feedback-title" style="color: #856404; margin: 0 0 15px 0; font-size: 1.4rem;">📸 實際燒天如何？</h2>
+                    <p style="margin: 0 0 20px 0; font-size: 1rem; color: #856404;">您的反饋幫助我們改進預測準確率</p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #856404;">實際燒天評分 (0-100)：</label>
+                        <input type="range" id="userRating" min="0" max="100" value="50" 
+                               style="width: 100%; height: 8px; margin-bottom: 10px; border-radius: 4px;"
+                               oninput="document.getElementById('ratingValue').textContent = this.value">
+                        <div style="text-align: center; font-size: 2rem; font-weight: bold; color: #856404; margin-bottom: 10px;">
+                            <span id="ratingValue">50</span> 分
+                        </div>
+                        <div style="text-align: center; font-size: 0.9rem; color: #666; margin-top: 5px;">
+                            <span id="ratingDescription">拖動滑塊設置您的評分</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #856404;">補充說明（選填）：</label>
+                        <textarea id="feedbackComment" rows="3" 
+                                  style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; resize: vertical; font-size: 1rem;"
+                                  placeholder="例如：實際顏色更豐富、雲層較預期厚、能見度比預期好..."></textarea>
+                    </div>
+                    
+                    <button onclick="submitFeedback()" 
+                            style="background: linear-gradient(45deg, #28a745, #20c997); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; font-weight: 600; width: 100%; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40, 167, 69, 0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.3)'">
+                        ✅ 提交反饋
+                    </button>
+                    
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.7); border-radius: 8px; font-size: 0.9rem; color: #666; text-align: center;">
+                        💡 您的反饋將用於計算系統的真實準確率，幫助改進預測算法
+                    </div>
+                </section>
+
                 <!-- 分析因子區域 -->
                 <section class="main-card" aria-labelledby="factors-title" style="margin-top: 30px;" id="factorsSection">
                     <div class="toggle-header" onclick="toggleFactorsSection()">
