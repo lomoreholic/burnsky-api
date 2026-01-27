@@ -3201,6 +3201,34 @@ def burnsky_dashboard_data():
         else:
             wind_insight = "風向數據收集中，暫無統計結果"
         
+        # 重新連接數據庫以進行週末/平日分析
+        cursor = conn.cursor()
+        
+        # 分析週末 vs 平日比例
+        cursor.execute('''
+            SELECT 
+                COUNT(CASE WHEN CAST(strftime('%w', timestamp) AS INTEGER) IN (0, 6) THEN 1 END) as weekend_count,
+                COUNT(CASE WHEN CAST(strftime('%w', timestamp) AS INTEGER) NOT IN (0, 6) THEN 1 END) as weekday_count,
+                COUNT(*) as total_count
+            FROM prediction_history 
+            WHERE score >= 60
+        ''')
+        day_pattern = cursor.fetchone()
+        
+        if day_pattern and day_pattern[2] > 0:
+            weekend_ratio = round((day_pattern[0] / day_pattern[2]) * 100)
+            weekday_ratio = round((day_pattern[1] / day_pattern[2]) * 100)
+        else:
+            weekend_ratio = 0
+            weekday_ratio = 0
+        
+        # 計算季節機率（基於記錄數量）
+        total_seasonal_count = sum(s[2] for s in seasonal_data) if seasonal_data else 1
+        winter_count = next((s[2] for s in seasonal_data if s[0] == 'winter'), 0)
+        summer_count = next((s[2] for s in seasonal_data if s[0] == 'summer'), 0)
+        winter_probability = round((winter_count / total_seasonal_count) * 100) if total_seasonal_count > 0 else 0
+        summer_probability = round((summer_count / total_seasonal_count) * 100) if total_seasonal_count > 0 else 0
+        
         conn.close()
         
         # 處理高影響警告數據
@@ -3267,13 +3295,13 @@ def burnsky_dashboard_data():
             },
             'time_pattern': {
                 'peak_hour': peak_hour,
-                'weekend_ratio': 68,  # 模擬數據
-                'weekday_ratio': 42   # 模擬數據
+                'weekend_ratio': weekend_ratio,
+                'weekday_ratio': weekday_ratio
             },
             'seasonal': {
-                'winter_probability': 45,
-                'summer_probability': 23,
-                'current_trend': 'up'
+                'winter_probability': winter_probability,
+                'summer_probability': summer_probability,
+                'current_trend': 'up' if best_season[0] == 'winter' else 'stable'
             },
             'monthly_data': [
                 {
