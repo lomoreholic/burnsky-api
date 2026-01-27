@@ -1743,6 +1743,15 @@
                 document.getElementById('lastUpdated').textContent = 
                     `最後更新: ${getHongKongTime()} (香港時間)`;
                 
+                // 保存預測分數以供用戶反饋使用
+                currentPredictedScore = data.burnsky_score;
+                currentPredictionTimestamp = new Date().toISOString();
+                console.log('✅ 預測分數已保存:', {
+                    score: currentPredictedScore,
+                    timestamp: currentPredictionTimestamp,
+                    level: data.prediction_level
+                });
+                
                 loading.style.display = 'none';
                 content.style.display = 'block';
                 
@@ -3167,6 +3176,31 @@
                         <h4 style="margin: 0 0 10px 0; color: #28a745;">📅 下次拍攝建議</h4>
                         <p style="margin: 0;">${result.suggestions.next_shoot_advice}</p>
                     </div>
+                    
+                    <!-- 用戶反饋區域 -->
+                    <div id="feedbackSection" style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-top: 15px;">
+                        <h4 style="margin: 0 0 10px 0; color: #856404;">📸 實際燒天如何？</h4>
+                        <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #856404;">幫助我們改進預測準確率</p>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">實際燒天評分 (0-100)：</label>
+                            <input type="range" id="userRating" min="0" max="100" value="50" 
+                                   style="width: 100%; margin-bottom: 5px;"
+                                   oninput="document.getElementById('ratingValue').textContent = this.value">
+                            <div style="text-align: center; font-size: 1.2rem; font-weight: bold; color: #856404;">
+                                <span id="ratingValue">50</span> 分
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 500;">補充說明（選填）：</label>
+                            <textarea id="feedbackComment" rows="2" 
+                                      style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"
+                                      placeholder="例如：實際顏色更豐富、雲層較預期厚..."></textarea>
+                        </div>
+                        <button onclick="submitFeedback()" 
+                                style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 1rem; width: 100%;">
+                            ✅ 提交反饋
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -3181,6 +3215,70 @@
             } catch (error) {
                 console.error('❌ 載入照片案例錯誤:', error);
                 APIUtils.showToast('載入照片案例失敗', 'error');
+            }
+        }
+        
+        // 提交用戶反饋
+        let currentPredictedScore = null;
+        let currentPredictionTimestamp = null;
+        
+        async function submitFeedback() {
+            try {
+                const userRating = parseInt(document.getElementById('userRating').value);
+                const comment = document.getElementById('feedbackComment').value;
+                
+                if (currentPredictedScore === null) {
+                    APIUtils.showToast('請先進行燒天預測', 'warning');
+                    return;
+                }
+                
+                const button = event.target;
+                button.disabled = true;
+                button.textContent = '⏳ 提交中...';
+                
+                const response = await fetch('/api/submit-feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        predicted_score: currentPredictedScore,
+                        user_rating: userRating,
+                        comment: comment,
+                        prediction_timestamp: currentPredictionTimestamp
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    APIUtils.showToast('感謝您的反饋！您的貢獻幫助我們改進預測準確率', 'success');
+                    
+                    // 顯示準確率統計
+                    if (result.accuracy_stats && result.accuracy_stats.has_data) {
+                        const stats = result.accuracy_stats;
+                        document.getElementById('feedbackSection').innerHTML = `
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">✅</div>
+                                <h4 style="margin: 0 0 10px 0; color: #28a745;">反饋已提交</h4>
+                                <p style="margin: 5px 0; color: #666;">當前系統準確率: <strong>${stats.accuracy}%</strong></p>
+                                <p style="margin: 5px 0; color: #666;">基於 ${stats.feedback_count} 個用戶反饋</p>
+                                <p style="margin: 5px 0; color: #666; font-size: 0.9rem;">
+                                    ${stats.within_10_points}% 的預測誤差在 10 分內
+                                </p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    APIUtils.showToast(result.message || '提交失敗，請稍後再試', 'error');
+                    button.disabled = false;
+                    button.textContent = '✅ 提交反饋';
+                }
+            } catch (error) {
+                console.error('❌ 提交反饋錯誤:', error);
+                APIUtils.showToast('網絡錯誤，請稍後再試', 'error');
+                event.target.disabled = false;
+                event.target.textContent = '✅ 提交反饋';
             }
         }
 

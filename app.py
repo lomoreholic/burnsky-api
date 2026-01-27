@@ -3115,10 +3115,16 @@ def burnsky_dashboard_data():
         ''')
         high_impact_records = cursor.fetchall()
         
-        # 計算準確性 (模擬數據，實際需要驗證邏輯)
-        cursor.execute('SELECT AVG(score) FROM prediction_history WHERE score >= 50')
-        avg_accuracy = cursor.fetchone()[0] or 0
-        accuracy_percentage = min(max(avg_accuracy * 1.2, 75), 95)  # 估算準確率
+        # 計算準確性 (使用真實用戶反饋數據)
+        accuracy_stats = calculate_real_accuracy()
+        
+        if accuracy_stats['has_data']:
+            accuracy_percentage = accuracy_stats['accuracy']
+        else:
+            # 如果沒有反饋數據，使用預測分數作為參考
+            cursor.execute('SELECT AVG(score) FROM prediction_history WHERE score >= 50')
+            avg_accuracy = cursor.fetchone()[0] or 0
+            accuracy_percentage = min(max(avg_accuracy * 1.2, 75), 95)
         
         # 時間模式分析
         cursor.execute('''
@@ -5990,6 +5996,156 @@ def generate_burnsky_insights(overall, by_type, best_hours):
         insights.append(f"{time_label}時段（{best['hour']}:00）的燒天評分最高，平均 {best['avg_score']} 分")
     
     return insights
+
+@app.route("/api/submit-feedback", methods=['POST'])
+def submit_feedback():
+    """接收用戶對預測準確性的反饋"""
+    try:
+        data = request.get_json()
+        
+        # 驗證必需字段
+        required_fields = ['predicted_score', 'user_rating']
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'status': 'error',
+                'message': '缺少必需字段'
+            }), 400
+        
+        predicted_score = int(data['predicted_score'])
+        user_rating = int(data['user_rating'])
+        
+        # 驗證評分範圍
+        if not (0 <= predicted_score <= 100) or not (0 <= user_rating <= 100):
+            return jsonify({
+                'status': 'error',
+                'message': '評分必須在 0-100 之間'
+            }), 400
+        
+        # 保存反饋
+        conn = sqlite3.connect(PREDICTION_HISTORY_DB)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO user_feedback 
+            (prediction_timestamp, predicted_score, user_rating, location, comment, weather_conditions)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (
+            data.get('prediction_timestamp', datetime.now().isoformat()),
+            predicted_score,
+            user_rating,
+            data.get('location', ''),
+            data.get('comment', ''),
+            data.get('weather_conditions', '')
+        ))
+        
+        conn.commit()
+        feedback_id = cursor.lastrowid
+        conn.close()
+        
+        # 計算更新後的準確率
+        accuracy_stats = calculate_real_accuracy()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '感謝您的反饋！',
+            'feedback_id': feedback_id,
+            'accuracy_stats': accuracy_stats
+        })
+        
+    except Exception as e:
+        print(f"❌ 提交反饋錯誤: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route("/api/accuracy-stats")
+def get_accuracy_stats():
+    """獲取基於真實反饋的準確率統計"""
+    try:
+        stats = calculate_real_accuracy()
+        return jsonify(stats)
+    except Exception as e:
+        print(f"❌ 獲取準確率統計錯誤: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+def calculate_real_accuracy():
+    """計算基於用戶反饋的真實準確率"""
+    try:
+        conn = sqlite3.connect(PREDICTION_HISTORY_DB)
+        cursor = conn.cursor()
+        
+        # 獲取最近30天的反饋
+        cursor.execute('''
+            SELECT 
+                predicted_score,
+                user_rating,
+                feedback_timestamp
+            FROM user_feedback
+            WHERE feedback_timestamp >= datetime('now', '-30 days')
+            ORDER BY feedback_timestamp DESC
+        ''')
+        
+        feedbacks = cursor.fetchall()
+        
+        if not feedbacks:
+            conn.close()
+            return {
+                'has_data': False,
+                'message': '暫無用戶反饋數據',
+                'estimated_accuracy': 85,
+                'feedback_count': 0
+            }
+        
+        # 計算準確率
+        total_error = 0
+        score_differences = []
+        
+        for predicted, actual, _ in feedbacks:
+            error = abs(predicted - actual)
+            total_error += error
+            score_differences.append(error)
+        
+        avg_error = total_error / len(feedbacks)
+        
+        # 準確率 = 100 - 平均誤差百分比
+        accuracy = max(0, min(100, 100 - avg_error))
+        
+        # 計算誤差分佈
+        cursor.execute('''
+            SELECT 
+                COUNT(CASE WHEN ABS(predicted_score - user_rating) <= 10 THEN 1 END) as within_10,
+                COUNT(CASE WHEN ABS(predicted_score - user_rating) <= 20 THEN 1 END) as within_20,
+                COUNT(*) as total
+            FROM user_feedback
+            WHERE feedback_timestamp >= datetime('now', '-30 days')
+        ''')
+        
+        within_10, within_20, total = cursor.fetchone()
+        
+        conn.close()
+        
+        return {
+            'has_data': True,
+            'accuracy': round(accuracy, 1),
+            'avg_error': round(avg_error, 1),
+            'feedback_count': len(feedbacks),
+            'within_10_points': round((within_10 / total * 100), 1) if total > 0 else 0,
+            'within_20_points': round((within_20 / total * 100), 1) if total > 0 else 0,
+            'last_updated': feedbacks[0][2] if feedbacks else None
+        }
+        
+    except Exception as e:
+        print(f"❌ 計算準確率錯誤: {e}")
+        return {
+            'has_data': False,
+            'message': f'計算錯誤: {str(e)}',
+            'estimated_accuracy': 85,
+            'feedback_count': 0
+        }
 
 # 啟動每小時預測保存排程
 start_hourly_scheduler()
