@@ -187,15 +187,28 @@
             border-radius: 15px;
             border: 1px solid rgba(102, 126, 234, 0.2);
             text-align: center;
+            overflow: hidden;
         }
 
         .webcam-image {
             width: 100%;
-            max-width: 300px;
+            max-width: 100%;
             height: auto;
             border-radius: 10px;
             margin-bottom: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+
+        .webcam-details {
+            text-align: left;
+        }
+
+        .webcam-details-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
         }
 
         .loading {
@@ -271,21 +284,82 @@
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                padding: 8px;
             }
             
             h1 {
-                font-size: 2rem;
+                font-size: 1.5rem;
+                margin-bottom: 20px;
             }
             
             .main-content {
-                padding: 20px;
+                padding: 15px;
                 margin: 10px 0;
+                border-radius: 15px;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .status-card {
+                padding: 15px;
+            }
+            
+            .status-card h3 {
+                font-size: 1rem;
+            }
+            
+            .webcam-grid {
+                grid-template-columns: 1fr !important;
+                gap: 15px;
+            }
+            
+            .webcam-card {
+                padding: 15px;
+            }
+            
+            .webcam-card h4 {
+                font-size: 0.95rem;
+            }
+            
+            .webcam-image {
+                max-width: 100%;
             }
             
             .footer-links {
                 flex-direction: column;
                 gap: 10px;
+            }
+            
+            .region-section h3 {
+                font-size: 1rem !important;
+                padding: 8px 12px !important;
+            }
+        }
+        
+        /* 小屏幕額外優化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+            
+            h1 {
+                font-size: 1.3rem;
+            }
+            
+            .main-content {
+                padding: 12px;
+                border-radius: 12px;
+            }
+            
+            .status-card {
+                padding: 12px;
+            }
+            
+            .webcam-card {
+                padding: 12px;
             }
         }
     </style>
@@ -426,9 +500,9 @@
                 if (!webcamsByRegion[region] || webcamsByRegion[region].length === 0) continue;
                 
                 const emoji = regionEmoji[region] || '📍';
-                html += `<div class="region-section" style="margin-bottom: 30px;">
-                    <h3 style="color: #333; margin-bottom: 15px; padding: 10px 15px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 10px; font-size: 1.2rem;">
-                        ${emoji} ${region} <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(${webcamsByRegion[region].length}個攝影機)</span>
+                html += `<div class="region-section" style="margin-bottom: 25px;">
+                    <h3 style="color: #333; margin-bottom: 12px; padding: 8px 12px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 10px; font-size: 1rem;">
+                        ${emoji} ${region} <span style="font-size: 0.8rem; color: #666; font-weight: normal;">(${webcamsByRegion[region].length}個)</span>
                     </h3>
                     <div class="webcam-grid">`;
                 
@@ -455,26 +529,26 @@
                     const warningStyle = isOutdated ? 'background: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-bottom: 10px; border-radius: 4px;' : '';
                     const timeStyle = isStale ? 'color: #d9534f; font-weight: 600;' : '';
                     html += `<div class="webcam-card">
-                        <h4 style="margin-bottom: 8px;">📍 ${data.name || locationId}</h4>
-                        <div style="font-size: 0.75rem; color: #888; margin-bottom: 10px; ${timeStyle}">朝向: ${direction} ${captureTimeStr ? `| 📅 ${captureTimeStr}` : ''}</div>
-                        ${isOutdated ? `<div style="${warningStyle}"><div style="font-size: 0.8rem; color: #856404;">⚠️ 照片超過15分鐘未更新，資料可能不準確</div></div>` : ''}
+                        <h4 style="margin-bottom: 8px; font-size: 0.95rem; word-break: break-word;">📍 ${data.name || locationId}</h4>
+                        <div style="font-size: 0.7rem; color: #888; margin-bottom: 10px; ${timeStyle}">朝向: ${direction} ${captureTimeStr ? `| 📅 ${captureTimeStr}` : ''}</div>
+                        ${isOutdated ? `<div style="${warningStyle}"><div style="font-size: 0.75rem; color: #856404;">⚠️ 照片超過15分鐘未更新</div></div>` : ''}
                         <div style="position: relative;">
                             <img src="/api/webcam/image/${locationId}?format=image&t=${Date.now()}" alt="${data.name}" class="webcam-image" 
-                                 style="width: 100%; height: auto; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                                 style="width: 100%; max-width: 100%; height: auto; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block;"
                                  onclick="window.open('${hkoUrl}', '_blank')"
                                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E圖片載入失敗%3C/text%3E%3C/svg%3E'">
-                            <a href="${hkoUrl}" target="_blank" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 5px; text-decoration: none; font-size: 0.75rem; backdrop-filter: blur(5px); font-weight: 500;" title="在香港天文台官網查看原圖">🔗 HKO原圖</a>
+                            <a href="${hkoUrl}" target="_blank" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 5px; text-decoration: none; font-size: 0.65rem; backdrop-filter: blur(5px); font-weight: 500;" title="在香港天文台官網查看原圖">🔗 HKO</a>
                         </div>
-                        <div style="margin-top: 15px;">
-                            <div style="font-size: 2rem; font-weight: bold; color: ${getScoreColor(score)}; margin-bottom: 5px;">${score.toFixed(1)}</div>
-                            <div style="color: #666; font-size: 1rem; font-weight: 500; margin-bottom: 12px;">${getScoreLevel(score)}</div>
-                            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; font-size: 0.85rem;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">🎨 色彩豐富度:</span><span style="font-weight: 600; color: ${getDetailColor(colorRichness)};">${colorRichness.toFixed(1)}</span></div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">☁️ 雲量覆蓋:</span><span style="font-weight: 600; color: ${getDetailColor(100 - cloudCoverage)};">${cloudCoverage.toFixed(1)}%</span></div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #666;">👁️ 能見度:</span><span style="font-weight: 600; color: ${getDetailColor(visibility)};">${visibility.toFixed(1)}</span></div>
+                        <div style="margin-top: 12px;">
+                            <div style="font-size: 1.8rem; font-weight: bold; color: ${getScoreColor(score)}; margin-bottom: 5px;">${score.toFixed(1)}</div>
+                            <div style="color: #666; font-size: 0.9rem; font-weight: 500; margin-bottom: 10px;">${getScoreLevel(score)}</div>
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: left;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #666;">🎨 色彩豐富度:</span><span style="font-weight: 600; color: ${getDetailColor(colorRichness)};">${colorRichness.toFixed(1)}</span></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #666;">☁️ 雲量覆蓋:</span><span style="font-weight: 600; color: ${getDetailColor(100 - cloudCoverage)};">${cloudCoverage.toFixed(1)}%</span></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span style="color: #666;">👁️ 能見度:</span><span style="font-weight: 600; color: ${getDetailColor(visibility)};">${visibility.toFixed(1)}</span></div>
                                 <div style="display: flex; justify-content: space-between;"><span style="color: #666;">💡 亮度:</span><span style="font-weight: 600; color: ${getDetailColor(brightness)};">${brightness.toFixed(1)}</span></div>
                             </div>
-                            <div style="font-size: 0.8rem; color: #999; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; text-align: center;">狀態: ${translateStatus(status)}</div>
+                            <div style="font-size: 0.75rem; color: #999; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; text-align: center;">狀態: ${translateStatus(status)}</div>
                         </div>
                     </div>`;
                 }
