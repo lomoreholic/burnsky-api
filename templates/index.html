@@ -2125,37 +2125,26 @@
                     return;
                 }
                 
-                // HKO 圖片 URL
-                const hkoUrls = {
-                    'HK_LFS': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/lfs/latest_LFS.jpg',
-                    'HK_WLP': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wlp/latest_WLP.jpg',
-                    'HK_TPK': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/tpk/latest_TPK.jpg',
-                    'HK_CP1': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cp1/latest_CP1.jpg',
-                    'HK_VPB': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/vpb/latest_VPB.jpg',
-                    'HK_WGL': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/wgl/latest_WGL.jpg',
-                    'HK_CCH': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/cch/latest_CCH.jpg',
-                    'HK_HKO': 'https://www.hko.gov.hk/wxinfo/aws/hko_mica/hko/latest_HKO.jpg'
-                };
+                // 動態生成 HKO 圖片 URL
+                function getHkoImageUrl(camId) {
+                    // 從 HK_XXX 取得 xxx (小寫) 和 XXX (大寫)
+                    const code = camId.replace('HK_', '');
+                    const lowerCode = code.toLowerCase();
+                    return `https://www.hko.gov.hk/wxinfo/aws/hko_mica/${lowerCode}/latest_${code}.jpg`;
+                }
                 
-                // 優先顯示的攝影機（燒天熱門地點）
-                const priorityLocations = ['HK_LFS', 'HK_WGL', 'HK_CP1', 'HK_VPB', 'HK_TPK', 'HK_CCH'];
+                // 優先顯示的攝影機（燒天熱門地點 - 只顯示這些）
+                const priorityLocations = ['HK_LFS', 'HK_WGL', 'HK_CP1', 'HK_VPB', 'HK_TPK', 'HK_CCH', 'HK_HKO', 'HK_WLP'];
                 
-                // 排序：優先地點在前，其他按評分排序
-                const sortedWebcams = Object.entries(data.webcam_data)
-                    .map(([id, info]) => ({ id, ...info }))
-                    .sort((a, b) => {
-                        const aPriority = priorityLocations.indexOf(a.id);
-                        const bPriority = priorityLocations.indexOf(b.id);
-                        if (aPriority !== -1 && bPriority !== -1) return aPriority - bPriority;
-                        if (aPriority !== -1) return -1;
-                        if (bPriority !== -1) return 1;
-                        return (b.sunset_potential || 0) - (a.sunset_potential || 0);
-                    })
+                // 只選取優先地點中存在於 API 資料的攝影機
+                const sortedWebcams = priorityLocations
+                    .filter(id => data.webcam_data[id])
+                    .map(id => ({ id, ...data.webcam_data[id] }))
                     .slice(0, 8); // 最多顯示 8 個
                 
                 let html = '';
                 for (const webcam of sortedWebcams) {
-                    const imgUrl = hkoUrls[webcam.id] || '';
+                    const imgUrl = getHkoImageUrl(webcam.id);
                     const score = webcam.sunset_potential || 0;
                     const name = webcam.name || webcam.id;
                     
