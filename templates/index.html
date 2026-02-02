@@ -2544,6 +2544,90 @@
             }
         };
 
+        /**
+         * 🌅 根據當前時間和天文台日出日落時間自動判斷應該預測日出還是日落
+         * - 日落後30分鐘 ~ 隔日日出後30分鐘：預測日出
+         * - 其他時間：預測日落
+         */
+        let cachedSunTimes = null;
+        
+        async function fetchSunTimes() {
+            try {
+                const response = await fetch('/api/sun-times');
+                if (response.ok) {
+                    const data = await response.json();
+                    cachedSunTimes = data;
+                    console.log('🌅 從天文台獲取日出日落時間:', data);
+                    return data;
+                }
+            } catch (e) {
+                console.warn('無法獲取日出日落時間，使用估算值');
+            }
+            return null;
+        }
+        
+        function getAutoPredictionType() {
+            const now = new Date();
+            const hkNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
+            const currentHour = hkNow.getHours();
+            const currentMinute = hkNow.getMinutes();
+            const currentTimeMinutes = currentHour * 60 + currentMinute;
+            
+            // 如果有天文台數據，使用精確時間
+            if (cachedSunTimes && cachedSunTimes.sunset && cachedSunTimes.sunrise) {
+                const [sunsetH, sunsetM] = cachedSunTimes.sunset.split(':').map(Number);
+                const [sunriseH, sunriseM] = cachedSunTimes.sunrise.split(':').map(Number);
+                
+                const sunsetMinutes = sunsetH * 60 + sunsetM;
+                const sunriseMinutes = sunriseH * 60 + sunriseM;
+                
+                // 日落後30分鐘 ~ 隔日日出後30分鐘 = 預測日出
+                // 即：currentTime > sunset+30 OR currentTime < sunrise+30
+                const sunsetThreshold = sunsetMinutes + 30;
+                const sunriseThreshold = sunriseMinutes + 30;
+                
+                if (currentTimeMinutes > sunsetThreshold || currentTimeMinutes < sunriseThreshold) {
+                    return 'sunrise';
+                }
+                return 'sunset';
+            }
+            
+            // 備用：簡單估算
+            const month = hkNow.getMonth() + 1;
+            let sunsetHour = 18;
+            if (month >= 5 && month <= 8) sunsetHour = 19;
+            else if (month >= 11 || month <= 2) sunsetHour = 17;
+            
+            let sunriseHour = 6;
+            if (month >= 5 && month <= 8) sunriseHour = 5;
+            
+            if (currentHour >= sunsetHour + 1 || currentHour < sunriseHour + 1) {
+                return 'sunrise';
+            }
+            return 'sunset';
+        }
+        
+        /**
+         * 🔄 初始化時自動設置預測類型（先獲取天文台時間）
+         */
+        async function initAutoPredictionType() {
+            // 先嘗試獲取天文台日出日落時間
+            if (!cachedSunTimes) {
+                await fetchSunTimes();
+            }
+            
+            const predictionTypeElement = document.getElementById('predictionType');
+            if (predictionTypeElement) {
+                const autoType = getAutoPredictionType();
+                predictionTypeElement.value = autoType;
+                
+                const sunInfo = cachedSunTimes 
+                    ? `(日出:${cachedSunTimes.sunrise} 日落:${cachedSunTimes.sunset})`
+                    : '(估算)';
+                console.log(`🌅 自動切換預測類型: ${autoType === 'sunrise' ? '日出' : '日落'} ${sunInfo}`);
+            }
+        }
+
         async function loadPrediction() {
             const loading = document.getElementById('loading');
             const content = document.getElementById('content');
@@ -5208,6 +5292,9 @@
             APIUtils.showGlobalLoading('正在載入燒天預測系統...');
             
             try {
+                // 🌅 自動根據時間設置預測類型（日落後自動切換到日出）
+                initAutoPredictionType();
+                
                 // 初始化區塊狀態（同步操作，不耗時）
                 initializeFactorsSection();
                 initializeScoreReferenceSection();
@@ -5267,6 +5354,9 @@
         setInterval(async () => {
             console.log('🔄 自動更新預測數據...');
             try {
+                // 🌅 每次更新時也檢查是否需要切換預測類型
+                initAutoPredictionType();
+                
                 await Promise.allSettled([
                     loadPrediction(),
                     loadPhotoCasesCount()
