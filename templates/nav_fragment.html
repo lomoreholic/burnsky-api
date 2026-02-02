@@ -1,47 +1,143 @@
 <nav class="top-nav">
     <div class="nav-container">
+        <!-- Logo/品牌 (手機版顯示) -->
+        <a href="/" class="nav-brand">
+            <span class="brand-icon">🔥</span>
+            <span class="brand-text">燒天預測</span>
+        </a>
+        
+        <!-- 桌面版導航菜單 (精簡) -->
         <div class="nav-menu" id="navMenu">
-            <a href="/">🏠 首頁</a>
-            <a href="/photo-analysis">📸 照片分析</a>
-            <a href="/warning-dashboard">⚠️ 警告台</a>
-            <a href="/ml-test">🤖 ML測試</a>
-            <a href="/api-docs">📚 API文檔</a>
-            <a href="/photography-guide">📸 攝影指南</a>
-            <a href="/webcam-analysis">📷 即時攝影機</a>
-            <a href="/best-locations">📍 最佳地點</a>
-            <a href="/faq">❓ FAQ</a>
-            <a href="/weather-terms">📚 天氣術語</a>
-            <a href="/terms">📄 條款</a>
-            <a href="/privacy">🔒 私隱</a>
+            <a href="/" class="nav-item">🔥 預測</a>
+            <a href="/webcam-analysis" class="nav-item">📷 實況</a>
+            <a href="/best-locations" class="nav-item">📍 地點</a>
+            <a href="/photo-analysis" class="nav-item">📸 分析</a>
+            <a href="/warning-dashboard" class="nav-item">⚠️ 警告</a>
+            
+            <!-- 更多選單 -->
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-btn">⋯</button>
+                <div class="nav-dropdown-content">
+                    <a href="/photography-guide">📖 攝影指南</a>
+                    <a href="/faq">❓ FAQ</a>
+                    <a href="/ml-test">🤖 ML測試</a>
+                    <a href="/api-docs">📚 API</a>
+                </div>
+            </div>
         </div>
-        <button class="hamburger-btn" id="hamburgerBtn">☰</button>
+        
+        <!-- 漢堡菜單按鈕（手機版備用） -->
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="開啟選單">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
     </div>
 </nav>
 
-<script>
-    // 漢堡菜單控制
-    (function() {
-        const hamburgerBtn = document.getElementById('hamburgerBtn');
-        const navMenu = document.getElementById('navMenu');
+<!-- 手機版底部導航 Tab Bar (精簡4項) -->
+<nav class="mobile-tab-bar" id="mobileTabBar">
+    <a href="/" class="tab-item" data-tab="home">
+        <span class="tab-icon">🔥</span>
+        <span class="tab-label">預測</span>
+    </a>
+    <a href="/webcam-analysis" class="tab-item" data-tab="webcam">
+        <span class="tab-icon">📷</span>
+        <span class="tab-label">實況</span>
+    </a>
+    <a href="/best-locations" class="tab-item" data-tab="locations">
+        <span class="tab-icon">📍</span>
+        <span class="tab-label">地點</span>
+    </a>
+    <button class="tab-item tab-more" id="tabMoreBtn" data-tab="more">
+        <span class="tab-icon">⚡</span>
+        <span class="tab-label">更多</span>
+    </button>
+</nav>
+
+<!-- 手機版「更多」抽屜面板 (精簡版) -->
+<div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
+<div class="mobile-drawer" id="mobileDrawer">
+    <div class="drawer-handle"></div>
+    
+    <div class="drawer-content">
+        <!-- 快捷功能格子 -->
+        <div class="drawer-grid">
+            <a href="/photo-analysis" class="grid-item">
+                <span class="grid-icon">📸</span>
+                <span class="grid-label">照片分析</span>
+            </a>
+            <a href="/warning-dashboard" class="grid-item">
+                <span class="grid-icon">⚠️</span>
+                <span class="grid-label">警告台</span>
+            </a>
+            <a href="/photography-guide" class="grid-item">
+                <span class="grid-icon">📖</span>
+                <span class="grid-label">攝影指南</span>
+            </a>
+            <a href="/faq" class="grid-item">
+                <span class="grid-icon">❓</span>
+                <span class="grid-label">常見問題</span>
+            </a>
+        </div>
         
-        if (hamburgerBtn && navMenu) {
-            hamburgerBtn.addEventListener('click', function() {
-                navMenu.classList.toggle('active');
-            });
-            
-            // 點擊導航項目後關閉菜單
-            navMenu.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', function() {
-                    navMenu.classList.remove('active');
-                });
-            });
-            
-            // 點擊外部關閉菜單
-            document.addEventListener('click', function(e) {
-                if (!hamburgerBtn.contains(e.target) && !navMenu.contains(e.target)) {
-                    navMenu.classList.remove('active');
-                }
-            });
-        }
-    })();
+        <!-- 其他連結 -->
+        <div class="drawer-links">
+            <a href="/ml-test" class="link-item">🤖 ML測試</a>
+            <a href="/api-docs" class="link-item">📚 API文檔</a>
+            <a href="/weather-terms" class="link-item">🌤️ 天氣術語</a>
+            <a href="/terms" class="link-item">📄 條款</a>
+            <a href="/privacy" class="link-item">🔒 私隱</a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const tabMoreBtn = document.getElementById('tabMoreBtn');
+    const mobileDrawer = document.getElementById('mobileDrawer');
+    const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
+    const mobileTabBar = document.getElementById('mobileTabBar');
+    const currentPath = window.location.pathname;
+    
+    // 高亮當前頁面
+    function highlightCurrentPage() {
+        document.querySelectorAll('.nav-item, .tab-item, .grid-item').forEach(el => {
+            if (el.getAttribute('href') === currentPath) el.classList.add('active');
+        });
+    }
+    
+    // 抽屜控制
+    function toggleDrawer(open) {
+        mobileDrawer?.classList.toggle('open', open);
+        mobileDrawerOverlay?.classList.toggle('open', open);
+        tabMoreBtn?.classList.toggle('active', open);
+        document.body.style.overflow = open ? 'hidden' : '';
+    }
+    
+    tabMoreBtn?.addEventListener('click', e => {
+        e.preventDefault();
+        toggleDrawer(!mobileDrawer.classList.contains('open'));
+    });
+    
+    mobileDrawerOverlay?.addEventListener('click', () => toggleDrawer(false));
+    
+    // 點擊連結關閉抽屜
+    document.querySelectorAll('.grid-item, .link-item').forEach(el => {
+        el.addEventListener('click', () => setTimeout(() => toggleDrawer(false), 100));
+    });
+    
+    // 滾動隱藏 Tab Bar
+    let lastY = 0;
+    window.addEventListener('scroll', () => {
+        const y = window.scrollY;
+        mobileTabBar?.classList.toggle('hidden', y > lastY && y > 80);
+        lastY = y;
+    }, { passive: true });
+    
+    // ESC 關閉
+    document.addEventListener('keydown', e => e.key === 'Escape' && toggleDrawer(false));
+    
+    highlightCurrentPage();
+})();
 </script>

@@ -2292,6 +2292,9 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         "ml_feature_analysis": unified_result.get('ml_feature_analysis', {}),
     }
 
+    # 🌅 獲取日出日落時間
+    sun_times = get_seasonal_sun_times()
+    
     result = {
         "burnsky_score": score,
         "probability": f"{round(min(score, 100))}%",
@@ -2306,6 +2309,12 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         "weather_data": future_weather_data,
         "original_weather_data": weather_data if advance_hours > 0 else None,
         "forecast_data": forecast_data,
+        # 🌅 新增日出日落時間
+        "sun_times": {
+            "sunrise": sun_times['sunrise'],
+            "sunset": sun_times['sunset'],
+            "method": sun_times.get('method', 'calculated')
+        },
         # 🚨 新增警告數據到回應中
         "warning_data": warning_data,
         "warning_analysis": {
