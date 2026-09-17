@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 燒天歷史儀表板 - 燒天預測歷史分析 | BurnSky 燒天預測系統</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    
+    <!-- Chart.js 圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #FF6B35;
+            --secondary-color: #004E89;
+            --bg-gradient: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-light: rgba(255, 255, 255, 0.9);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-light);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px 20px 20px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .warning-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .warning-header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .warning-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .warning-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .warning-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #FF6B35;
+        }
+
+        .warning-item.high {
+            border-left-color: #FF4757;
+        }
+
+        .warning-item.medium {
+            border-left-color: #FFA502;
+        }
+
+        .warning-item.low {
+            border-left-color: #2ED573;
+        }
+
+        .warning-time {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .warning-message {
+            font-weight: 500;
+        }
+
+        .footer {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-light);
+            padding: 30px 20px;
+            margin-top: 40px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #FFD700;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px 15px 15px;
+                margin: 15px auto;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .warning-header h1 {
+                font-size: 2em;
+            }
+
+            .glass-card {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+
+    <div class="container">
+        <div class="warning-header">
+            <h1>📊 燒天歷史儀表板</h1>
+            <p>燒天預測系統 - 歷史預測數據分析與可視化</p>
+        </div>
+
+        <!-- 總覽統計 -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalWarnings">--</div>
+                <div class="stat-label">總預測次數</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #FF4757;">--</div>
+                <div class="stat-label">高分預測(≥70)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #FFA502;">--</div>
+                <div class="stat-label">中分預測(50-69)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #2ED573;" id="verifiedAccuracy">--</div>
+                <div class="stat-label" id="verifiedAccuracyLabel">真實準確率（等待驗證）</div>
+            </div>
+        </div>
+
+        <div class="glass-card" id="accuracySummary">
+            <h2 style="margin-bottom: 20px;">真實預測準確率</h2>
+            <div class="dashboard-grid" style="margin-bottom: 0;">
+                <div class="stat-card">
+                    <div class="stat-number" id="avgError">--</div>
+                    <div class="stat-label">平均誤差</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="withinTen">--</div>
+                    <div class="stat-label">誤差 10 分內</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="highPrecision">--</div>
+                    <div class="stat-label">高分預測命中率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 警告時間軸圖表 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 20px;">📈 燒天預測時間軸</h2>
+            <div class="chart-container">
+                <canvas id="warningTimelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 評分分析 -->
+        <div class="dashboard-grid">
+            <div class="glass-card">
+                <h2 style="margin-bottom: 20px;">⭐ 評分分布分析</h2>
+                <div class="chart-container">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h2 style="margin-bottom: 20px;">🔥 近期高影響警告</h2>
+                <div class="warning-list">
+                    <div class="warning-item high">
+                        <div class="warning-time">2024-12-28 18:45</div>
+                        <div class="warning-message">極佳燒天條件：預測評分 95/100，持續時間 25 分鐘</div>
+                    </div>
+                    <div class="warning-item high">
+                        <div class="warning-time">2024-12-25 19:10</div>
+                        <div class="warning-message">聖誕節燒天盛宴：預測評分 92/100，覆蓋全港</div>
+                    </div>
+                    <div class="warning-item medium">
+                        <div class="warning-time">2024-12-22 18:30</div>
+                        <div class="warning-message">中等燒天條件：預測評分 78/100，建議西區拍攝</div>
+                    </div>
+                    <div class="warning-item medium">
+                        <div class="warning-time">2024-12-20 19:05</div>
+                        <div class="warning-message">局部燒天現象：預測評分 71/100，維港東部較佳</div>
+                    </div>
+                    <div class="warning-item low">
+                        <div class="warning-time">2024-12-18 17:45</div>
+                        <div class="warning-message">輕微燒天可能：預測評分 65/100，東區有機會</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 數據洞察 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 20px;">💡 數據洞察與建議</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>🌨️ 季節性模式</strong><br>
+                    冬季月份 (12-2月) 燒天機率最高，建議重點關注
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>🕐 最佳時段</strong><br>
+                    下午 6:30-7:00 是燒天預警高峰時段
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>💧 濕度影響</strong><br>
+                    適中濕度範圍內燒天發生機率較高
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>🌪️ 風向因素</strong><br>
+                    東北風天氣型態較有利燒天形成
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let timelineChart = null;
+        let severityChart = null;
+        
+        // 漢堡菜單控制
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const navMenu = document.getElementById('navMenu');
+        
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', function() {
+                navMenu.classList.toggle('active');
+            });
+            
+            // 點擊導航項目後關閉菜單
+            navMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', function() {
+                    navMenu.classList.remove('active');
+                });
+            });
+        }
+        
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+        });
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/burnsky-dashboard-data');
+                const data = await response.json();
+                
+                window.dashboardAccuracy = data.accuracy;
+                updateStatistics(data.statistics);
+                updateCharts(data);
+                updateWarningList(data.high_impact_warnings);
+                updateInsights(data.insights);
+                
+            } catch (error) {
+                console.error('❌ 加載數據失敗:', error);
+                showErrorNotice('無法加載最新數據，顯示示範內容');
+            }
+        }
+        
+        function updateStatistics(stats) {
+            if (!stats) return;
+            
+            document.getElementById('totalWarnings').textContent = stats.total_warnings ?? '--';
+            
+            const statCards = document.querySelectorAll('.stat-card .stat-number');
+            if (statCards.length >= 2) statCards[1].textContent = stats.high_severity ?? '--';
+            if (statCards.length >= 3) statCards[2].textContent = stats.medium_severity ?? '--';
+            const accuracy = window.dashboardAccuracy;
+            const accuracyElement = document.getElementById('verifiedAccuracy');
+            const accuracyLabel = document.getElementById('verifiedAccuracyLabel');
+            if (accuracy && accuracy.verified) {
+                accuracyElement.textContent = `${accuracy.percentage.toFixed(1)}%`;
+                accuracyLabel.textContent = accuracy.statistically_ready
+                    ? `真實準確率（${accuracy.feedback_count} 筆用戶驗證）`
+                    : `Verified accuracy (limited sample: ${accuracy.feedback_count}/${accuracy.minimum_sample_size})`;
+                document.getElementById('avgError').textContent = `${accuracy.avg_error.toFixed(1)} 分`;
+                document.getElementById('withinTen').textContent = `${accuracy.within_10_points.toFixed(1)}%`;
+                document.getElementById('highPrecision').textContent = accuracy.high_score_precision === null
+                    ? '--'
+                    : `${accuracy.high_score_precision.toFixed(1)}%`;
+            } else {
+                accuracyElement.textContent = '--';
+                accuracyLabel.textContent = '真實準確率（等待用戶驗證）';
+                document.getElementById('avgError').textContent = '--';
+                document.getElementById('withinTen').textContent = '--';
+                document.getElementById('highPrecision').textContent = '--';
+            }
+        }
+        
+        function updateCharts(data) {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js 未載入');
+                return;
+            }
+            
+            // 警告時間軸圖表
+            const timelineCtx = document.getElementById('warningTimelineChart');
+            if (timelineCtx && data.monthly_data) {
+                if (timelineChart) timelineChart.destroy();
+                
+                const months = data.monthly_data.map(m => `${m.month}月`);
+                const totalCounts = data.monthly_data.map(m => m.total_count);
+                const highCounts = data.monthly_data.map(m => m.high_count);
+                
+                timelineChart = new Chart(timelineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: '總預測次數',
+                            data: totalCounts,
+                            borderColor: '#FFD700',
+                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: '高分預測 (≥70)',
+                            data: highCounts,
+                            borderColor: '#FF4757',
+                            backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: 'white' }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: 'white' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            x: {
+                                ticks: { color: 'white' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 嚴重程度分析圖表
+            const severityCtx = document.getElementById('severityChart');
+            if (severityCtx && data.statistics) {
+                if (severityChart) severityChart.destroy();
+                
+                severityChart = new Chart(severityCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['高分 (≥70)', '中分 (50-69)', '低分 (<50)'],
+                        datasets: [{
+                            data: [
+                                data.statistics.high_severity || 0,
+                                data.statistics.medium_severity || 0,
+                                data.statistics.low_severity || 0
+                            ],
+                            backgroundColor: ['#FF4757', '#FFA502', '#2ED573'],
+                            borderWidth: 2,
+                            borderColor: 'white'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: 'white',
+                                    padding: 20
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        function updateWarningList(warnings) {
+            if (!warnings || warnings.length === 0) return;
+            
+            const listContainer = document.querySelector('.warning-list');
+            if (!listContainer) return;
+            
+            listContainer.innerHTML = warnings.map(w => {
+                const severity = w.score >= 80 ? 'high' : w.score >= 60 ? 'medium' : 'low';
+                const timestamp = new Date(w.timestamp).toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="warning-item ${severity}">
+                        <div class="warning-time">${timestamp}</div>
+                        <div class="warning-message">
+                            ${w.score >= 80 ? '極佳' : w.score >= 60 ? '良好' : '一般'}燒天條件：
+                            預測評分 ${w.score}/100
+                            ${w.factors ? ` - ${w.factors}` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateInsights(insights) {
+            if (!insights) return;
+            
+            const insightsContainer = document.querySelector('.glass-card:last-child > div');
+            if (!insightsContainer) return;
+            
+            const cards = [
+                { icon: '🌨️', title: '季節性模式', text: insights.seasonal || '冬季月份 (12-2月) 燒天機率最高' },
+                { icon: '🕐', title: '最佳時段', text: insights.peak_time || '下午 6:30-7:00 是燒天預警高峰時段' },
+                { icon: '💧', title: '濕度影響', text: insights.humidity || '濕度 60-80% 範圍內燒天機率較高' },
+                { icon: '🌪️', title: '風向因素', text: insights.wind || '東北風天氣型態下預測準確率更高' }
+            ];
+            
+            insightsContainer.innerHTML = cards.map(card => `
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>${card.icon} ${card.title}</strong><br>
+                    ${card.text}
+                </div>
+            `).join('');
+        }
+        
+        function showErrorNotice(message) {
+            const notice = document.createElement('div');
+            notice.style.cssText = `
+                position: fixed; top: 20px; right: 20px; 
+                background: rgba(255, 71, 87, 0.9); color: white;
+                padding: 15px 20px; border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 9999;
+            `;
+            notice.textContent = `⚠️ ${message}`;
+            document.body.appendChild(notice);
+            
+            setTimeout(() => notice.remove(), 5000);
+        }
+    </script>
+</body>
+</html>
