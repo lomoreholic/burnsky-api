@@ -583,8 +583,9 @@ class WebcamImageAnalyzer:
         - 非燒天時段：基於相片特徵（日出/早晨/全天任何時間都可能有好天空）
         """
         from datetime import datetime
+        from zoneinfo import ZoneInfo
         
-        current_time = datetime.now()
+        current_time = datetime.now(ZoneInfo('Asia/Hong_Kong'))
         hour = current_time.hour
         month = current_time.month
         
@@ -609,6 +610,19 @@ class WebcamImageAnalyzer:
         # 判斷當前時段（日出、白天、燒天、日落、夜間）
         time_period = self._get_time_period(hour, month)
         is_sunset_time = self._is_sunset_time(hour, month)
+
+        if time_period == 'night':
+            return {
+                'score': 0.0,
+                'level': 'night_observation',
+                'is_sunset_time': False,
+                'time_period': 'night',
+                'current_hour': hour,
+                'factors': {
+                    'brightness': float(avg_brightness)
+                },
+                'message': '夜間天空觀測，不評估燒天潛力'
+            }
         
         # 顏色豐富度（紅色vs藍色比例）- 正規化到0-100
         red_blue_ratio = (red / (blue + 1)) if blue > 0 else 0
