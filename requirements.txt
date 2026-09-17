@@ -1,5 +1,6 @@
 Flask
 Flask-Caching
+Flask-Compress
 Flask-CORS
 flask-limiter
 python-dotenv

@@ -195,20 +195,38 @@
         <!-- 總覽統計 -->
         <div class="dashboard-grid">
             <div class="stat-card">
-                <div class="stat-number" id="totalWarnings">1885</div>
+                <div class="stat-number" id="totalWarnings">--</div>
                 <div class="stat-label">總預測次數</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" style="color: #FF4757;">234</div>
+                <div class="stat-number" style="color: #FF4757;">--</div>
                 <div class="stat-label">高分預測(≥70)</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" style="color: #FFA502;">456</div>
+                <div class="stat-number" style="color: #FFA502;">--</div>
                 <div class="stat-label">中分預測(50-69)</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" style="color: #2ED573;">12.4%</div>
-                <div class="stat-label">高分成功率</div>
+                <div class="stat-number" style="color: #2ED573;" id="verifiedAccuracy">--</div>
+                <div class="stat-label" id="verifiedAccuracyLabel">真實準確率（等待驗證）</div>
+            </div>
+        </div>
+
+        <div class="glass-card" id="accuracySummary">
+            <h2 style="margin-bottom: 20px;">真實預測準確率</h2>
+            <div class="dashboard-grid" style="margin-bottom: 0;">
+                <div class="stat-card">
+                    <div class="stat-number" id="avgError">--</div>
+                    <div class="stat-label">平均誤差</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="withinTen">--</div>
+                    <div class="stat-label">誤差 10 分內</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="highPrecision">--</div>
+                    <div class="stat-label">高分預測命中率</div>
+                </div>
             </div>
         </div>
 
@@ -310,9 +328,10 @@
                 const response = await fetch('/api/burnsky-dashboard-data');
                 const data = await response.json();
                 
+                window.dashboardAccuracy = data.accuracy;
                 updateStatistics(data.statistics);
                 updateCharts(data);
-                updateWarningList(data.recent_warnings);
+                updateWarningList(data.high_impact_warnings);
                 updateInsights(data.insights);
                 
             } catch (error) {
@@ -324,12 +343,31 @@
         function updateStatistics(stats) {
             if (!stats) return;
             
-            document.getElementById('totalWarnings').textContent = stats.total_warnings || 256;
+            document.getElementById('totalWarnings').textContent = stats.total_warnings ?? '--';
             
             const statCards = document.querySelectorAll('.stat-card .stat-number');
-            if (statCards.length >= 2) statCards[1].textContent = stats.high_severity || 87;
-            if (statCards.length >= 3) statCards[2].textContent = stats.medium_severity || 123;
-            if (statCards.length >= 4) statCards[3].textContent = `${(stats.accuracy || 87.3).toFixed(1)}%`;
+            if (statCards.length >= 2) statCards[1].textContent = stats.high_severity ?? '--';
+            if (statCards.length >= 3) statCards[2].textContent = stats.medium_severity ?? '--';
+            const accuracy = window.dashboardAccuracy;
+            const accuracyElement = document.getElementById('verifiedAccuracy');
+            const accuracyLabel = document.getElementById('verifiedAccuracyLabel');
+            if (accuracy && accuracy.verified) {
+                accuracyElement.textContent = `${accuracy.percentage.toFixed(1)}%`;
+                accuracyLabel.textContent = accuracy.statistically_ready
+                    ? `真實準確率（${accuracy.feedback_count} 筆用戶驗證）`
+                    : `Verified accuracy (limited sample: ${accuracy.feedback_count}/${accuracy.minimum_sample_size})`;
+                document.getElementById('avgError').textContent = `${accuracy.avg_error.toFixed(1)} 分`;
+                document.getElementById('withinTen').textContent = `${accuracy.within_10_points.toFixed(1)}%`;
+                document.getElementById('highPrecision').textContent = accuracy.high_score_precision === null
+                    ? '--'
+                    : `${accuracy.high_score_precision.toFixed(1)}%`;
+            } else {
+                accuracyElement.textContent = '--';
+                accuracyLabel.textContent = '真實準確率（等待用戶驗證）';
+                document.getElementById('avgError').textContent = '--';
+                document.getElementById('withinTen').textContent = '--';
+                document.getElementById('highPrecision').textContent = '--';
+            }
         }
         
         function updateCharts(data) {

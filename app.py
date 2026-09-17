@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory, redirect
 from flask_caching import Cache
+from flask_compress import Compress
 from flask_cors import CORS
 from hko_fetcher import fetch_weather_data, fetch_forecast_data, fetch_ninday_forecast, get_current_wind_data, fetch_warning_data
 from unified_scorer import calculate_burnsky_score_unified
@@ -75,6 +76,8 @@ except ImportError as e:
 
 # 即時攝影機監控系統
 webcam_monitor = RealTimeWebcamMonitor()
+_scheduler_started = False
+_scheduler_lock = threading.Lock()
 
 # ========== 以下是原始函數定義（保留用於向後兼容）==========
 # 如果模塊已載入，這些函數將被模塊中的版本覆蓋
@@ -102,6 +105,28 @@ def init_prediction_history_db():
     # 創建索引
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_timestamp ON prediction_history(timestamp)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_type ON prediction_history(prediction_type)')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            prediction_timestamp TEXT,
+            predicted_score INTEGER NOT NULL,
+            user_rating INTEGER NOT NULL,
+            location TEXT,
+            photo_url TEXT,
+            comment TEXT,
+            feedback_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            weather_conditions TEXT,
+            verification_source TEXT NOT NULL DEFAULT 'manual',
+            photo_case_id INTEGER
+        )
+    ''')
+    feedback_columns = {column[1] for column in cursor.execute('PRAGMA table_info(user_feedback)')}
+    if 'verification_source' not in feedback_columns:
+        cursor.execute("ALTER TABLE user_feedback ADD COLUMN verification_source TEXT NOT NULL DEFAULT 'manual'")
+    if 'photo_case_id' not in feedback_columns:
+        cursor.execute('ALTER TABLE user_feedback ADD COLUMN photo_case_id INTEGER')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_feedback_timestamp ON user_feedback(feedback_timestamp)')
     
     conn.commit()
     conn.close()
@@ -371,8 +396,23 @@ def generate_accuracy_suggestions(accuracy_analysis):
 
 def start_hourly_scheduler():
     """啟動每小時保存排程"""
+    global _scheduler_started
     if not HOURLY_SAVE_ENABLED:
         return
+
+    debug_reloader_parent = (
+        os.getenv('FLASK_DEBUG', os.getenv('FLASK_ENV', 'development')) == 'development'
+        and os.getenv('WERKZEUG_RUN_MAIN') != 'true'
+    )
+    if debug_reloader_parent:
+        print("⏭️ Debug reloader 父程序不啟動排程")
+        return
+
+    with _scheduler_lock:
+        if _scheduler_started:
+            print("⏭️ 每小時預測保存排程已啟動，略過重複初始化")
+            return
+        _scheduler_started = True
     
     # 設定每小時的第5分鐘執行
     schedule.every().hour.at(":05").do(auto_save_current_predictions)
@@ -388,6 +428,7 @@ def start_hourly_scheduler():
 # 初始化預測歷史數據庫
 if MODULES_LOADED:
     print("🔧 使用模塊化組件初始化系統...")
+    init_prediction_history_db()
     initialize_photo_cases()  # 初始化照片案例系統
     start_hourly_scheduler()  # 啟動調度器
 else:
@@ -454,11 +495,19 @@ def clear_prediction_cache():
     
     for key in keys_to_remove:
         cache.pop(key, None)
+
+    full_prediction_keys = [
+        f"full_prediction_{prediction_type}_{advance_hours}"
+        for prediction_type in ('sunrise', 'sunset')
+        for advance_hours in (0, 1, 2, 3, 6, 12, 24)
+    ]
+    for key in full_prediction_keys:
+        flask_cache.delete(key)
     
     if keys_to_remove:
         print(f"🔄 已清除 {len(keys_to_remove)} 個預測快取: {keys_to_remove}")
     
-    return len(keys_to_remove)
+    return len(keys_to_remove) + len(full_prediction_keys)
 
 def trigger_prediction_update():
     """觸發預測更新（清除快取，強制重新計算）"""
@@ -491,6 +540,7 @@ except ImportError as e:
     print("⚠️ 警告數據收集器未可用（可選組件）")
 
 app = Flask(__name__)
+Compress(app)
 
 # 配置 Flask 應用
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24).hex())
@@ -2091,15 +2141,12 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     # 轉換參數類型
     advance_hours = int(advance_hours)
     
-    # 🚀 完整預測結果快取檢查
+    # 使用 Flask-Caching 儲存完整結果，避免與資料來源快取共用非執行緒安全的 dict。
     prediction_cache_key = f"full_prediction_{prediction_type}_{advance_hours}"
-    current_time = time.time()
-    
-    if prediction_cache_key in cache:
-        cached_time, cached_result = cache[prediction_cache_key]
-        if current_time - cached_time < 180:  # 3分鐘完整預測快取
-            print(f"✅ 使用完整預測快取: {prediction_cache_key}")
-            return cached_result
+    cached_result = flask_cache.get(prediction_cache_key)
+    if cached_result is not None:
+        print(f"✅ 使用完整預測快取: {prediction_cache_key}")
+        return cached_result
     
     print(f"🔄 執行完整預測計算 (第一次載入或快取過期)")
     
@@ -2330,8 +2377,7 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     
     result = convert_numpy_types(result)
     
-    # 🚀 快取完整預測結果
-    cache[prediction_cache_key] = (current_time, result)
+    flask_cache.set(prediction_cache_key, result, timeout=180)
     print(f"✅ 預測結果已快取: {prediction_cache_key}")
     
     return result  # 返回結果字典而不是 jsonify
@@ -2417,7 +2463,7 @@ def api_info():
         ],
         "data_source": "香港天文台開放數據 API + CSDI 政府空間數據共享平台",
         "update_frequency": "每小時更新",
-        "accuracy": "基於歷史數據訓練，準確率約85%",
+        "accuracy": "真實準確率會根據用戶反饋和相片驗證統計；驗證樣本不足時不提供準確率結論。",
         "improvements_v3.0": [
             "統一計分系統，整合所有現有算法",
             "標準化因子權重和評分邏輯",
@@ -2685,6 +2731,8 @@ def get_current_webcam_conditions():
                         'status': 'success' if sunset_data.get('score', 0) > 0 else 'unknown',
                         'level': sunset_data.get('level', 'unknown'),
                         'message': sunset_data.get('message', ''),
+                        'time_period': sunset_data.get('time_period', 'unknown'),
+                        'is_sunset_time': sunset_data.get('is_sunset_time', False),
                         'color_richness': factors.get('color_richness', 0),
                         'cloud_coverage': analysis.get('cloud_coverage', 0),
                         'visibility': factors.get('visibility', 0),
@@ -3125,16 +3173,9 @@ def burnsky_dashboard_data():
         ''')
         high_impact_records = cursor.fetchall()
         
-        # 計算準確性 (使用真實用戶反饋數據)
+        # 只以用戶提交的實際評分計算準確率；沒有驗證資料時不顯示估計值。
         accuracy_stats = calculate_real_accuracy()
-        
-        if accuracy_stats['has_data']:
-            accuracy_percentage = accuracy_stats['accuracy']
-        else:
-            # 如果沒有反饋數據，使用預測分數作為參考
-            cursor.execute('SELECT AVG(score) FROM prediction_history WHERE score >= 50')
-            avg_accuracy = cursor.fetchone()[0] or 0
-            accuracy_percentage = min(max(avg_accuracy * 1.2, 75), 95)
+        accuracy_percentage = accuracy_stats.get('accuracy') if accuracy_stats['has_data'] else None
         
         # 時間模式分析
         cursor.execute('''
@@ -3303,11 +3344,20 @@ def burnsky_dashboard_data():
                 'high_severity': high_warnings,
                 'medium_severity': medium_warnings,
                 'low_severity': low_warnings,
-                'accuracy': round(accuracy_percentage, 1)
+                'accuracy': round(accuracy_percentage, 1) if accuracy_percentage is not None else None
             },
             'accuracy': {
-                'percentage': round(accuracy_percentage, 1),
-                'trend': 'up' if accuracy_percentage > 85 else 'stable'
+                'verified': accuracy_stats['has_data'],
+                'statistically_ready': accuracy_stats.get('is_statistically_ready', False),
+                'minimum_sample_size': accuracy_stats.get('minimum_sample_size'),
+                'percentage': round(accuracy_percentage, 1) if accuracy_percentage is not None else None,
+                'feedback_count': accuracy_stats['feedback_count'],
+                'avg_error': accuracy_stats.get('avg_error'),
+                'within_10_points': accuracy_stats.get('within_10_points'),
+                'within_20_points': accuracy_stats.get('within_20_points'),
+                'high_score_precision': accuracy_stats.get('high_score_precision'),
+                'high_score_recall': accuracy_stats.get('high_score_recall'),
+                'last_updated': accuracy_stats.get('last_updated')
             },
             'time_pattern': {
                 'peak_hour': peak_hour,
@@ -3792,6 +3842,33 @@ def upload_burnsky_photo():
             photo_analysis=photo_analysis,
             saved_path=saved_path
         )
+
+        feedback_recorded = False
+        predicted_score = request.form.get('predicted_score')
+        if request.form.get('confirm_feedback', 'false').lower() == 'true' and predicted_score is not None:
+            predicted_score = int(predicted_score)
+            if not 0 <= predicted_score <= 100:
+                raise ValueError('預測分數必須在 0-100 之間')
+
+            conn = sqlite3.connect(PREDICTION_HISTORY_DB)
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO user_feedback
+                (prediction_timestamp, predicted_score, user_rating, location, photo_url, weather_conditions, verification_source, photo_case_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                request.form.get('prediction_timestamp', datetime.now().isoformat()),
+                predicted_score,
+                round(visual_rating * 10),
+                location,
+                saved_path,
+                json.dumps({'notes': weather_notes}, ensure_ascii=False),
+                'photo',
+                case_id
+            ))
+            conn.commit()
+            conn.close()
+            feedback_recorded = True
         
         # 進行準確性分析（用於數據質量評估）
         photo_datetime = datetime.now().strftime('%Y-%m-%d_%H-%M')
@@ -3808,6 +3885,8 @@ def upload_burnsky_photo():
             "case_id": case_id,
             "photo_analysis": photo_analysis,
             "accuracy_check": accuracy_check,
+            "feedback_recorded": feedback_recorded,
+            "accuracy_stats": calculate_real_accuracy() if feedback_recorded else None,
             "ml_training_info": {
                 "total_cases": ml_stats['total_cases'],
                 "pending_training": ml_stats['pending_cases'],
@@ -4401,6 +4480,99 @@ def get_shooting_locations():
         "locations": locations,
         "total": len(locations),
         "last_updated": datetime.now().isoformat()
+    })
+
+@app.route("/api/locations/recommendations")
+@flask_cache.cached(timeout=120, query_string=True)
+def get_location_recommendations():
+    """按拍攝時段和季節提供可執行的地點建議。"""
+    prediction_type = request.args.get('type', 'sunset')
+    if prediction_type not in {'sunrise', 'sunset'}:
+        return error_response(400, '預測類型必須為 sunrise 或 sunset')
+
+    month = datetime.now().month
+    season = (
+        '冬季' if month in (12, 1, 2) else
+        '春季' if month in (3, 4, 5) else
+        '夏季' if month in (6, 7, 8) else '秋季'
+    )
+    location_catalog = [
+        {
+            'id': 'victoria-harbour', 'name': '維多利亞港', 'best_time': 'sunset',
+            'direction': '西面至西南面', 'transport': '尖沙咀／中環／灣仔地鐵可達',
+            'webcam_id': 'HK_HK2', 'webcam_name': '尖沙咀（望向西面）',
+            'season_tip': '秋冬能見度通常較佳，適合拍攝城市天際線。'
+        },
+        {
+            'id': 'victoria-peak', 'name': '太平山頂', 'best_time': 'sunset',
+            'direction': '東北至西南面', 'transport': '山頂纜車或巴士',
+            'webcam_id': 'HK_VPB', 'webcam_name': '太平山攝影機',
+            'season_tip': '夏季午後驟雨後可留意雲隙光；冬季要預留保暖。'
+        },
+        {
+            'id': 'clear-water-bay', 'name': '清水灣', 'best_time': 'sunrise',
+            'direction': '東面（日出）／西南面（日落）', 'transport': '由將軍澳轉乘巴士',
+            'webcam_id': 'HK_CWA', 'webcam_name': '清水灣（望向東面）',
+            'season_tip': '春夏海面濕度高，出發前先查看能見度和雷暴警告。'
+        },
+        {
+            'id': 'lantau', 'name': '長沙及大嶼山南岸', 'best_time': 'sunset',
+            'direction': '西面至西南面', 'transport': '東涌轉乘巴士',
+            'webcam_id': 'HK_CCH', 'webcam_name': '長沙攝影機',
+            'season_tip': '秋季日落方向和海岸線配合較佳，注意回程班次。'
+        }
+    ]
+    matching = [location for location in location_catalog if location['best_time'] == prediction_type]
+    fallback = [location for location in location_catalog if location['best_time'] != prediction_type]
+    locations = matching + fallback[:1]
+
+    try:
+        webcam_conditions = webcam_monitor.get_current_conditions(detailed=True)
+        webcam_data = webcam_conditions.get('individual_analyses', {})
+        for location in locations:
+            observation = webcam_data.get(location['webcam_id'], {})
+            analysis = observation.get('analysis', {}).get('sunset_potential', {})
+            time_period = analysis.get('time_period', 'unknown')
+            score = float(analysis.get('score', 0))
+            is_night = time_period == 'night'
+            location['live_observation'] = {
+                'available': bool(observation),
+                'score': score if not is_night else None,
+                'time_period': time_period,
+                'captured_at': observation.get('capture_time'),
+                'message': analysis.get('message', '暫無攝影機分析')
+            }
+            location['recommendation_score'] = score if not is_night else 0
+            if is_night:
+                location['recommendation_reason'] = '目前為夜間，只提供天空觀測；請按拍攝時段和交通安排選擇。'
+            elif observation:
+                location['recommendation_reason'] = f"{location['webcam_name']} 實況評分 {score:.0f} 分。"
+            else:
+                location['recommendation_reason'] = '暫無對應攝影機實況，按拍攝方向和時段推薦。'
+        locations.sort(key=lambda location: location['recommendation_score'], reverse=True)
+    except Exception as error:
+        logger.warning(f'無法取得地點攝影機實況: {error}')
+        for location in locations:
+            location['live_observation'] = {
+                'available': False,
+                'score': None,
+                'time_period': 'unknown',
+                'captured_at': None,
+                'message': '攝影機實況暫時不可用'
+            }
+            location['recommendation_score'] = 0
+            location['recommendation_reason'] = '按拍攝方向和時段推薦。'
+
+    return jsonify({
+        'status': 'success',
+        'prediction_type': prediction_type,
+        'season': season,
+        'recommendations': locations,
+        'data_freshness': {
+            'generated_at': datetime.now().isoformat(),
+            'webcam_refresh_minutes': 2,
+            'message': '地點按對應攝影機實況排序，每兩分鐘更新；出發前請同時留意官方天氣警告。'
+        }
     })
 
 @app.route("/api/astronomy")
@@ -5892,7 +6064,7 @@ def get_burnsky_history():
                 'avg_score': round(avg, 1) if avg else 0,
                 'max_score': max_s if max_s else 0,
                 'high_score_count': high,
-                'success_rate': round((high / count * 100) if count > 0 else 0, 1)
+                'high_score_prediction_rate': round((high / count * 100) if count > 0 else 0, 1)
             }
         
         # 3. 每日趨勢（最近30天）
@@ -5943,6 +6115,7 @@ def get_burnsky_history():
             })
         
         conn.close()
+        verified_accuracy = calculate_real_accuracy(days_back)
         
         # 組織返回數據
         return jsonify({
@@ -5961,8 +6134,9 @@ def get_burnsky_history():
                 'high_score_count': overall[4] or 0,
                 'medium_score_count': overall[5] or 0,
                 'low_score_count': overall[6] or 0,
-                'success_rate': round((overall[4] / overall[0] * 100) if overall[0] else 0, 1)
+                'high_score_prediction_rate': round((overall[4] / overall[0] * 100) if overall[0] else 0, 1)
             },
+            'verified_accuracy': verified_accuracy,
             'by_type': by_type,
             'daily_trends': daily_trends,
             'best_hours': best_hours[:5],  # 前5個最佳時段
@@ -5981,8 +6155,8 @@ def generate_burnsky_insights(overall, by_type, best_hours):
     insights = []
     
     if overall[0] > 0:
-        success_rate = (overall[4] / overall[0] * 100) if overall[0] else 0
-        insights.append(f"過去期間共進行 {overall[0]} 次預測，高分（≥70分）出現率為 {success_rate:.1f}%")
+        high_score_rate = (overall[4] / overall[0] * 100) if overall[0] else 0
+        insights.append(f"過去期間共進行 {overall[0]} 次預測，高分（≥70分）預測比例為 {high_score_rate:.1f}%")
         
         if overall[1]:
             insights.append(f"平均燒天評分為 {overall[1]:.1f} 分")
@@ -5992,12 +6166,12 @@ def generate_burnsky_insights(overall, by_type, best_hours):
     
     # 日出日落對比
     if 'sunrise' in by_type and 'sunset' in by_type:
-        sunrise_rate = by_type['sunrise']['success_rate']
-        sunset_rate = by_type['sunset']['success_rate']
+        sunrise_rate = by_type['sunrise']['high_score_prediction_rate']
+        sunset_rate = by_type['sunset']['high_score_prediction_rate']
         if sunrise_rate > sunset_rate:
-            insights.append(f"日出的燒天成功率（{sunrise_rate}%）高於日落（{sunset_rate}%）")
+            insights.append(f"日出的高分預測比例（{sunrise_rate}%）高於日落（{sunset_rate}%）")
         else:
-            insights.append(f"日落的燒天成功率（{sunset_rate}%）高於日出（{sunrise_rate}%）")
+            insights.append(f"日落的高分預測比例（{sunset_rate}%）高於日出（{sunrise_rate}%）")
     
     # 最佳時段
     if best_hours:
@@ -6011,11 +6185,11 @@ def generate_burnsky_insights(overall, by_type, best_hours):
 def submit_feedback():
     """接收用戶對預測準確性的反饋"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True)
         
         # 驗證必需字段
         required_fields = ['predicted_score', 'user_rating']
-        if not all(field in data for field in required_fields):
+        if not data or not all(field in data for field in required_fields):
             return jsonify({
                 'status': 'error',
                 'message': '缺少必需字段'
@@ -6023,12 +6197,19 @@ def submit_feedback():
         
         predicted_score = int(data['predicted_score'])
         user_rating = int(data['user_rating'])
+        verification_source = data.get('verification_source', 'manual')
+        photo_case_id = data.get('photo_case_id')
         
         # 驗證評分範圍
         if not (0 <= predicted_score <= 100) or not (0 <= user_rating <= 100):
             return jsonify({
                 'status': 'error',
                 'message': '評分必須在 0-100 之間'
+            }), 400
+        if verification_source not in {'manual', 'photo'}:
+            return jsonify({
+                'status': 'error',
+                'message': '不支援的驗證來源'
             }), 400
         
         # 保存反饋
@@ -6037,15 +6218,17 @@ def submit_feedback():
         
         cursor.execute('''
             INSERT INTO user_feedback 
-            (prediction_timestamp, predicted_score, user_rating, location, comment, weather_conditions)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (prediction_timestamp, predicted_score, user_rating, location, comment, weather_conditions, verification_source, photo_case_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             data.get('prediction_timestamp', datetime.now().isoformat()),
             predicted_score,
             user_rating,
             data.get('location', ''),
             data.get('comment', ''),
-            data.get('weather_conditions', '')
+            data.get('weather_conditions', ''),
+            verification_source,
+            photo_case_id
         ))
         
         conn.commit()
@@ -6073,7 +6256,8 @@ def submit_feedback():
 def get_accuracy_stats():
     """獲取基於真實反饋的準確率統計"""
     try:
-        stats = calculate_real_accuracy()
+        days_back = min(max(int(request.args.get('days', 30)), 1), 365)
+        stats = calculate_real_accuracy(days_back)
         return jsonify(stats)
     except Exception as e:
         print(f"❌ 獲取準確率統計錯誤: {e}")
@@ -6082,22 +6266,23 @@ def get_accuracy_stats():
             'message': str(e)
         }), 500
 
-def calculate_real_accuracy():
+def calculate_real_accuracy(days_back=30):
     """計算基於用戶反饋的真實準確率"""
+    minimum_sample_size = 10
     try:
         conn = sqlite3.connect(PREDICTION_HISTORY_DB)
         cursor = conn.cursor()
         
-        # 獲取最近30天的反饋
+        # 只從實際用戶評分取得結果，不能用模型自身分數估算準確率。
         cursor.execute('''
             SELECT 
                 predicted_score,
                 user_rating,
                 feedback_timestamp
             FROM user_feedback
-            WHERE feedback_timestamp >= datetime('now', '-30 days')
+            WHERE feedback_timestamp >= datetime('now', ?)
             ORDER BY feedback_timestamp DESC
-        ''')
+        ''', (f'-{days_back} days',))
         
         feedbacks = cursor.fetchall()
         
@@ -6105,9 +6290,11 @@ def calculate_real_accuracy():
             conn.close()
             return {
                 'has_data': False,
-                'message': '暫無用戶反饋數據',
-                'estimated_accuracy': 85,
-                'feedback_count': 0
+                'message': f'最近 {days_back} 天暫無已驗證的用戶反饋',
+                'feedback_count': 0,
+                'is_statistically_ready': False,
+                'minimum_sample_size': minimum_sample_size,
+                'period_days': days_back
             }
         
         # 計算準確率
@@ -6129,12 +6316,16 @@ def calculate_real_accuracy():
             SELECT 
                 COUNT(CASE WHEN ABS(predicted_score - user_rating) <= 10 THEN 1 END) as within_10,
                 COUNT(CASE WHEN ABS(predicted_score - user_rating) <= 20 THEN 1 END) as within_20,
+                COUNT(CASE WHEN predicted_score >= 70 AND user_rating >= 70 THEN 1 END) as true_positive,
+                COUNT(CASE WHEN predicted_score >= 70 AND user_rating < 70 THEN 1 END) as false_positive,
+                COUNT(CASE WHEN predicted_score < 70 AND user_rating >= 70 THEN 1 END) as false_negative,
+                COUNT(CASE WHEN verification_source = 'photo' THEN 1 END) as photo_verified,
                 COUNT(*) as total
             FROM user_feedback
-            WHERE feedback_timestamp >= datetime('now', '-30 days')
-        ''')
+            WHERE feedback_timestamp >= datetime('now', ?)
+        ''', (f'-{days_back} days',))
         
-        within_10, within_20, total = cursor.fetchone()
+        within_10, within_20, true_positive, false_positive, false_negative, photo_verified, total = cursor.fetchone()
         
         conn.close()
         
@@ -6143,8 +6334,15 @@ def calculate_real_accuracy():
             'accuracy': round(accuracy, 1),
             'avg_error': round(avg_error, 1),
             'feedback_count': len(feedbacks),
+            'is_statistically_ready': len(feedbacks) >= minimum_sample_size,
+            'minimum_sample_size': minimum_sample_size,
+            'period_days': days_back,
             'within_10_points': round((within_10 / total * 100), 1) if total > 0 else 0,
             'within_20_points': round((within_20 / total * 100), 1) if total > 0 else 0,
+            'high_score_precision': round((true_positive / (true_positive + false_positive) * 100), 1) if true_positive + false_positive > 0 else None,
+            'high_score_recall': round((true_positive / (true_positive + false_negative) * 100), 1) if true_positive + false_negative > 0 else None,
+            'photo_verified_count': photo_verified or 0,
+            'manual_verified_count': total - (photo_verified or 0),
             'last_updated': feedbacks[0][2] if feedbacks else None
         }
         
@@ -6153,8 +6351,10 @@ def calculate_real_accuracy():
         return {
             'has_data': False,
             'message': f'計算錯誤: {str(e)}',
-            'estimated_accuracy': 85,
-            'feedback_count': 0
+            'feedback_count': 0,
+            'is_statistically_ready': False,
+            'minimum_sample_size': minimum_sample_size,
+            'period_days': days_back
         }
 
 # 啟動每小時預測保存排程
