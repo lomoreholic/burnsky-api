@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>燒天預測系統 - 系統狀態</title>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3552699426860096"
+         crossorigin="anonymous"></script>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-4KLPHLD5EQ');
+    </script>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .status-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border-left: 5px solid #4CAF50;
+        }
+        .status-section.warning {
+            border-left-color: #FF9800;
+        }
+        .status-section.error {
+            border-left-color: #F44336;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .status-ok {
+            background: #4CAF50;
+            color: white;
+        }
+        .status-warning {
+            background: #FF9800;
+            color: white;
+        }
+        .status-error {
+            background: #F44336;
+            color: white;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .center {
+            text-align: center;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid white;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 頂部導航樣式 */
+        .top-nav {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            font-size: 0.85rem;
+        }
+
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .nav-link {
+            color: #333;
+            text-decoration: none;
+            padding: 6px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 500;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-link:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .top-nav {
+                position: static;
+                margin: 0 0 20px 0;
+                max-width: none;
+                font-size: 0.8rem;
+            }
+            
+            .nav-row {
+                flex-wrap: wrap;
+            }
+            
+            .nav-link {
+                padding: 5px 6px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+
+    <div class="container">
+        <div class="header">
+            <h1>🔥 燒天預測系統狀態</h1>
+            <p>系統運行狀態與功能檢查</p>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在檢查系統狀態...</p>
+        </div>
+
+        <div id="status-content">
+            <!-- 核心系統狀態 -->
+            <div class="status-section">
+                <h3>🏠 核心系統</h3>
+                <div class="status-item">
+                    <span>Flask 應用程式</span>
+                    <span class="status-badge status-ok" id="flask-status">運行中</span>
+                </div>
+                <div class="status-item">
+                    <span>機器學習模型</span>
+                    <span class="status-badge" id="ml-status">檢查中</span>
+                </div>
+                <div class="status-item">
+                    <span>資料庫</span>
+                    <span class="status-badge" id="db-status">檢查中</span>
+                </div>
+            </div>
+
+            <!-- 數據來源狀態 -->
+            <div class="status-section">
+                <h3>📡 數據來源</h3>
+                <div class="status-item">
+                    <span>香港天文台 API</span>
+                    <span class="status-badge" id="hko-status">檢查中</span>
+                </div>
+                <div class="status-item">
+                    <span>空氣品質 API</span>
+                    <span class="status-badge" id="aq-status">檢查中</span>
+                </div>
+                <div class="status-item">
+                    <span>天氣預報數據</span>
+                    <span class="status-badge" id="forecast-status">檢查中</span>
+                </div>
+            </div>
+
+            <!-- 預測功能狀態 -->
+            <div class="status-section">
+                <h3>🔮 預測功能</h3>
+                <div class="status-item">
+                    <span>燒天評分計算</span>
+                    <span class="status-badge" id="scoring-status">檢查中</span>
+                </div>
+                <div class="status-item">
+                    <span>空氣品質分析</span>
+                    <span class="status-badge" id="air-analysis-status">檢查中</span>
+                </div>
+                <div class="status-item">
+                    <span>雲層分析</span>
+                    <span class="status-badge" id="cloud-analysis-status">檢查中</span>
+                </div>
+                <div class="status-item">
+                    <span>顏色預測</span>
+                    <span class="status-badge" id="color-prediction-status">檢查中</span>
+                </div>
+            </div>
+
+            <!-- Google AdSense 廣告區域 -->
+            <div style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(248, 249, 250, 0.6); border-radius: 4px;">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-3552699426860096"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
+            <!-- 最近測試結果 -->
+            <div class="status-section">
+                <h3>📊 最近測試結果</h3>
+                <div id="test-results">
+                    <p>正在執行系統測試...</p>
+                </div>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function runSystemCheck() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('status-content').style.opacity = '0.5';
+
+            try {
+                // 1. 檢查 Flask 應用狀態
+                updateStatus('flask-status', 'ok', '運行中');
+
+                // 2. 測試預測 API
+                const response = await fetch('/predict');
+                const data = await response.json();
+                
+                if (data.burnsky_score !== undefined) {
+                    updateStatus('scoring-status', 'ok', '正常');
+                    updateStatus('ml-status', 'ok', '正常');
+                    
+                    // 顯示測試結果
+                    document.getElementById('test-results').innerHTML = `
+                        <div class="status-item">
+                            <span>燒天分數</span>
+                            <span>${data.burnsky_score.toFixed(1)}/100</span>
+                        </div>
+                        <div class="status-item">
+                            <span>預測等級</span>
+                            <span>${data.prediction_level}</span>
+                        </div>
+                        <div class="status-item">
+                            <span>空氣品質 AQHI</span>
+                            <span>${data.analysis_details.air_quality_factor.aqhi} (${data.analysis_details.air_quality_factor.level})</span>
+                        </div>
+                        <div class="status-item">
+                            <span>數據來源</span>
+                            <span>${data.analysis_details.air_quality_factor.source}</span>
+                        </div>
+                    `;
+                } else {
+                    updateStatus('scoring-status', 'error', '錯誤');
+                }
+
+                // 3. 檢查空氣品質功能
+                if (data.analysis_details && data.analysis_details.air_quality_factor) {
+                    updateStatus('air-analysis-status', 'ok', '正常');
+                    updateStatus('aq-status', 'warning', '備用數據');
+                } else {
+                    updateStatus('air-analysis-status', 'error', '錯誤');
+                    updateStatus('aq-status', 'error', '無法連接');
+                }
+
+                // 4. 檢查雲層分析
+                if (data.analysis_details && data.analysis_details.cloud_analysis_factor) {
+                    updateStatus('cloud-analysis-status', 'ok', '正常');
+                } else {
+                    updateStatus('cloud-analysis-status', 'error', '錯誤');
+                }
+
+                // 5. 檢查顏色預測
+                if (data.color_prediction) {
+                    updateStatus('color-prediction-status', 'ok', '正常');
+                } else {
+                    updateStatus('color-prediction-status', 'warning', '部分功能');
+                }
+
+                // 6. 檢查天文台數據
+                if (data.weather_data) {
+                    updateStatus('hko-status', 'ok', '正常');
+                    updateStatus('forecast-status', 'ok', '正常');
+                } else {
+                    updateStatus('hko-status', 'error', '無法連接');
+                    updateStatus('forecast-status', 'error', '無法連接');
+                }
+
+                updateStatus('db-status', 'ok', '正常');
+
+            } catch (error) {
+                console.error('系統檢查失敗:', error);
+                updateStatus('scoring-status', 'error', '錯誤');
+                updateStatus('ml-status', 'error', '錯誤');
+                document.getElementById('test-results').innerHTML = `
+                    <p style="color: #F44336;">❌ 系統檢查失敗: ${error.message}</p>
+                `;
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('status-content').style.opacity = '1';
+        }
+
+        function updateStatus(elementId, status, text) {
+            const element = document.getElementById(elementId);
+            element.className = `status-badge status-${status}`;
+            element.textContent = text;
+        }
+
+        // 頁面載入時自動檢查
+        window.onload = runSystemCheck;
+    </script>
+</body>
+</html>

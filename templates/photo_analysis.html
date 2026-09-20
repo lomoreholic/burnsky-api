@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>燒天照片分析系統 | AI 智能評分 | BurnSky 香港火燒雲預測</title>
+    
+    <!-- SEO 標籤 -->
+    <meta name="description" content="上傳您的燒天照片，使用 AI 智能分析系統獲得專業評分。分析天空色彩、雲層結構、光影效果等燒天關鍵要素。">
+    <meta name="keywords" content="燒天照片分析,AI評分,火燒雲照片,天空攝影分析,燒天評分系統,香港燒天,攝影分析">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph 標籤 -->
+    <meta property="og:title" content="燒天照片分析系統 | AI 智能評分">
+    <meta property="og:description" content="使用 AI 技術分析您的燒天照片，獲得專業的燒天品質評分和改進建議。">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://burnsky-api.onrender.com/photo-analysis">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://burnsky-api.onrender.com/photo-analysis">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .upload-section {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px dashed #ddd;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .upload-section:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .file-input {
+            margin: 15px 0;
+        }
+        
+        .file-input input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .score-display {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            color: white;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        
+        .score-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .analysis-details {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid #eee;
+        }
+        
+        .detail-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .detail-value {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+
+    <div class="container">
+        <div class="header">
+            <h1>🌅 燒天照片分析系統</h1>
+            <p>上傳您的燒天照片，讓 AI 智能分析評分</p>
+        </div>
+
+        <div class="two-columns">
+            <div class="section">
+                <h2>📋 分析邏輯說明</h2>
+                <ul>
+                    <li><strong>天空色彩：</strong>評估色彩豐富度、飽和度和色溫</li>
+                    <li><strong>雲層結構：</strong>分析雲層的形狀、厚度和分佈</li>
+                    <li><strong>光影效果：</strong>檢測光線角度和陰影層次</li>
+                    <li><strong>整體構圖：</strong>評估畫面平衡和視覺衝擊力</li>
+                    <li><strong>燒天特徵：</strong>識別典型的火燒雲特征</li>
+                </ul>
+            </div>
+            
+            <div class="section">
+                <h2>📊 評分標準</h2>
+                <ul>
+                    <li><strong>90-100分：</strong>極品燒天，色彩豐富層次分明</li>
+                    <li><strong>80-89分：</strong>優秀燒天，效果顯著</li>
+                    <li><strong>70-79分：</strong>良好燒天，有明顯特徵</li>
+                    <li><strong>60-69分：</strong>一般燒天，輕微效果</li>
+                    <li><strong>60分以下：</strong>非燒天或效果不明顯</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="upload-section">
+            <h3>📤 上傳照片進行分析</h3>
+            <p>支援 JPG、PNG、HEIC 格式，檔案大小不超過 10MB</p>
+            
+            <form id="photoForm" enctype="multipart/form-data">
+                <div class="file-input">
+                    <input type="file" id="photoFile" name="photo" accept="image/*" required>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label for="userRating">您的主觀評分 (1-10)：</label>
+                    <input type="range" id="userRating" name="rating" min="1" max="10" value="5" 
+                           onchange="updateRatingDisplay(this.value)">
+                    <span id="ratingValue">5</span>
+                </div>
+                
+                <button type="submit" class="btn">🔍 開始分析</button>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在分析您的照片，請稍候...</p>
+        </div>
+
+        <div class="result" id="result">
+            <!-- 分析結果將在這裡顯示 -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('photoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('photoFile');
+            const ratingInput = document.getElementById('userRating');
+            
+            if (!fileInput.files[0]) {
+                alert('請選擇一張照片');
+                return;
+            }
+            
+            // 顯示加載狀態
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+            
+            const formData = new FormData();
+            formData.append('photo', fileInput.files[0]);
+            formData.append('rating', ratingInput.value);
+            
+            try {
+                const response = await fetch('/api/analyze-photo', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // 隱藏加載狀態
+                document.getElementById('loading').classList.remove('show');
+                
+                if (result.success) {
+                    displayResult(result);
+                } else {
+                    alert('分析失敗：' + (result.message || '未知錯誤'));
+                }
+                
+            } catch (error) {
+                document.getElementById('loading').classList.remove('show');
+                alert('網路錯誤：' + error.message);
+            }
+        });
+        
+        function displayResult(result) {
+            const resultDiv = document.getElementById('result');
+            
+            const score = result.ai_score || 0;
+            const userRating = result.user_rating || 0;
+            const analysis = result.photo_analysis || {};
+            
+            resultDiv.innerHTML = `
+                <div class="score-display">
+                    <h3>📊 分析結果</h3>
+                    <div class="score-number">${score.toFixed(1)}</div>
+                    <p>AI 評分 (滿分100)</p>
+                    <p>您的評分：${userRating}/10</p>
+                </div>
+                
+                <div class="analysis-details">
+                    <h4>🔍 詳細分析</h4>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">天空色彩分析</div>
+                        <div class="detail-value">${analysis.color_analysis || '正在分析色彩特徵...'}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">雲層結構</div>
+                        <div class="detail-value">${analysis.cloud_structure || '正在分析雲層形態...'}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">光影效果</div>
+                        <div class="detail-value">${analysis.lighting_effect || '正在分析光影層次...'}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">整體評價</div>
+                        <div class="detail-value">${analysis.overall_quality || '綜合評估中...'}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">改進建議</div>
+                        <div class="detail-value">${analysis.suggestions || '根據分析結果提供專業建議...'}</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="analyzeAnother()">📷 分析另一張照片</button>
+                </div>
+            `;
+            
+            resultDiv.classList.add('show');
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function updateRatingDisplay(value) {
+            document.getElementById('ratingValue').textContent = value;
+        }
+        
+        function analyzeAnother() {
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('photoForm').reset();
+            document.getElementById('ratingValue').textContent = '5';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

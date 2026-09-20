@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚠️ 警告台 - 燒天警告歷史分析 | BurnSky 燒天預測系統</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    
+    <!-- Chart.js 圖表庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #FF6B35;
+            --secondary-color: #004E89;
+            --bg-gradient: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-light: rgba(255, 255, 255, 0.9);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .warning-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .warning-header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .warning-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .warning-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .warning-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #FF6B35;
+        }
+
+        .warning-item.high {
+            border-left-color: #FF4757;
+        }
+
+        .warning-item.medium {
+            border-left-color: #FFA502;
+        }
+
+        .warning-item.low {
+            border-left-color: #2ED573;
+        }
+
+        .warning-time {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .warning-message {
+            font-weight: 500;
+        }
+
+        .footer {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-light);
+            padding: 30px 20px;
+            margin-top: 40px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #FFD700;
+        }
+
+        @media (max-width: 768px) {
+            .nav-row {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .nav-row a {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .warning-header h1 {
+                font-size: 2em;
+            }
+
+            .glass-card {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+
+    <div class="container">
+        <div class="warning-header">
+            <h1>⚠️ 警告台</h1>
+            <p>燒天預測系統 - 警告歷史分析儀表板</p>
+        </div>
+
+        <!-- 總覽統計 -->
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalWarnings">256</div>
+                <div class="stat-label">總警告數量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #FF4757;">87</div>
+                <div class="stat-label">高嚴重度警告</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #FFA502;">123</div>
+                <div class="stat-label">中嚴重度警告</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" style="color: #2ED573;">87.3%</div>
+                <div class="stat-label">預測準確率</div>
+            </div>
+        </div>
+
+        <!-- 警告時間軸圖表 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 20px;">📈 警告時間軸</h2>
+            <div class="chart-container">
+                <canvas id="warningTimelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 嚴重程度分析 -->
+        <div class="dashboard-grid">
+            <div class="glass-card">
+                <h2 style="margin-bottom: 20px;">⚠️ 嚴重程度分析</h2>
+                <div class="chart-container">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h2 style="margin-bottom: 20px;">🔥 近期高影響警告</h2>
+                <div class="warning-list">
+                    <div class="warning-item high">
+                        <div class="warning-time">2024-12-28 18:45</div>
+                        <div class="warning-message">極佳燒天條件：預測評分 95/100，持續時間 25 分鐘</div>
+                    </div>
+                    <div class="warning-item high">
+                        <div class="warning-time">2024-12-25 19:10</div>
+                        <div class="warning-message">聖誕節燒天盛宴：預測評分 92/100，覆蓋全港</div>
+                    </div>
+                    <div class="warning-item medium">
+                        <div class="warning-time">2024-12-22 18:30</div>
+                        <div class="warning-message">中等燒天條件：預測評分 78/100，建議西區拍攝</div>
+                    </div>
+                    <div class="warning-item medium">
+                        <div class="warning-time">2024-12-20 19:05</div>
+                        <div class="warning-message">局部燒天現象：預測評分 71/100，維港東部較佳</div>
+                    </div>
+                    <div class="warning-item low">
+                        <div class="warning-time">2024-12-18 17:45</div>
+                        <div class="warning-message">輕微燒天可能：預測評分 65/100，東區有機會</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 數據洞察 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 20px;">💡 數據洞察與建議</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>🌨️ 季節性模式</strong><br>
+                    冬季月份 (12-2月) 燒天機率最高，建議重點關注
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>🕐 最佳時段</strong><br>
+                    下午 6:30-7:00 是燒天預警高峰時段
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>💧 濕度影響</strong><br>
+                    適中濕度範圍內燒天發生機率較高
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
+                    <strong>🌪️ 風向因素</strong><br>
+                    東北風天氣型態較有利燒天形成
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

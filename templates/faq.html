@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>常見問題 FAQ | 燒天預測系統 | BurnSky 香港火燒雲預測</title>
+    
+    <!-- SEO 標籤 -->
+    <meta name="description" content="燒天預測系統常見問題解答，包含燒天現象解釋、預測準確率、最佳拍攝地點、攝影技巧等專業建議。">
+    <meta name="keywords" content="燒天FAQ,火燒雲問題,香港燒天,攝影問題,天氣預測,燒天攝影,日落拍攝">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph 標籤 -->
+    <meta property="og:title" content="燒天預測 FAQ | 常見問題解答">
+    <meta property="og:description" content="專業燒天預測常見問題解答，幫助您更好地理解和使用燒天預測系統。">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://burnsky-api.onrender.com/faq">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://burnsky-api.onrender.com/faq">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3552699426860096"
+         crossorigin="anonymous"></script>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-4KLPHLD5EQ');
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .nav-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-row a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-row a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+        }
+        
+        .faq-item {
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .faq-item:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .faq-question {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            color: white;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .faq-question:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        
+        .faq-question::after {
+            content: '+';
+            font-size: 1.5em;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+        
+        .faq-item.active .faq-question::after {
+            content: '−';
+            transform: rotate(180deg);
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            padding: 0 20px;
+            background: white;
+            line-height: 1.8;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            color: #333;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 1000px;
+            padding: 20px;
+        }
+        
+        .back-home {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .back-home a {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: background 0.3s ease;
+            display: inline-block;
+        }
+        
+        .back-home a:hover {
+            background: #5a6fd8;
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+    
+    <div class="container">
+        <header class="header">
+            <h1>🔥 常見問題 FAQ</h1>
+            <p>關於燒天預測的一切問題解答</p>
+        </header>
+        
+        <div style="margin-bottom: 30px;">
+            <input type="text" id="faq-search" placeholder="🔍 搜尋問題..." style="
+                width: 100%;
+                padding: 15px 20px;
+                font-size: 16px;
+                border: 2px solid rgba(255, 255, 255, 0.5);
+                border-radius: 30px;
+                background: rgba(255, 255, 255, 0.9);
+                outline: none;
+                transition: all 0.3s ease;
+            " onfocus="this.style.borderColor='#667eea'; this.style.background='white';" 
+               onblur="this.style.borderColor='rgba(255, 255, 255, 0.5)'; this.style.background='rgba(255, 255, 255, 0.9)';">
+        </div>
+        
+        <main>
+            <div class="faq-item">
+                <div class="faq-question">❓ 什麼是燒天？</div>
+                <div class="faq-answer">
+                    燒天是指日出或日落時天空呈現橙紅色火燒般色彩的自然現象。這種現象通常發生在特定的大氣條件下，包括適當的雲層厚度、濕度、空氣品質等因素。燒天是攝影愛好者最喜愛的自然景觀之一，能創造出壯觀的天空色彩。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">📊 燒天預測的準確率如何？</div>
+                <div class="faq-answer">
+                    我們的AI預測系統結合香港天文台官方數據和先進的機器學習算法，預測準確率約達85%。系統會分析雲層厚度、濕度、風速、空氣品質指數(AQHI)、溫度等多項氣象因素，提供綜合評分和詳細分析。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">📍 香港最佳的燒天拍攝地點在哪裡？</div>
+                <div class="faq-answer">
+                    <strong>日落拍攝：</strong><br>
+                    • 維多利亞港 - 經典城市天際線<br>
+                    • 太平山頂 - 360度全景視野<br>
+                    • 青馬大橋觀景台 - 壯觀橋樑景色<br>
+                    • 西環海濱 - 開闊海景<br><br>
+                    
+                    <strong>日出拍攝：</strong><br>
+                    • 石澳 - 東南海岸線<br>
+                    • 獅子山 - 俯瞰九龍景色<br>
+                    • 大東山 - 高山日出<br>
+                    系統會根據當日條件推薦最佳拍攝位置。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🕐 如何知道今天會不會有燒天？</div>
+                <div class="faq-answer">
+                    請查看我們的首頁預測系統，系統每小時更新一次預測結果。我們建議：<br>
+                    • 在日落前2-3小時查看預測<br>
+                    • 燒天機率60%以上時建議前往拍攝<br>
+                    • 關注雲層厚度和濕度變化<br>
+                    • 留意空氣品質指數(AQHI)影響
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">📸 拍攝燒天有什麼技巧？</div>
+                <div class="faq-answer">
+                    <strong>拍攝設定：</strong><br>
+                    • 使用三腳架確保穩定<br>
+                    • 手動模式控制曝光<br>
+                    • ISO 100-400 保持畫質<br>
+                    • 包圍曝光拍攝HDR<br><br>
+                    
+                    <strong>構圖建議：</strong><br>
+                    • 包含前景增加層次<br>
+                    • 運用三分法則構圖<br>
+                    • 尋找水面倒影<br>
+                    • 捕捉城市輪廓剪影
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🌦️ 哪些天氣條件有利於燒天？</div>
+                <div class="faq-answer">
+                    <strong>理想條件：</strong><br>
+                    • 中層雲覆蓋30-70%<br>
+                    • 濕度60-85%<br>
+                    • 風速輕微至溫和<br>
+                    • 空氣能見度良好<br>
+                    • 無強烈對流活動<br><br>
+                    
+                    <strong>不利條件：</strong><br>
+                    • 完全晴朗或完全陰霾<br>
+                    • 雷暴或強風<br>
+                    • 空氣污染嚴重<br>
+                    • 濕度過低或過高
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">⏰ 燒天通常持續多長時間？</div>
+                <div class="faq-answer">
+                    燒天現象通常持續15-45分鐘，具體時間取決於：<br>
+                    • 雲層移動速度<br>
+                    • 大氣穩定度<br>
+                    • 太陽角度變化<br>
+                    • 濕度條件<br><br>
+                    
+                    最佳拍攝時間通常在日落前後30分鐘內，建議提早到達拍攝地點準備。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🔔 如何獲得燒天預警通知？</div>
+                <div class="faq-answer">
+                    目前系統提供實時網頁預測，建議您：<br>
+                    • 每日定時查看預測結果<br>
+                    • 收藏本網站便於快速訪問<br>
+                    • 關注社交媒體更新<br>
+                    • 與其他攝影愛好者分享資訊<br><br>
+                    
+                    我們正在開發推送通知功能，敬請期待！
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">🤖 AI預測系統如何運作？</div>
+                <div class="faq-answer">
+                    我們的系統結合多種數據源：<br>
+                    • 香港天文台實時氣象數據<br>
+                    • 衛星雲圖分析<br>
+                    • 空氣品質監測<br>
+                    • 歷史燒天記錄<br>
+                    • 機器學習模型預測<br><br>
+                    
+                    系統會綜合分析這些因素，計算燒天發生機率並提供詳細解釋。
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question">📱 有手機App嗎？</div>
+                <div class="faq-answer">
+                    目前我們提供響應式網頁版本，在手機、平板和電腦上都能完美使用。您可以：<br>
+                    • 將網站添加到主屏幕作為快捷方式<br>
+                    • 使用書籤功能快速訪問<br>
+                    • 享受完整的移動端體驗<br><br>
+                    
+                    原生App正在開發中，敬請期待！
+                </div>
+            </div>
+        </main>
+        
+        <div class="back-home">
+            <a href="/">🏠 返回首頁</a>
+        </div>
+    </div>
+    
+    <script>
+        // FAQ 手風琴效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const faqItems = document.querySelectorAll('.faq-item');
+            
+            // 默認展開第一個
+            if (faqItems.length > 0) {
+                faqItems[0].classList.add('active');
+            }
+            
+            faqItems.forEach(item => {
+                const question = item.querySelector('.faq-question');
+                
+                question.addEventListener('click', () => {
+                    // 切換當前項目
+                    const isActive = item.classList.contains('active');
+                    
+                    // 可選：關閉其他項目（手風琴模式）
+                    // faqItems.forEach(i => i.classList.remove('active'));
+                    
+                    // 切換當前項目
+                    if (isActive) {
+                        item.classList.remove('active');
+                    } else {
+                        item.classList.add('active');
+                    }
+                });
+            });
+            
+            // 搜尋功能（可選）
+            const searchInput = document.getElementById('faq-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    const searchTerm = e.target.value.toLowerCase();
+                    
+                    faqItems.forEach(item => {
+                        const question = item.querySelector('.faq-question').textContent.toLowerCase();
+                        const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+                        
+                        if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

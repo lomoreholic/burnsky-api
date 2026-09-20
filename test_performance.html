@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>性能測試 - 燒天預測系統</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .metric.good {
+            border-left-color: #51cf66;
+        }
+        
+        .metric.good .metric-value {
+            color: #51cf66;
+        }
+        
+        .metric.warning {
+            border-left-color: #feca57;
+        }
+        
+        .metric.warning .metric-value {
+            color: #feca57;
+        }
+        
+        .metric.error {
+            border-left-color: #ff6b6b;
+        }
+        
+        .metric.error .metric-value {
+            color: #ff6b6b;
+        }
+        
+        .test-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .comparison-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .comparison-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .improvement {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #51cf66;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>🚀 首頁性能測試</h1>
+        <p class="subtitle">測試API並行載入優化的效果</p>
+        
+        <button class="test-btn" onclick="runTest()">開始測試</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function runTest() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">⏳ 測試中，請稍候...</div>';
+            
+            const results = {
+                apiCalls: [],
+                totalTime: 0,
+                parallelTime: 0
+            };
+            
+            try {
+                // 測試主要API端點的響應時間
+                const apiEndpoints = [
+                    { name: '主預測API', url: '/predict' },
+                    { name: '警告歷史API', url: '/api/warnings/history' },
+                    { name: '警告時間軸API', url: '/api/warnings/timeline' },
+                    { name: '警告類別API', url: '/api/warnings/category-simple' },
+                    { name: '季節趨勢API', url: '/api/warnings/seasonal' },
+                    { name: '準確度API', url: '/api/warnings/accuracy' }
+                ];
+                
+                // 模擬串行載入（舊方式）
+                console.log('📊 測試串行載入...');
+                const serialStart = performance.now();
+                for (const endpoint of apiEndpoints) {
+                    const start = performance.now();
+                    try {
+                        await fetch(endpoint.url);
+                        const time = performance.now() - start;
+                        results.apiCalls.push({ 
+                            name: endpoint.name, 
+                            time: time.toFixed(0),
+                            success: true 
+                        });
+                    } catch (error) {
+                        results.apiCalls.push({ 
+                            name: endpoint.name, 
+                            time: 0,
+                            success: false 
+                        });
+                    }
+                }
+                const serialEnd = performance.now();
+                results.totalTime = serialEnd - serialStart;
+                
+                // 測試並行載入（新方式）
+                console.log('🚀 測試並行載入...');
+                const parallelStart = performance.now();
+                await Promise.allSettled(
+                    apiEndpoints.map(endpoint => fetch(endpoint.url))
+                );
+                const parallelEnd = performance.now();
+                results.parallelTime = parallelEnd - parallelStart;
+                
+                // 計算改善
+                const improvement = ((results.totalTime - results.parallelTime) / results.totalTime * 100).toFixed(1);
+                
+                // 顯示結果
+                let html = '<h3 style="color: #333; margin-bottom: 20px;">測試結果</h3>';
+                
+                // 主要指標
+                html += `
+                    <div class="metric ${results.totalTime > 3000 ? 'error' : results.totalTime > 1500 ? 'warning' : 'good'}">
+                        <span class="metric-label">🐌 串行載入時間（舊方式）</span>
+                        <span class="metric-value">${(results.totalTime / 1000).toFixed(2)}秒</span>
+                    </div>
+                    <div class="metric ${results.parallelTime > 1500 ? 'warning' : 'good'}">
+                        <span class="metric-label">🚀 並行載入時間（新方式）</span>
+                        <span class="metric-value">${(results.parallelTime / 1000).toFixed(2)}秒</span>
+                    </div>
+                    <div class="metric good">
+                        <span class="metric-label">📈 性能改善</span>
+                        <span class="metric-value">${improvement}%</span>
+                    </div>
+                    <div class="metric good">
+                        <span class="metric-label">⚡ 節省時間</span>
+                        <span class="metric-value">${((results.totalTime - results.parallelTime) / 1000).toFixed(2)}秒</span>
+                    </div>
+                `;
+                
+                // API詳細信息
+                html += '<h3 style="color: #333; margin: 30px 0 20px;">📊 各API響應時間</h3>';
+                results.apiCalls.forEach(call => {
+                    const timeMs = parseInt(call.time);
+                    const className = timeMs > 1000 ? 'warning' : timeMs > 2000 ? 'error' : 'good';
+                    html += `
+                        <div class="metric ${className}">
+                            <span class="metric-label">${call.success ? '✅' : '❌'} ${call.name}</span>
+                            <span class="metric-value">${call.time}ms</span>
+                        </div>
+                    `;
+                });
+                
+                // 結論
+                html += '<h3 style="color: #333; margin: 30px 0 20px;">📝 結論</h3>';
+                html += '<div style="background: #e7f5ff; padding: 20px; border-radius: 8px; border-left: 4px solid #339af0;">';
+                
+                if (improvement >= 60) {
+                    html += `
+                        <p style="margin: 0; color: #333; line-height: 1.6;">
+                            <strong style="color: #51cf66;">✨ 優秀！</strong> 
+                            並行載入優化效果顯著，頁面載入速度提升了 <strong>${improvement}%</strong>，
+                            為用戶節省了 <strong>${((results.totalTime - results.parallelTime) / 1000).toFixed(2)}秒</strong>。
+                            達到了60-80%的優化目標！
+                        </p>
+                    `;
+                } else if (improvement >= 40) {
+                    html += `
+                        <p style="margin: 0; color: #333; line-height: 1.6;">
+                            <strong style="color: #339af0;">👍 良好！</strong> 
+                            並行載入優化有明顯效果，速度提升了 <strong>${improvement}%</strong>。
+                            可以繼續優化個別較慢的API以獲得更好的效果。
+                        </p>
+                    `;
+                } else {
+                    html += `
+                        <p style="margin: 0; color: #333; line-height: 1.6;">
+                            <strong style="color: #feca57;">⚠️ 尚可</strong> 
+                            並行載入優化效果為 <strong>${improvement}%</strong>，
+                            建議檢查網路連接或服務器性能。
+                        </p>
+                    `;
+                }
+                
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div style="background: #ffe0e0; padding: 20px; border-radius: 8px; color: #721c24;">
+                        <h4 style="margin: 0 0 10px 0;">❌ 測試失敗</h4>
+                        <p style="margin: 0;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 自動運行測試
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(runTest, 1000);
+        });
+    </script>
+</body>
+</html>

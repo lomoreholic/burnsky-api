@@ -24,6 +24,15 @@ from PIL import Image
 import uuid
 import sqlite3
 import json
+from modules.feedback import calculate_real_accuracy, feedback_bp
+from modules.history import history_bp
+from modules.prediction_routes import create_prediction_blueprint
+from modules.scheduler_service import HourlyPredictionScheduler
+from modules.weather_inputs import WeatherInputService
+from modules.warning_risk import FutureWarningRiskService
+from modules.warning_assessment import CurrentWarningAssessmentService
+from modules.warning_rules import calculate_warning_impact_advanced
+from modules.prediction_response import PredictionResponseBuilder
 
 # ========== 模塊化組件導入 ==========
 # 優先使用模塊化組件，如果不可用則使用內嵌函數
@@ -40,7 +49,6 @@ try:
         get_season, get_time_category
     )
     from modules.cache import get_cached_data, clear_prediction_cache, trigger_prediction_update
-    from modules.scheduler import auto_save_current_predictions, start_hourly_scheduler
     from modules.file_handler import (
         allowed_file, validate_image_content, cleanup_old_photos,
         save_uploaded_photo, get_photo_storage_info
@@ -76,8 +84,6 @@ except ImportError as e:
 
 # 即時攝影機監控系統
 webcam_monitor = RealTimeWebcamMonitor()
-_scheduler_started = False
-_scheduler_lock = threading.Lock()
 
 # ========== 以下是原始函數定義（保留用於向後兼容）==========
 # 如果模塊已載入，這些函數將被模塊中的版本覆蓋
@@ -206,42 +212,6 @@ def get_time_category(hour):
         return 'night'
     else:
         return 'late_night'
-
-def auto_save_current_predictions():
-    """自動保存當前時間的預測"""
-    try:
-        print("🕐 開始自動保存每小時預測...")
-        
-        # 清除快取確保獲取最新數據
-        global cache
-        cache.clear()
-        
-        for prediction_type in ['sunset', 'sunrise']:
-            for advance_hours in [0, 1, 2, 3, 6, 12]:
-                try:
-                    # 重新計算預測
-                    result = predict_burnsky_core(prediction_type, advance_hours)
-                    
-                    if result.get('status') == 'success':
-                        # 保存到預測歷史數據庫
-                        save_prediction_to_history(
-                            prediction_type,
-                            advance_hours,
-                            result.get('burnsky_score', 0),
-                            result.get('analysis_details', {}),
-                            result.get('weather_data', {}),
-                            result.get('warning_data', {})
-                        )
-                    
-                    time.sleep(0.5)  # 避免請求過快
-                    
-                except Exception as e:
-                    print(f"❌ 保存 {prediction_type} (提前{advance_hours}小時) 失敗: {e}")
-        
-        print("✅ 每小時預測保存完成")
-        
-    except Exception as e:
-        print(f"❌ 自動保存預測失敗: {e}")
 
 def get_historical_prediction_for_time(target_datetime, prediction_type, tolerance_hours=2):
     """獲取指定時間附近的歷史預測數據"""
@@ -394,43 +364,11 @@ def generate_accuracy_suggestions(accuracy_analysis):
     
     return suggestions
 
-def start_hourly_scheduler():
-    """啟動每小時保存排程"""
-    global _scheduler_started
-    if not HOURLY_SAVE_ENABLED:
-        return
-
-    debug_reloader_parent = (
-        os.getenv('FLASK_DEBUG', os.getenv('FLASK_ENV', 'development')) == 'development'
-        and os.getenv('WERKZEUG_RUN_MAIN') != 'true'
-    )
-    if debug_reloader_parent:
-        print("⏭️ Debug reloader 父程序不啟動排程")
-        return
-
-    with _scheduler_lock:
-        if _scheduler_started:
-            print("⏭️ 每小時預測保存排程已啟動，略過重複初始化")
-            return
-        _scheduler_started = True
-    
-    # 設定每小時的第5分鐘執行
-    schedule.every().hour.at(":05").do(auto_save_current_predictions)
-    
-    def run_scheduler():
-        while True:
-            schedule.run_pending()
-            time.sleep(60)  # 每分鐘檢查一次
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    print("⏰ 每小時預測保存排程已啟動")
-
 # 初始化預測歷史數據庫
 if MODULES_LOADED:
     print("🔧 使用模塊化組件初始化系統...")
     init_prediction_history_db()
     initialize_photo_cases()  # 初始化照片案例系統
-    start_hourly_scheduler()  # 啟動調度器
 else:
     print("🔧 使用內嵌函數初始化系統...")
     init_prediction_history_db()
@@ -602,6 +540,9 @@ else:
                 return f
             return decorator
     limiter = NoOpLimiter()
+
+app.register_blueprint(feedback_bp)
+app.register_blueprint(history_bp)
 
 # ========== 錯誤處理 ==========
 import logging
@@ -1826,296 +1767,6 @@ def parse_warning_details(warning_input):
     
     return warning_info
 
-def calculate_warning_impact_advanced(warning_info, time_of_day='day', season='summer'):
-    """根據警告詳細信息計算精確的影響分數"""
-    base_impact = 0
-    multipliers = []
-    
-    # 基礎影響分數
-    severity_base = {
-        'extreme': 35,
-        'severe': 25,
-        'moderate': 15,
-        'low': 8
-    }
-    base_impact = severity_base.get(warning_info['severity'], 5)
-    
-    # 警告類型特殊調整
-    category_adjustments = {
-        'rainfall': {
-            'black_rain': 0,      # 保持基礎分數
-            'red_rain': -3,       # 稍微降低
-            'amber_rain': -2,     # 輕微降低
-            'flood_warning': +2   # 水浸額外嚴重
-        },
-        'wind_storm': {
-            'hurricane_10': +5,   # 十號風球額外嚴重
-            'gale_9': +2,         # 九號稍微增加
-            'strong_wind_8': -2,  # 八號降低
-            'strong_wind_3': -3,  # 三號大幅降低
-            'standby_1': -5       # 一號最低影響
-        },
-        'thunderstorm': {
-            'severe_thunderstorm': +2,
-            'general_thunderstorm': -8  # 一般雷暴對燒天影響更小
-        },
-        'visibility': {
-            'dense_fog': +1,
-            'general_fog': -4  # 輕霧對燒天影響較小
-        },
-        'air_quality': {
-            'severe_pollution': -10,     # 空氣污染對燒天影響較小
-            'moderate_pollution': -12
-        },
-        'temperature': {
-            'extreme_heat': -8,         # 高溫通常有助燒天
-            'extreme_cold': +2
-        },
-        'marine': {
-            'marine_warning': -5        # 海事警告對陸地燒天影響很小
-        }
-    }
-    
-    subcategory_adj = category_adjustments.get(warning_info['category'], {}).get(warning_info['subcategory'], 0)
-    base_impact += subcategory_adj
-    
-    # 時間因子調整
-    if time_of_day in ['sunset', 'sunrise']:  # 燒天時段
-        if warning_info['category'] == 'visibility':
-            multipliers.append(('能見度在燒天時段更重要', 1.3))
-        elif warning_info['category'] == 'air_quality':
-            multipliers.append(('空氣品質影響燒天效果', 0.7))
-    
-    # 季節性調整
-    if season == 'summer':
-        if warning_info['category'] == 'thunderstorm':
-            multipliers.append(('夏季雷暴頻繁', 0.8))
-        elif warning_info['category'] == 'temperature' and warning_info['subcategory'] == 'extreme_heat':
-            multipliers.append(('夏季高溫常見', 0.6))
-    elif season == 'winter':
-        if warning_info['category'] == 'visibility':
-            multipliers.append(('冬季霧霾常見', 1.2))
-        elif warning_info['category'] == 'air_quality':
-            multipliers.append(('冬季空氣品質較差', 1.1))
-    
-    # 地區特定調整
-    if warning_info['area_specific']:
-        multipliers.append(('地區性警告影響較小', 0.9))
-    
-    # 持續性調整
-    if warning_info['duration_hint'] == '間歇性警告':
-        multipliers.append(('間歇性警告影響較小', 0.8))
-    elif warning_info['duration_hint'] == '持續性警告':
-        multipliers.append(('持續性警告影響較大', 1.1))
-    
-    # 應用乘數
-    final_impact = base_impact
-    for description, multiplier in multipliers:
-        final_impact *= multiplier
-    
-    # 確保影響分數在合理範圍內 (0-10)
-    final_impact = max(0, min(final_impact, 10))
-    
-    return round(final_impact, 1), multipliers
-
-def get_warning_impact_score(warning_data):
-    """計算天氣警告對燒天預測的影響分數 - 增強版"""
-    if not warning_data or 'details' not in warning_data:
-        return 0, [], []  # 無警告時不影響分數
-    
-    warning_details = warning_data.get('details', [])
-    if not warning_details:
-        return 0, [], []
-    
-    total_impact = 0
-    active_warnings = []
-    warning_analysis = []
-    severe_warnings = []
-    
-    # 獲取當前時間和季節信息
-    current_hour = datetime.now().hour
-    current_month = datetime.now().month
-    
-    time_of_day = 'day'
-    if 17 <= current_hour <= 19:
-        time_of_day = 'sunset'
-    elif 5 <= current_hour <= 7:
-        time_of_day = 'sunrise'
-    
-    season = 'summer'
-    if current_month in [12, 1, 2]:
-        season = 'winter'
-    elif current_month in [3, 4, 5]:
-        season = 'spring'
-    elif current_month in [9, 10, 11]:
-        season = 'autumn'
-    
-    print(f"🚨 警告分析環境: {time_of_day}時段, {season}季節")
-    
-    for warning in warning_details:
-        warning_text = warning if isinstance(warning, str) else str(warning)
-        active_warnings.append(warning_text)
-        
-        # 解析警告詳細信息
-        warning_info = parse_warning_details(warning_text)
-        
-        # 計算精確影響分數
-        impact, multipliers = calculate_warning_impact_advanced(warning_info, time_of_day, season)
-        
-        # 記錄分析詳情
-        analysis_detail = {
-            'warning_text': warning_text,
-            'category': warning_info['category'],
-            'subcategory': warning_info['subcategory'],
-            'severity': warning_info['severity'],
-            'level': warning_info['level'],
-            'impact_score': impact,
-            'impact_factors': warning_info['impact_factors'],
-            'adjustments': multipliers,
-            'area_specific': warning_info['area_specific']
-        }
-        warning_analysis.append(analysis_detail)
-        
-        # 標記嚴重警告
-        if warning_info['severity'] in ['extreme', 'severe']:
-            severe_warnings.append(f"{warning_info['category']}-{warning_info['severity']}")
-        
-        total_impact += impact
-        
-        print(f"   📋 {warning_info['category'].upper()} | {warning_info['severity']} | 影響: {impact}分")
-        if multipliers:
-            for desc, mult in multipliers:
-                print(f"      🔧 {desc}: x{mult:.1f}")
-    
-    # 動態調整最大扣分上限 - 基於警告嚴重程度
-    extreme_count = sum(1 for w in warning_analysis if w['severity'] == 'extreme')
-    severe_count = sum(1 for w in warning_analysis if w['severity'] == 'severe')
-    
-    if extreme_count >= 2:
-        max_impact = 45  # 多個極端警告
-    elif extreme_count >= 1:
-        max_impact = 35  # 單個極端警告
-    elif severe_count >= 2:
-        max_impact = 30  # 多個嚴重警告
-    elif severe_count >= 1:
-        max_impact = 25  # 單個嚴重警告
-    else:
-        max_impact = 20  # 一般警告
-    
-    final_impact = min(total_impact, max_impact)
-    
-    print(f"🚨 警告影響總結:")
-    print(f"   📊 原始總影響: {total_impact:.1f}分")
-    print(f"   🔒 影響上限: {max_impact}分")
-    print(f"   ✅ 最終影響: {final_impact:.1f}分")
-    print(f"   ⚠️ 嚴重警告: {len(severe_warnings)}個 ({severe_warnings})")
-    
-    return final_impact, active_warnings, warning_analysis
-
-def assess_future_warning_risk(weather_data, forecast_data, ninday_data, advance_hours):
-    """評估提前預測時段的警告風險"""
-    if advance_hours <= 0:
-        return 0, []  # 即時預測不需要風險評估
-    
-    risk_score = 0
-    risk_warnings = []
-    
-    try:
-        # 獲取未來天氣數據 - 安全調用
-        future_weather = forecast_extractor.extract_future_weather_data(
-            weather_data, forecast_data, ninday_data, advance_hours
-        )
-    except Exception as e:
-        print(f"🔮 警告: 無法提取未來天氣數據: {e}")
-        future_weather = {}
-    
-    # 1. 雨量風險評估 - 基於九天預報
-    rainfall_risk = 0
-    if ninday_data and 'weatherForecast' in ninday_data:
-        # 獲取對應日期的降雨概率
-        for ninday in ninday_data.get('weatherForecast', []):
-            if advance_hours <= 48:  # 兩天內的預測
-                psr = ninday.get('PSR', 'Low')  # 降雨概率
-                if psr in ['High', '高']:
-                    rainfall_risk = 15
-                    risk_warnings.append("高降雨概率 - 可能發出雨量警告")
-                elif psr in ['Medium High', '中高']:
-                    rainfall_risk = 10
-                    risk_warnings.append("中高降雨概率 - 有雨量警告風險")
-                elif psr in ['Medium', '中等']:
-                    rainfall_risk = 5
-                    risk_warnings.append("中等降雨概率 - 輕微雨量警告風險")
-                break
-    
-    # 2. 風速風險評估 - 基於未來天氣數據
-    wind_risk = 0
-    if future_weather and 'wind' in future_weather:
-        wind_data = future_weather['wind']
-        if isinstance(wind_data, dict) and 'speed' in wind_data:
-            try:
-                wind_speed = float(wind_data.get('speed', 0))
-                if wind_speed >= 88:  # 烈風程度
-                    wind_risk = 12
-                    risk_warnings.append("預測強風 - 可能發出烈風警告")
-                elif wind_speed >= 62:  # 強風程度
-                    wind_risk = 8
-                    risk_warnings.append("預測中等風力 - 有強風警告風險")
-            except (ValueError, TypeError):
-                pass  # 忽略無效的風速數據
-    
-    # 3. 能見度風險評估 - 基於濕度
-    visibility_risk = 0
-    if future_weather and 'humidity' in future_weather:
-        humidity_data = future_weather['humidity']
-        if isinstance(humidity_data, dict):
-            try:
-                humidity_value = float(humidity_data.get('value', 50))
-                if humidity_value >= 95:  # 極高濕度可能導致霧
-                    visibility_risk = 8
-                    risk_warnings.append("極高濕度 - 可能出現霧患")
-                elif humidity_value >= 85:
-                    visibility_risk = 4
-                    risk_warnings.append("高濕度 - 有能見度下降風險")
-            except (ValueError, TypeError):
-                pass  # 忽略無效的濕度數據
-    
-    # 4. 季節性和天氣模式風險
-    seasonal_risk = 0
-    try:
-        from datetime import datetime
-        current_month = datetime.now().month
-        if current_month in [6, 7, 8, 9]:  # 夏秋季（雷暴季節）
-            if advance_hours >= 2:  # 夏季午後雷暴風險
-                seasonal_risk = 6
-                risk_warnings.append("雷暴季節 - 雷暴發展風險")
-        elif current_month in [12, 1, 2]:  # 冬季
-            seasonal_risk = 3
-            risk_warnings.append("冬季 - 霧霾風險較高")
-        elif current_month in [3, 4, 5]:  # 春季
-            seasonal_risk = 4
-            risk_warnings.append("春季 - 天氣變化較大")
-        else:  # 其他月份
-            seasonal_risk = 2
-    except Exception:
-        seasonal_risk = 2  # 默認季節風險
-    
-    # 5. 提前時間不確定性修正
-    time_uncertainty = min(advance_hours * 0.5, 8)  # 時間越長風險越高，最多8分
-    
-    total_risk = rainfall_risk + wind_risk + visibility_risk + seasonal_risk + time_uncertainty
-    
-    # 風險上限控制 - 避免過度懲罰
-    max_risk = min(20, advance_hours * 2)  # 最多20分，且隨提前時間增加
-    final_risk = min(total_risk, max_risk)
-    
-    print(f"🔮 提前{advance_hours}小時警告風險評估: {final_risk:.1f}分")
-    print(f"   風險因子: 雨量{rainfall_risk} + 風速{wind_risk} + 能見度{visibility_risk} + 季節{seasonal_risk} + 時間不確定性{time_uncertainty:.1f}")
-    if risk_warnings:
-        for warning in risk_warnings:
-            print(f"   ⚠️ {warning}")
-    
-    return final_risk, risk_warnings
-
 def get_prediction_level(score):
     """根據燒天分數返回預測等級 - 調整後更符合實際情況"""
     if score >= 80:
@@ -2136,6 +1787,26 @@ def home():
     """主頁 - 燒天預測前端"""
     return render_template('index.html')
 
+weather_input_service = WeatherInputService(
+    get_cached_data=get_cached_data,
+    fetch_weather=fetch_weather_data,
+    fetch_forecast=fetch_forecast_data,
+    fetch_ninday=fetch_ninday_forecast,
+    fetch_wind=get_current_wind_data,
+    fetch_warnings=fetch_warning_data,
+    forecast_extractor=forecast_extractor
+)
+warning_risk_service = FutureWarningRiskService(forecast_extractor)
+warning_assessment_service = CurrentWarningAssessmentService(
+    parse_warning=parse_warning_details,
+    calculate_impact=calculate_warning_impact_advanced
+)
+prediction_response_builder = PredictionResponseBuilder(
+    get_prediction_level=get_prediction_level,
+    get_sun_times=get_seasonal_sun_times,
+    convert_types=convert_numpy_types
+)
+
 def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     """核心燒天預測邏輯 - 共用函數"""
     # 轉換參數類型
@@ -2150,34 +1821,19 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     
     print(f"🔄 執行完整預測計算 (第一次載入或快取過期)")
     
-    # 使用快取獲取數據
-    weather_data = get_cached_data('weather', fetch_weather_data)
-    forecast_data = get_cached_data('forecast', fetch_forecast_data)
-    ninday_data = get_cached_data('ninday', fetch_ninday_forecast)
-    wind_data = get_cached_data('wind', get_current_wind_data)
-    warning_data = get_cached_data('warning', fetch_warning_data)
+    inputs = weather_input_service.prepare(advance_hours)
+    weather_data = inputs.observed_weather
+    future_weather_data = inputs.target_weather
+    forecast_data = inputs.forecast_data
+    ninday_data = inputs.ninday_data
+    warning_data = inputs.warning_data
     
     print(f"🚨 獲取天氣警告數據: {len(warning_data.get('details', [])) if warning_data else 0} 個警告")
     
-    # 將風速數據加入天氣數據中
-    weather_data['wind'] = wind_data
-    
-    # 🚨 將警告數據加入天氣數據（新增）
-    weather_data['warnings'] = warning_data
-    
-    # 如果是提前預測，使用未來天氣數據
     if advance_hours > 0:
-        future_weather_data = forecast_extractor.extract_future_weather_data(
-            weather_data, forecast_data, ninday_data, advance_hours
-        )
-        # 將風速數據加入未來天氣數據中
-        future_weather_data['wind'] = wind_data
-        # 🚨 提前預測時無法預知未來警告，使用當前警告作參考
-        future_weather_data['warnings'] = warning_data
         print(f"🔮 使用 {advance_hours} 小時後的推算天氣數據進行{prediction_type}預測")
         print(f"⚠️ 提前預測無法預知未來警告狀態，使用當前警告作參考")
     else:
-        future_weather_data = weather_data
         print(f"🕐 使用即時天氣數據進行{prediction_type}預測")
     
     # 使用統一計分系統 (整合所有計分方式)
@@ -2189,13 +1845,13 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     score = unified_result['final_score']
     
     # 🚨 計算警告影響並調整最終分數（增強版）
-    warning_impact, active_warnings, warning_analysis = get_warning_impact_score(warning_data)
+    warning_impact, active_warnings, warning_analysis = warning_assessment_service.assess(warning_data)
     
     # 🔮 新增：提前預測警告風險評估
     warning_risk_score = 0
     warning_risk_warnings = []
     if advance_hours > 0:
-        warning_risk_score, warning_risk_warnings = assess_future_warning_risk(
+        warning_risk_score, warning_risk_warnings = warning_risk_service.assess(
             weather_data, forecast_data, ninday_data, advance_hours
         )
     
@@ -2253,169 +1909,30 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     final_intensity_prediction = advanced_predictor_temp.predict_burnsky_intensity(score)
     final_color_prediction = advanced_predictor_temp.predict_burnsky_colors(future_weather_data, forecast_data, score)
 
-    # 構建前端兼容的分析詳情格式
-    factor_scores = unified_result.get('factor_scores', {})
-    
-    # 構建詳細的因子信息，包含前端期望的格式
-    def build_factor_info(factor_name, score, max_score=None):
-        """構建因子詳情"""
-        if max_score is None:
-            max_score = {'time': 18, 'temperature': 15, 'humidity': 20, 'visibility': 20, 
-                        'pressure': 10, 'cloud': 35, 'uv': 2, 'wind': 15, 'air_quality': 15}.get(factor_name, 100)
-        
-        factor_data = {
-            'score': round(score, 1),
-            'max_score': max_score,
-            'description': f'{factor_name.title()}因子評分: {round(score, 1)}/{max_score}分'
-        }
-        
-        # 添加特定因子的額外信息
-        if factor_name == 'time':
-            # 使用香港時間
-            from datetime import datetime, timezone, timedelta
-            hk_tz = timezone(timedelta(hours=8))
-            hk_now = datetime.now(hk_tz)
-            factor_data.update({
-                'current_time': hk_now.strftime('%H:%M'),
-                'target_time': '18:30' if prediction_type == 'sunset' else '06:30',
-                'target_type': prediction_type,
-                'advance_hours': advance_hours
-            })
-        elif factor_name == 'temperature' and 'temperature' in future_weather_data:
-            factor_data['current_temp'] = future_weather_data['temperature']
-        elif factor_name == 'humidity' and 'humidity' in future_weather_data:
-            factor_data['current_humidity'] = future_weather_data['humidity']
-        elif factor_name == 'wind' and 'wind' in future_weather_data:
-            wind_data = future_weather_data['wind']
-            if isinstance(wind_data, dict) and 'speed' in wind_data:
-                factor_data['wind_speed'] = wind_data['speed']
-        
-        return factor_data
-    
-    analysis_details = {
-        "confidence": unified_result['analysis'].get('confidence', 'medium'),
-        "recommendation": unified_result['analysis'].get('recommendation', ''),
-        "score_breakdown": {
-            "final_score": score,  # 使用警告調整後的分數
-            "final_weighted_score": score,
-            "ml_score": unified_result['ml_score'],
-            "traditional_normalized": unified_result['traditional_normalized'],
-            "traditional_raw": unified_result['traditional_score'],
-            "traditional_score": unified_result['traditional_score'],
-            "weighted_score": unified_result['weighted_score'],
-            "warning_impact": warning_impact,  # 🚨 即時警告影響
-            "warning_risk_impact": warning_risk_score,  # 🔮 新增：未來警告風險影響
-            "total_warning_impact": total_warning_impact,  # 🔮 新增：總警告影響
-            "weight_explanation": f"智能權重分配: AI模型 {unified_result['weights_used'].get('ml', 0.5)*100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5)*100:.0f}%"
-        },
-        "top_factors": unified_result['analysis'].get('top_factors', []),
-        # 添加前端期望的因子數據 - 將字串摘要轉換為陣列格式
-        "analysis_summary": [part.strip() for part in unified_result['analysis'].get('summary', '基於統一計分系統的綜合分析').split('|')],
-        "intensity_prediction": final_intensity_prediction,  # 使用警告調整後的強度預測
-        "cloud_visibility_analysis": cloud_thickness_analysis,
-        # 🚨 增強版警告相關信息
-        "weather_warnings": {
-            "active_warnings": active_warnings,
-            "warning_count": len(active_warnings),
-            "warning_impact_score": warning_impact,
-            "warning_risk_score": warning_risk_score,  # 🔮 新增：風險評估分數
-            "warning_risk_warnings": warning_risk_warnings,  # 🔮 新增：風險警告列表
-            "total_warning_impact": total_warning_impact,  # 🔮 新增：總警告影響
-            "has_severe_warnings": warning_impact >= 25,
-            "has_future_risks": warning_risk_score > 0,  # 🔮 新增：是否有未來風險
-            "detailed_analysis": warning_analysis  # 🆕 新增：詳細警告分析
-        },
-        # 構建各個因子的詳細信息（已修正分數）
-        "time_factor": build_factor_info('time', factor_scores.get('time', 0), 18),
-        "temperature_factor": build_factor_info('temperature', factor_scores.get('temperature', 0), 15),
-        "humidity_factor": build_factor_info('humidity', factor_scores.get('humidity', 0), 20),
-        "visibility_factor": build_factor_info('visibility', factor_scores.get('visibility', 0), 20),
-        "pressure_factor": build_factor_info('pressure', factor_scores.get('pressure', 0), 10),
-        "cloud_analysis_factor": build_factor_info('cloud', factor_scores.get('cloud', 0), 35),
-        "uv_factor": build_factor_info('uv', factor_scores.get('uv', 0), 2),
-        "wind_factor": build_factor_info('wind', factor_scores.get('wind', 0), 15),
-        "air_quality_factor": build_factor_info('air_quality', factor_scores.get('air_quality', 0), 15),
-        # 添加機器學習特徵分析
-        "ml_feature_analysis": unified_result.get('ml_feature_analysis', {}),
-    }
-
-    # 🌅 獲取日出日落時間
-    sun_times = get_seasonal_sun_times()
-    
-    result = {
-        "burnsky_score": score,
-        "probability": f"{round(min(score, 100))}%",
-        "prediction_level": get_prediction_level(score),
-        "prediction_type": prediction_type,
-        "advance_hours": advance_hours,
-        "unified_analysis": unified_result,  # 完整的統一分析結果
-        "analysis_details": analysis_details,  # 前端兼容格式
-        "intensity_prediction": final_intensity_prediction,  # 使用警告調整後的強度預測
-        "color_prediction": final_color_prediction,  # 使用警告調整後的顏色預測
-        "cloud_thickness_analysis": cloud_thickness_analysis,
-        "weather_data": future_weather_data,
-        "original_weather_data": weather_data if advance_hours > 0 else None,
-        "forecast_data": forecast_data,
-        # 🌅 新增日出日落時間
-        "sun_times": {
-            "sunrise": sun_times['sunrise'],
-            "sunset": sun_times['sunset'],
-            "method": sun_times.get('method', 'calculated')
-        },
-        # 🚨 新增警告數據到回應中
-        "warning_data": warning_data,
-        "warning_analysis": {
-            "active_warnings": active_warnings,
-            "warning_impact": warning_impact,
-            "warning_risk_score": warning_risk_score,  # 🔮 新增：風險評估分數
-            "warning_risk_warnings": warning_risk_warnings,  # 🔮 新增：風險警告列表
-            "total_warning_impact": total_warning_impact,  # 🔮 新增：總警告影響
-            "warning_adjusted": total_warning_impact > 0  # 🔮 更新：使用總影響判斷
-        },
-        "scoring_method": "unified_v1.2_with_advance_warning_risk"  # � 更新版本號標示風險評估功能
-    }
-    
-    result = convert_numpy_types(result)
+    result = prediction_response_builder.build(
+        score=score,
+        prediction_type=prediction_type,
+        advance_hours=advance_hours,
+        unified_result=unified_result,
+        intensity_prediction=final_intensity_prediction,
+        color_prediction=final_color_prediction,
+        target_weather=future_weather_data,
+        observed_weather=weather_data,
+        forecast_data=forecast_data,
+        warning_data=warning_data,
+        warning_impact=warning_impact,
+        warning_risk_score=warning_risk_score,
+        warning_risk_warnings=warning_risk_warnings,
+        active_warnings=active_warnings,
+        warning_analysis=warning_analysis
+    )
     
     flask_cache.set(prediction_cache_key, result, timeout=180)
     print(f"✅ 預測結果已快取: {prediction_cache_key}")
     
     return result  # 返回結果字典而不是 jsonify
 
-@app.route("/predict", methods=["GET"])
-@limiter.limit("100 per hour")
-@flask_cache.cached(timeout=300, query_string=True)  # 5分鐘快取，根據查詢參數
-def predict_burnsky():
-    """統一燒天預測 API 端點 - 支援即時和提前預測"""
-    # 獲取查詢參數
-    prediction_type = request.args.get('type', 'sunset')  # sunset 或 sunrise
-    advance_hours = int(request.args.get('advance', 0))   # 提前預測小時數
-    
-    # 呼叫核心預測邏輯
-    result = predict_burnsky_core(prediction_type, advance_hours)
-    return jsonify(result)
-
-@app.route("/predict/sunrise", methods=["GET"])
-@limiter.limit("100 per hour")
-@flask_cache.cached(timeout=300, query_string=True)  # 5分鐘快取，根據查詢參數
-def predict_sunrise():
-    """專門的日出燒天預測端點 - 直接回傳結果，不重定向"""
-    advance_hours = request.args.get('advance_hours', '0')  # 預設即時預測
-    
-    # 直接呼叫核心預測邏輯
-    result = predict_burnsky_core('sunrise', advance_hours)
-    return jsonify(result)
-
-@app.route("/predict/sunset", methods=["GET"])
-@limiter.limit("100 per hour")
-@flask_cache.cached(timeout=300, query_string=True)  # 5分鐘快取，根據查詢參數
-def predict_sunset():
-    """專門的日落燒天預測端點 - 直接回傳結果，不重定向"""
-    advance_hours = request.args.get('advance_hours', '0')  # 預設即時預測
-    
-    # 直接呼叫核心預測邏輯
-    result = predict_burnsky_core('sunset', advance_hours)
-    return jsonify(result)
+app.register_blueprint(create_prediction_blueprint(predict_burnsky_core, limiter, flask_cache))
 
 @app.route("/api")
 @flask_cache.cached(timeout=3600)  # 1小時快取，API資訊很少變化
@@ -6009,356 +5526,18 @@ def ml_status():
             'message': str(e)
         }), 500
 
-# ==================== 燒天歷史統計 API ====================
-@app.route("/api/burnsky/history", methods=["GET"])
-def get_burnsky_history():
-    """獲取燒天預測歷史統計"""
-    try:
-        days_back = int(request.args.get('days', 30))
-        days_back = min(max(days_back, 1), 365)
-        
-        conn = sqlite3.connect('prediction_history.db')
-        cursor = conn.cursor()
-        
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days_back)
-        
-        # 轉換為 SQLite 格式（空格分隔）
-        start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
-        end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # 1. 總體統計
-        cursor.execute('''
-            SELECT 
-                COUNT(*) as total_predictions,
-                AVG(score) as avg_score,
-                MAX(score) as max_score,
-                MIN(score) as min_score,
-                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count,
-                COUNT(CASE WHEN score >= 50 AND score < 70 THEN 1 END) as medium_score_count,
-                COUNT(CASE WHEN score < 50 THEN 1 END) as low_score_count
-            FROM prediction_history
-            WHERE timestamp >= ? AND timestamp <= ?
-        ''', (start_date_str, end_date_str))
-        
-        overall = cursor.fetchone()
-        
-        # 2. 按類型統計（日出/日落）
-        cursor.execute('''
-            SELECT 
-                prediction_type,
-                COUNT(*) as count,
-                AVG(score) as avg_score,
-                MAX(score) as max_score,
-                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count
-            FROM prediction_history
-            WHERE timestamp >= ? AND timestamp <= ?
-            GROUP BY prediction_type
-        ''', (start_date_str, end_date_str))
-        
-        by_type = {}
-        for row in cursor.fetchall():
-            pred_type, count, avg, max_s, high = row
-            by_type[pred_type] = {
-                'count': count,
-                'avg_score': round(avg, 1) if avg else 0,
-                'max_score': max_s if max_s else 0,
-                'high_score_count': high,
-                'high_score_prediction_rate': round((high / count * 100) if count > 0 else 0, 1)
-            }
-        
-        # 3. 每日趨勢（最近30天）
-        cursor.execute('''
-            SELECT 
-                DATE(timestamp) as date,
-                AVG(score) as avg_score,
-                MAX(score) as max_score,
-                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count
-            FROM prediction_history
-            WHERE timestamp >= ? AND timestamp <= ?
-            GROUP BY DATE(timestamp)
-            ORDER BY date DESC
-            LIMIT 30
-        ''', (start_date_str, end_date_str))
-        
-        daily_trends = []
-        for row in cursor.fetchall():
-            date, avg, max_s, high = row
-            daily_trends.append({
-                'date': date,
-                'avg_score': round(avg, 1) if avg else 0,
-                'max_score': max_s if max_s else 0,
-                'high_score_count': high
-            })
-        
-        # 4. 最佳時段統計（按小時）
-        cursor.execute('''
-            SELECT 
-                CAST(strftime('%H', timestamp) AS INTEGER) as hour,
-                COUNT(*) as count,
-                AVG(score) as avg_score,
-                COUNT(CASE WHEN score >= 70 THEN 1 END) as high_score_count
-            FROM prediction_history
-            WHERE timestamp >= ? AND timestamp <= ?
-            GROUP BY hour
-            ORDER BY avg_score DESC
-        ''', (start_date_str, end_date_str))
-        
-        best_hours = []
-        for row in cursor.fetchall():
-            hour, count, avg, high = row
-            best_hours.append({
-                'hour': hour,
-                'count': count,
-                'avg_score': round(avg, 1) if avg else 0,
-                'high_score_count': high
-            })
-        
-        conn.close()
-        verified_accuracy = calculate_real_accuracy(days_back)
-        
-        # 組織返回數據
-        return jsonify({
-            'status': 'success',
-            'data_source': 'prediction_history',
-            'time_range': {
-                'days': days_back,
-                'start_date': start_date.strftime('%Y-%m-%d'),
-                'end_date': end_date.strftime('%Y-%m-%d')
-            },
-            'summary': {
-                'total_predictions': overall[0] or 0,
-                'avg_score': round(overall[1], 1) if overall[1] else 0,
-                'max_score': overall[2] if overall[2] else 0,
-                'min_score': overall[3] if overall[3] else 0,
-                'high_score_count': overall[4] or 0,
-                'medium_score_count': overall[5] or 0,
-                'low_score_count': overall[6] or 0,
-                'high_score_prediction_rate': round((overall[4] / overall[0] * 100) if overall[0] else 0, 1)
-            },
-            'verified_accuracy': verified_accuracy,
-            'by_type': by_type,
-            'daily_trends': daily_trends,
-            'best_hours': best_hours[:5],  # 前5個最佳時段
-            'insights': generate_burnsky_insights(overall, by_type, best_hours)
-        })
-        
-    except Exception as e:
-        print(f"❌ 燒天歷史統計錯誤: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+def clear_scheduler_caches():
+    cache.clear()
+    clear_prediction_cache()
 
-def generate_burnsky_insights(overall, by_type, best_hours):
-    """生成燒天歷史洞察"""
-    insights = []
-    
-    if overall[0] > 0:
-        high_score_rate = (overall[4] / overall[0] * 100) if overall[0] else 0
-        insights.append(f"過去期間共進行 {overall[0]} 次預測，高分（≥70分）預測比例為 {high_score_rate:.1f}%")
-        
-        if overall[1]:
-            insights.append(f"平均燒天評分為 {overall[1]:.1f} 分")
-        
-        if overall[2] and overall[2] >= 80:
-            insights.append(f"最高評分達到 {overall[2]:.0f} 分，出現極佳燒天條件")
-    
-    # 日出日落對比
-    if 'sunrise' in by_type and 'sunset' in by_type:
-        sunrise_rate = by_type['sunrise']['high_score_prediction_rate']
-        sunset_rate = by_type['sunset']['high_score_prediction_rate']
-        if sunrise_rate > sunset_rate:
-            insights.append(f"日出的高分預測比例（{sunrise_rate}%）高於日落（{sunset_rate}%）")
-        else:
-            insights.append(f"日落的高分預測比例（{sunset_rate}%）高於日出（{sunrise_rate}%）")
-    
-    # 最佳時段
-    if best_hours:
-        best = best_hours[0]
-        time_label = '凌晨' if best['hour'] < 6 else '早晨' if best['hour'] < 12 else '下午' if best['hour'] < 18 else '晚間'
-        insights.append(f"{time_label}時段（{best['hour']}:00）的燒天評分最高，平均 {best['avg_score']} 分")
-    
-    return insights
 
-@app.route("/api/submit-feedback", methods=['POST'])
-def submit_feedback():
-    """接收用戶對預測準確性的反饋"""
-    try:
-        data = request.get_json(silent=True)
-        
-        # 驗證必需字段
-        required_fields = ['predicted_score', 'user_rating']
-        if not data or not all(field in data for field in required_fields):
-            return jsonify({
-                'status': 'error',
-                'message': '缺少必需字段'
-            }), 400
-        
-        predicted_score = int(data['predicted_score'])
-        user_rating = int(data['user_rating'])
-        verification_source = data.get('verification_source', 'manual')
-        photo_case_id = data.get('photo_case_id')
-        
-        # 驗證評分範圍
-        if not (0 <= predicted_score <= 100) or not (0 <= user_rating <= 100):
-            return jsonify({
-                'status': 'error',
-                'message': '評分必須在 0-100 之間'
-            }), 400
-        if verification_source not in {'manual', 'photo'}:
-            return jsonify({
-                'status': 'error',
-                'message': '不支援的驗證來源'
-            }), 400
-        
-        # 保存反饋
-        conn = sqlite3.connect(PREDICTION_HISTORY_DB)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO user_feedback 
-            (prediction_timestamp, predicted_score, user_rating, location, comment, weather_conditions, verification_source, photo_case_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            data.get('prediction_timestamp', datetime.now().isoformat()),
-            predicted_score,
-            user_rating,
-            data.get('location', ''),
-            data.get('comment', ''),
-            data.get('weather_conditions', ''),
-            verification_source,
-            photo_case_id
-        ))
-        
-        conn.commit()
-        feedback_id = cursor.lastrowid
-        conn.close()
-        
-        # 計算更新後的準確率
-        accuracy_stats = calculate_real_accuracy()
-        
-        return jsonify({
-            'status': 'success',
-            'message': '感謝您的反饋！',
-            'feedback_id': feedback_id,
-            'accuracy_stats': accuracy_stats
-        })
-        
-    except Exception as e:
-        print(f"❌ 提交反饋錯誤: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-@app.route("/api/accuracy-stats")
-def get_accuracy_stats():
-    """獲取基於真實反饋的準確率統計"""
-    try:
-        days_back = min(max(int(request.args.get('days', 30)), 1), 365)
-        stats = calculate_real_accuracy(days_back)
-        return jsonify(stats)
-    except Exception as e:
-        print(f"❌ 獲取準確率統計錯誤: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-def calculate_real_accuracy(days_back=30):
-    """計算基於用戶反饋的真實準確率"""
-    minimum_sample_size = 10
-    try:
-        conn = sqlite3.connect(PREDICTION_HISTORY_DB)
-        cursor = conn.cursor()
-        
-        # 只從實際用戶評分取得結果，不能用模型自身分數估算準確率。
-        cursor.execute('''
-            SELECT 
-                predicted_score,
-                user_rating,
-                feedback_timestamp
-            FROM user_feedback
-            WHERE feedback_timestamp >= datetime('now', ?)
-            ORDER BY feedback_timestamp DESC
-        ''', (f'-{days_back} days',))
-        
-        feedbacks = cursor.fetchall()
-        
-        if not feedbacks:
-            conn.close()
-            return {
-                'has_data': False,
-                'message': f'最近 {days_back} 天暫無已驗證的用戶反饋',
-                'feedback_count': 0,
-                'is_statistically_ready': False,
-                'minimum_sample_size': minimum_sample_size,
-                'period_days': days_back
-            }
-        
-        # 計算準確率
-        total_error = 0
-        score_differences = []
-        
-        for predicted, actual, _ in feedbacks:
-            error = abs(predicted - actual)
-            total_error += error
-            score_differences.append(error)
-        
-        avg_error = total_error / len(feedbacks)
-        
-        # 準確率 = 100 - 平均誤差百分比
-        accuracy = max(0, min(100, 100 - avg_error))
-        
-        # 計算誤差分佈
-        cursor.execute('''
-            SELECT 
-                COUNT(CASE WHEN ABS(predicted_score - user_rating) <= 10 THEN 1 END) as within_10,
-                COUNT(CASE WHEN ABS(predicted_score - user_rating) <= 20 THEN 1 END) as within_20,
-                COUNT(CASE WHEN predicted_score >= 70 AND user_rating >= 70 THEN 1 END) as true_positive,
-                COUNT(CASE WHEN predicted_score >= 70 AND user_rating < 70 THEN 1 END) as false_positive,
-                COUNT(CASE WHEN predicted_score < 70 AND user_rating >= 70 THEN 1 END) as false_negative,
-                COUNT(CASE WHEN verification_source = 'photo' THEN 1 END) as photo_verified,
-                COUNT(*) as total
-            FROM user_feedback
-            WHERE feedback_timestamp >= datetime('now', ?)
-        ''', (f'-{days_back} days',))
-        
-        within_10, within_20, true_positive, false_positive, false_negative, photo_verified, total = cursor.fetchone()
-        
-        conn.close()
-        
-        return {
-            'has_data': True,
-            'accuracy': round(accuracy, 1),
-            'avg_error': round(avg_error, 1),
-            'feedback_count': len(feedbacks),
-            'is_statistically_ready': len(feedbacks) >= minimum_sample_size,
-            'minimum_sample_size': minimum_sample_size,
-            'period_days': days_back,
-            'within_10_points': round((within_10 / total * 100), 1) if total > 0 else 0,
-            'within_20_points': round((within_20 / total * 100), 1) if total > 0 else 0,
-            'high_score_precision': round((true_positive / (true_positive + false_positive) * 100), 1) if true_positive + false_positive > 0 else None,
-            'high_score_recall': round((true_positive / (true_positive + false_negative) * 100), 1) if true_positive + false_negative > 0 else None,
-            'photo_verified_count': photo_verified or 0,
-            'manual_verified_count': total - (photo_verified or 0),
-            'last_updated': feedbacks[0][2] if feedbacks else None
-        }
-        
-    except Exception as e:
-        print(f"❌ 計算準確率錯誤: {e}")
-        return {
-            'has_data': False,
-            'message': f'計算錯誤: {str(e)}',
-            'feedback_count': 0,
-            'is_statistically_ready': False,
-            'minimum_sample_size': minimum_sample_size,
-            'period_days': days_back
-        }
-
-# 啟動每小時預測保存排程
-start_hourly_scheduler()
+scheduler = HourlyPredictionScheduler(
+    predict=predict_burnsky_core,
+    save_prediction=save_prediction_to_history,
+    clear_cache=clear_scheduler_caches,
+    enabled=HOURLY_SAVE_ENABLED
+)
+scheduler.start()
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', '5001'))

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天氣術語詞彙表 | 燒天預測專業名詞解釋 | BurnSky</title>
+    
+    <!-- SEO 標籤 -->
+    <meta name="description" content="完整的天氣術語詞彙表，解釋燒天預測中的專業名詞，包含氣象、攝影、預測相關術語，幫助您更好理解天氣預報。">
+    <meta name="keywords" content="天氣術語,氣象名詞,燒天術語,天氣預報,氣象詞彙,天氣專業名詞,氣象知識">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph 標籤 -->
+    <meta property="og:title" content="天氣術語詞彙表 | 專業氣象名詞解釋">
+    <meta property="og:description" content="學習天氣預測相關的專業術語，成為燒天預測達人。">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://burnsky-api.onrender.com/weather-terms">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://burnsky-api.onrender.com/weather-terms">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3552699426860096"
+         crossorigin="anonymous"></script>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-4KLPHLD5EQ');
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .top-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 10px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .nav-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-row a {
+            text-decoration: none;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-row a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+        
+        .search-box {
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .category {
+            margin-bottom: 35px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .category-header {
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .terms-grid {
+            padding: 20px;
+            display: grid;
+            gap: 15px;
+        }
+        
+        .term-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .term-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        
+        .term-english {
+            color: #666;
+            font-style: italic;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        
+        .term-definition {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .back-home {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .back-home a {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: background 0.3s ease;
+            display: inline-block;
+        }
+        
+        .back-home a:hover {
+            background: #5a6fd8;
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+    
+    <div class="container">
+        <header class="header">
+            <h1>📚 天氣術語詞彙表</h1>
+            <p>理解燒天預測的專業術語</p>
+        </header>
+        
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 搜尋術語...">
+        </div>
+        
+        <main>
+            <!-- 燒天相關術語 -->
+            <div class="category">
+                <div class="category-header">
+                    🔥 燒天相關術語
+                </div>
+                <div class="terms-grid">
+                    <div class="term-item">
+                        <div class="term-name">燒天</div>
+                        <div class="term-english">Burning Sky / Fire Sky</div>
+                        <div class="term-definition">
+                            指日出或日落時天空呈現橙紅色火燒般色彩的自然現象。通常發生在特定的大氣條件下，包括適當的雲層厚度、濕度、風速等因素配合。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">火燒雲</div>
+                        <div class="term-english">Fire Clouds</div>
+                        <div class="term-definition">
+                            燒天現象中的雲層本身，因陽光照射角度和大氣散射作用，呈現出橙紅色、深紅色等火焰般的色彩。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">黃金時段</div>
+                        <div class="term-english">Golden Hour</div>
+                        <div class="term-definition">
+                            日出後和日落前的一小時內，此時陽光柔和，色溫偏暖，是攝影的最佳時機。燒天現象通常在這個時段出現。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">藍調時刻</div>
+                        <div class="term-english">Blue Hour</div>
+                        <div class="term-definition">
+                            日落後15-30分鐘的時段，天空呈現深藍色調，此時城市燈光開始亮起，是拍攝城市夜景的理想時間。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 雲層相關術語 -->
+            <div class="category">
+                <div class="category-header">
+                    ☁️ 雲層相關術語
+                </div>
+                <div class="terms-grid">
+                    <div class="term-item">
+                        <div class="term-name">雲層覆蓋率</div>
+                        <div class="term-english">Cloud Coverage</div>
+                        <div class="term-definition">
+                            指天空被雲層遮蔽的百分比。燒天預測中，30-70%的雲層覆蓋率通常是最理想的條件。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">雲層厚度</div>
+                        <div class="term-english">Cloud Thickness</div>
+                        <div class="term-definition">
+                            雲層的垂直厚度。適中的雲層厚度有助於光線散射，產生燒天效果。過厚或過薄都不利於燒天形成。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">高積雲</div>
+                        <div class="term-english">Altocumulus</div>
+                        <div class="term-definition">
+                            中層雲的一種，高度約2-7公里，呈灰白色片狀或波狀。是產生燒天現象的理想雲層類型之一。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">層積雲</div>
+                        <div class="term-english">Stratocumulus</div>
+                        <div class="term-definition">
+                            低層雲的一種，呈灰色或白色的大塊狀雲層。當覆蓋率適中時，有助於產生燒天效果。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 氣象相關術語 -->
+            <div class="category">
+                <div class="category-header">
+                    🌤️ 氣象相關術語
+                </div>
+                <div class="terms-grid">
+                    <div class="term-item">
+                        <div class="term-name">相對濕度</div>
+                        <div class="term-english">Relative Humidity</div>
+                        <div class="term-definition">
+                            空氣中水蒸氣含量相對於該溫度下飽和水蒸氣含量的百分比。燒天預測中，60-80%的濕度被認為是理想範圍。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">風速</div>
+                        <div class="term-english">Wind Speed</div>
+                        <div class="term-definition">
+                            空氣移動的速度，通常以蒲福風級表示。適中的風速（2-4級）有助於雲層移動和形態變化，有利於燒天形成。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">氣壓</div>
+                        <div class="term-english">Atmospheric Pressure</div>
+                        <div class="term-definition">
+                            大氣對地面的壓力。高壓系統通常帶來晴朗天氣，而高壓系統邊緣或過境後常有利於燒天形成。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">能見度</div>
+                        <div class="term-english">Visibility</div>
+                        <div class="term-definition">
+                            在正常光線條件下，眼睛能看清楚目標物體的最大距離。良好的能見度有助於燒天色彩的呈現。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 空氣品質術語 -->
+            <div class="category">
+                <div class="category-header">
+                    🌬️ 空氣品質術語
+                </div>
+                <div class="terms-grid">
+                    <div class="term-item">
+                        <div class="term-name">空氣質素健康指數</div>
+                        <div class="term-english">Air Quality Health Index (AQHI)</div>
+                        <div class="term-definition">
+                            香港使用的空氣品質指標，分為1-10+級。數值越低代表空氣越清潔，AQHI 6以下通常有利於燒天效果的呈現。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">PM2.5</div>
+                        <div class="term-english">Particulate Matter 2.5</div>
+                        <div class="term-definition">
+                            直徑小於2.5微米的細懸浮粒子。濃度過高會影響大氣透明度，降低燒天色彩的鮮豔度。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">大氣透明度</div>
+                        <div class="term-english">Atmospheric Transparency</div>
+                        <div class="term-definition">
+                            大氣對光線的穿透程度。高透明度意味著較少的空氣污染物，有利於燒天色彩的清晰呈現。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 攝影相關術語 -->
+            <div class="category">
+                <div class="category-header">
+                    📸 攝影相關術語
+                </div>
+                <div class="terms-grid">
+                    <div class="term-item">
+                        <div class="term-name">曝光</div>
+                        <div class="term-english">Exposure</div>
+                        <div class="term-definition">
+                            相機感光元件接受光線的總量，由光圈、快門速度和ISO三者決定。燒天攝影需要精確控制曝光以保留色彩細節。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">動態範圍</div>
+                        <div class="term-english">Dynamic Range</div>
+                        <div class="term-definition">
+                            相機能同時記錄的最亮和最暗部分的範圍。燒天場景的高對比度需要較大的動態範圍來保留細節。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">白平衡</div>
+                        <div class="term-english">White Balance</div>
+                        <div class="term-definition">
+                            調整相機對不同色溫光源的色彩還原。燒天攝影中正確的白平衡設定能準確還原天空的暖色調。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">HDR</div>
+                        <div class="term-english">High Dynamic Range</div>
+                        <div class="term-definition">
+                            高動態範圍技術，通過拍攝多張不同曝光的照片合成，以記錄更大的亮度範圍。常用於燒天攝影。
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 預測相關術語 -->
+            <div class="category">
+                <div class="category-header">
+                    🔮 預測相關術語
+                </div>
+                <div class="terms-grid">
+                    <div class="term-item">
+                        <div class="term-name">機器學習</div>
+                        <div class="term-english">Machine Learning</div>
+                        <div class="term-definition">
+                            通過算法讓電腦從數據中學習規律的技術。燒天預測系統使用機器學習分析歷史天氣數據，提高預測準確率。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">數值天氣預報</div>
+                        <div class="term-english">Numerical Weather Prediction (NWP)</div>
+                        <div class="term-definition">
+                            使用數學模型和電腦計算來預測未來天氣狀況的方法。是現代天氣預報的基礎技術。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">衛星遙感</div>
+                        <div class="term-english">Satellite Remote Sensing</div>
+                        <div class="term-definition">
+                            利用衛星搭載的感應器收集地球表面和大氣的資訊。燒天預測中用於分析雲層分布和厚度。
+                        </div>
+                    </div>
+                    
+                    <div class="term-item">
+                        <div class="term-name">預測信心度</div>
+                        <div class="term-english">Prediction Confidence</div>
+                        <div class="term-definition">
+                            預測結果的可靠程度。通常以百分比表示，信心度越高表示預測越可靠。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="back-home">
+            <a href="/">🏠 返回首頁</a>
+        </div>
+    </div>
+    
+    <script>
+        // 搜尋功能
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const termItems = document.querySelectorAll('.term-item');
+            
+            termItems.forEach(item => {
+                const termName = item.querySelector('.term-name').textContent.toLowerCase();
+                const termEnglish = item.querySelector('.term-english').textContent.toLowerCase();
+                const termDefinition = item.querySelector('.term-definition').textContent.toLowerCase();
+                
+                if (termName.includes(searchTerm) || termEnglish.includes(searchTerm) || termDefinition.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

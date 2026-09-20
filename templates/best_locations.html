@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO 標籤 -->
+    <title>香港最佳燒天拍攝地點 | 專業拍攝指南 | BurnSky</title>
+    <meta name="description" content="香港最佳燒天拍攝地點推薦，包含維多利亞港、太平山頂、石澳等經典景點，提供詳細交通資訊、拍攝技巧和最佳時間。">
+    <meta name="keywords" content="香港燒天地點,火燒雲拍攝地點,香港攝影景點,維港日落,太平山燒天,石澳日出,攝影地點推薦">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph 標籤 -->
+    <meta property="og:title" content="香港最佳燒天拍攝地點推薦">
+    <meta property="og:description" content="發現香港最美的燒天拍攝地點，從維港到太平山，完整攻略等你探索。">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://burnsky-api.onrender.com/best-locations">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://burnsky-api.onrender.com/best-locations">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3552699426860096"
+         crossorigin="anonymous"></script>
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-4KLPHLD5EQ');
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .locations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+            @media (max-width: 768px) {
+                body {
+                    padding: 10px;
+                }
+
+                .container {
+                    padding: 16px;
+                }
+
+                .locations-grid {
+                    grid-template-columns: minmax(0, 1fr);
+                    gap: 16px;
+                    margin: 20px 0;
+                }
+
+                .info-grid {
+                    grid-template-columns: 1fr;
+                    gap: 10px;
+                }
+            }
+
+                ins.adsbygoogle {
+                    display: block;
+                    max-width: 100%;
+                    width: 100% !important;
+                    overflow: hidden;
+                }
+        
+        .location-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .location-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .location-header {
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .location-content {
+            padding: 20px;
+        }
+        
+        .location-rating {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .star {
+            color: #ffd700;
+            font-size: 1.2em;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .info-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .tips-section {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .difficulty-easy { border-left-color: #4caf50; }
+        .difficulty-medium { border-left-color: #ff9800; }
+        .difficulty-hard { border-left-color: #f44336; }
+        
+        .back-home {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .back-home a {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: background 0.3s ease;
+            display: inline-block;
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+    
+    <div class="container">
+        <header class="header">
+            <h1>📍 香港最佳燒天拍攝地點</h1>
+            <p>發現最美的火燒雲拍攝景點</p>
+        </header>
+        
+        <main>
+            <div class="locations-grid">
+                <!-- 維多利亞港 -->
+                <div class="location-card">
+                    <div class="location-header">
+                        <h2>🌆 維多利亞港</h2>
+                        <p>經典城市天際線配燒天</p>
+                        <div class="location-rating">
+                            <span class="star">★★★★★</span>
+                        </div>
+                    </div>
+                    <div class="location-content">
+                        <div class="info-grid">
+                            <div class="info-item difficulty-easy">
+                                <strong>🎯 難度：</strong>容易
+                            </div>
+                            <div class="info-item">
+                                <strong>🕐 最佳時間：</strong>日落
+                            </div>
+                            <div class="info-item">
+                                <strong>🚇 交通：</strong>地鐵可達
+                            </div>
+                            <div class="info-item">
+                                <strong>📷 特色：</strong>城市天際線
+                            </div>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>📸 推薦拍攝點：</h4>
+                            <ul>
+                                <li><strong>尖沙咀海濱長廊：</strong>最經典角度</li>
+                                <li><strong>中環摩天輪：</strong>高角度俯拍</li>
+                                <li><strong>金紫荊廣場：</strong>灣仔角度</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>💡 拍攝貼士：</h4>
+                            <ul>
+                                <li>建議攜帶廣角鏡頭捕捉完整天際線</li>
+                                <li>注意潮汐時間，低潮時前景更好</li>
+                                <li>週末人潮較多，建議平日前往</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Google AdSense 廣告區域 -->
+                <div style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(248, 249, 250, 0.6); border-radius: 4px;">
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="ca-pub-3552699426860096"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                    <script>
+                         (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+                
+                <!-- 太平山頂 -->
+                <div class="location-card">
+                    <div class="location-header">
+                        <h2>⛰️ 太平山頂</h2>
+                        <p>俯瞰全港景色的最佳位置</p>
+                        <div class="location-rating">
+                            <span class="star">★★★★★</span>
+                        </div>
+                    </div>
+                    <div class="location-content">
+                        <div class="info-grid">
+                            <div class="info-item difficulty-medium">
+                                <strong>🎯 難度：</strong>中等
+                            </div>
+                            <div class="info-item">
+                                <strong>🕐 最佳時間：</strong>日落
+                            </div>
+                            <div class="info-item">
+                                <strong>🚠 交通：</strong>山頂纜車
+                            </div>
+                            <div class="info-item">
+                                <strong>📷 特色：</strong>360度全景
+                            </div>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>📸 推薦拍攝點：</h4>
+                            <ul>
+                                <li><strong>山頂廣場：</strong>經典觀景台</li>
+                                <li><strong>獅子亭：</strong>免費觀景點</li>
+                                <li><strong>盧吉道：</strong>較少人潮</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>💡 拍攝貼士：</h4>
+                            <ul>
+                                <li>提早1小時到達佔據最佳位置</li>
+                                <li>山頂溫度較低，準備保暖衣物</li>
+                                <li>注意纜車營運時間，避免被困</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 石澳 -->
+                <div class="location-card">
+                    <div class="location-header">
+                        <h2>🏖️ 石澳</h2>
+                        <p>香港島東南端的海岸線</p>
+                        <div class="location-rating">
+                            <span class="star">★★★★☆</span>
+                        </div>
+                    </div>
+                    <div class="location-content">
+                        <div class="info-grid">
+                            <div class="info-item difficulty-easy">
+                                <strong>🎯 難度：</strong>容易
+                            </div>
+                            <div class="info-item">
+                                <strong>🕐 最佳時間：</strong>日出
+                            </div>
+                            <div class="info-item">
+                                <strong>🚌 交通：</strong>巴士可達
+                            </div>
+                            <div class="info-item">
+                                <strong>📷 特色：</strong>海岸線
+                            </div>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>📸 推薦拍攝點：</h4>
+                            <ul>
+                                <li><strong>石澳海灘：</strong>開闊海景</li>
+                                <li><strong>石澳郊野公園：</strong>高角度</li>
+                                <li><strong>大頭洲：</strong>獨特岩石</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>💡 拍攝貼士：</h4>
+                            <ul>
+                                <li>清晨6點前到達，捕捉第一道曙光</li>
+                                <li>注意海浪安全，避免太接近水邊</li>
+                                <li>攜帶手電筒，清晨光線較暗</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 獅子山 -->
+                <div class="location-card">
+                    <div class="location-header">
+                        <h2>🦁 獅子山</h2>
+                        <p>香港精神象徵</p>
+                        <div class="location-rating">
+                            <span class="star">★★★★☆</span>
+                        </div>
+                    </div>
+                    <div class="location-content">
+                        <div class="info-grid">
+                            <div class="info-item difficulty-hard">
+                                <strong>🎯 難度：</strong>困難
+                            </div>
+                            <div class="info-item">
+                                <strong>🕐 最佳時間：</strong>日落
+                            </div>
+                            <div class="info-item">
+                                <strong>🥾 交通：</strong>行山
+                            </div>
+                            <div class="info-item">
+                                <strong>📷 特色：</strong>九龍全景
+                            </div>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>📸 推薦拍攝點：</h4>
+                            <ul>
+                                <li><strong>獅子山山頂：</strong>最高點</li>
+                                <li><strong>望夫石：</strong>中途休息點</li>
+                                <li><strong>獅子頭：</strong>經典角度</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>💡 拍攝貼士：</h4>
+                            <ul>
+                                <li>需要2-3小時行山時間</li>
+                                <li>帶足飲水和食物</li>
+                                <li>注意天氣變化，避免惡劣天氣</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 青馬大橋 -->
+                <div class="location-card">
+                    <div class="location-header">
+                        <h2>🌉 青馬大橋</h2>
+                        <p>世界最長懸索橋</p>
+                        <div class="location-rating">
+                            <span class="star">★★★★☆</span>
+                        </div>
+                    </div>
+                    <div class="location-content">
+                        <div class="info-grid">
+                            <div class="info-item difficulty-medium">
+                                <strong>🎯 難度：</strong>中等
+                            </div>
+                            <div class="info-item">
+                                <strong>🕐 最佳時間：</strong>日落
+                            </div>
+                            <div class="info-item">
+                                <strong>🚌 交通：</strong>巴士+步行
+                            </div>
+                            <div class="info-item">
+                                <strong>📷 特色：</strong>工程美學
+                            </div>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>📸 推薦拍攝點：</h4>
+                            <ul>
+                                <li><strong>青嶼幹線觀景台：</strong>官方觀景點</li>
+                                <li><strong>汀九橋：</strong>另一角度</li>
+                                <li><strong>青衣東北公園：</strong>較近距離</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>💡 拍攝貼士：</h4>
+                            <ul>
+                                <li>注意觀景台開放時間</li>
+                                <li>避免強風日子前往</li>
+                                <li>攜帶望遠鏡頭拍攝橋樑細節</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 西環海濱 -->
+                <div class="location-card">
+                    <div class="location-header">
+                        <h2>🌊 西環海濱</h2>
+                        <p>較少人知的隱藏寶石</p>
+                        <div class="location-rating">
+                            <span class="star">★★★☆☆</span>
+                        </div>
+                    </div>
+                    <div class="location-content">
+                        <div class="info-grid">
+                            <div class="info-item difficulty-easy">
+                                <strong>🎯 難度：</strong>容易
+                            </div>
+                            <div class="info-item">
+                                <strong>🕐 最佳時間：</strong>日落
+                            </div>
+                            <div class="info-item">
+                                <strong>🚇 交通：</strong>地鐵可達
+                            </div>
+                            <div class="info-item">
+                                <strong>📷 特色：</strong>開闊海景
+                            </div>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>📸 推薦拍攝點：</h4>
+                            <ul>
+                                <li><strong>西區海濱長廊：</strong>主要步道</li>
+                                <li><strong>中山紀念公園：</strong>公園內角度</li>
+                                <li><strong>堅尼地城海濱：</strong>較新發展區</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h4>💡 拍攝貼士：</h4>
+                            <ul>
+                                <li>人潮相對較少，拍攝較自由</li>
+                                <li>前景可加入海濱設施</li>
+                                <li>注意潮汐影響前景效果</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tips-section" style="margin: 40px 0; padding: 25px; background: #fff3e0; border-radius: 12px;">
+                <h2>🎯 選擇地點的建議</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div>
+                        <h4>🔰 新手推薦：</h4>
+                        <ul>
+                            <li>維多利亞港（尖沙咀）</li>
+                            <li>西環海濱</li>
+                            <li>石澳（日出）</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>📸 進階攝影：</h4>
+                        <ul>
+                            <li>太平山頂</li>
+                            <li>獅子山</li>
+                            <li>青馬大橋</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>🚇 交通便利：</h4>
+                        <ul>
+                            <li>維多利亞港</li>
+                            <li>太平山頂</li>
+                            <li>西環海濱</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📸 燒天攝影指南 | 火燒雲攝影教學 | BurnSky 燒天預測系統</title>
+    <meta name="description" content="學習專業的燒天攝影技巧，從器材選擇到拍攝技巧，完整指南教你拍出完美的火燒雲。包含器材選擇、拍攝技巧、構圖方法、後製處理等全面攝影教學。">
+    <meta name="keywords" content="燒天攝影,火燒雲拍攝,日落攝影,香港攝影,攝影技巧,日落拍攝,天空攝影,攝影教學">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3552699426860096"
+         crossorigin="anonymous"></script>
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-4KLPHLD5EQ');
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #FF6B35;
+            --secondary-color: #004E89;
+            --bg-gradient: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-light: rgba(255, 255, 255, 0.9);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .guide-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .guide-header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .guide-header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .equipment-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .equipment-item h3 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #FFD700;
+        }
+
+        .equipment-item ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .equipment-item li {
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .equipment-item li::before {
+            content: "📌";
+            position: absolute;
+            left: 0;
+        }
+
+        .tips-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .tips-section h3 {
+            color: #FFD700;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .tips-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tips-list li {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #FF6B35;
+        }
+
+        .location-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .location-card h3 {
+            color: #FFD700;
+            margin-bottom: 10px;
+        }
+
+        .ad-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--text-light);
+            padding: 30px 20px;
+            margin-top: 40px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-light);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #FFD700;
+        }
+
+        /* 原有的手機版 CSS 已整合到上方 */
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .equipment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .guide-header h1 {
+                font-size: 2em;
+            }
+
+            .glass-card {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+
+    <div class="container">
+        <div class="guide-header">
+            <h1>📸 燒天攝影指南</h1>
+            <p>掌握火燒雲拍攝的專業技巧</p>
+        </div>
+
+        <!-- 基礎器材準備 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">📱 基礎器材準備</h2>
+            <div class="equipment-grid">
+                <div class="equipment-item">
+                    <h3>📷 相機選擇</h3>
+                    <ul>
+                        <li><strong>DSLR/無反相機：</strong>手動控制能力強</li>
+                        <li><strong>手機：</strong>便攜性佳，有專業模式</li>
+                        <li><strong>建議功能：</strong>RAW格式、手動曝光</li>
+                        <li><strong>推薦品牌：</strong>Canon、Nikon、Sony、Fujifilm</li>
+                    </ul>
+                </div>
+                <div class="equipment-item">
+                    <h3>🔍 鏡頭選擇</h3>
+                    <ul>
+                        <li><strong>廣角鏡（14-24mm）：</strong>捕捉更多天空</li>
+                        <li><strong>標準鏡（24-70mm）：</strong>平衡視角</li>
+                        <li><strong>望遠鏡（70-200mm）：</strong>壓縮透視感</li>
+                        <li><strong>定焦鏡：</strong>畫質最佳選擇</li>
+                    </ul>
+                </div>
+                <div class="equipment-item">
+                    <h3>🎯 必備配件</h3>
+                    <ul>
+                        <li><strong>三腳架：</strong>必備，確保穩定</li>
+                        <li><strong>ND濾鏡：</strong>控制曝光時間</li>
+                        <li><strong>偏光鏡：</strong>增強色彩對比</li>
+                        <li><strong>快門線：</strong>減少震動</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 拍攝參數設定 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">⚙️ 拍攝參數設定</h2>
+            <div class="section-grid">
+                <div class="tips-section">
+                    <h3>📊 基本設定</h3>
+                    <ul class="tips-list">
+                        <li><strong>拍攝模式：</strong>手動模式（M）或光圈優先（A/Av）</li>
+                        <li><strong>檔案格式：</strong>RAW + JPEG（方便後製）</li>
+                        <li><strong>測光模式：</strong>矩陣測光或中央重點測光</li>
+                        <li><strong>對焦模式：</strong>單點自動對焦或手動對焦</li>
+                    </ul>
+                </div>
+                <div class="tips-section">
+                    <h3>🎛️ 曝光參數</h3>
+                    <ul class="tips-list">
+                        <li><strong>光圈：</strong>f/8-f/11（獲得最佳畫質）</li>
+                        <li><strong>快門：</strong>1/60s-1/250s（避免過曝）</li>
+                        <li><strong>ISO：</strong>100-400（保持低噪點）</li>
+                        <li><strong>白平衡：</strong>日光模式或手動調整</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 構圖技巧 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">🎨 構圖技巧</h2>
+            <div class="section-grid">
+                <div class="tips-section">
+                    <h3>📏 基本構圖法則</h3>
+                    <ul class="tips-list">
+                        <li><strong>三分法則：</strong>將地平線放在1/3或2/3位置</li>
+                        <li><strong>引導線：</strong>利用海岸線、橋樑等引導視線</li>
+                        <li><strong>對稱構圖：</strong>利用水面反射營造對稱感</li>
+                        <li><strong>前景元素：</strong>加入建築、樹木增加層次</li>
+                    </ul>
+                </div>
+                <div class="tips-section">
+                    <h3>🌅 特殊技巧</h3>
+                    <ul class="tips-list">
+                        <li><strong>剪影效果：</strong>讓前景形成黑色剪影</li>
+                        <li><strong>色彩漸變：</strong>捕捉天空的色彩變化</li>
+                        <li><strong>雲層紋理：</strong>利用不同雲層增加視覺效果</li>
+                        <li><strong>倒影拍攝：</strong>尋找水面或玻璃倒影</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Google AdSense 廣告 -->
+            <div class="ad-container">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-3552699426860096"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+
+        <!-- 拍攝時機掌握 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">⏰ 拍攝時機掌握</h2>
+            <div class="section-grid">
+                <div class="tips-section">
+                    <h3>🕐 黃金時段</h3>
+                    <ul class="tips-list">
+                        <li><strong>到達時間：</strong>日落前30-45分鐘</li>
+                        <li><strong>最佳拍攝：</strong>日落前後15分鐘</li>
+                        <li><strong>藍調時刻：</strong>日落後15-30分鐘</li>
+                        <li><strong>持續拍攝：</strong>色彩變化很快，不要停</li>
+                    </ul>
+                </div>
+                <div class="tips-section">
+                    <h3>🌤️ 天氣條件</h3>
+                    <ul class="tips-list">
+                        <li><strong>理想雲量：</strong>30-70%雲層覆蓋</li>
+                        <li><strong>避免：</strong>完全晴朗或完全陰天</li>
+                        <li><strong>風速：</strong>輕微風速有助雲層移動</li>
+                        <li><strong>空氣品質：</strong>較清潔的空氣色彩更豐富</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 香港推薦拍攝地點 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">📍 香港推薦拍攝地點</h2>
+            <div class="equipment-grid">
+                <div class="location-card">
+                    <h3>🌆 維多利亞港</h3>
+                    <p><strong>特色：</strong>城市天際線配燒天</p>
+                    <p><strong>最佳位置：</strong>尖沙咀海濱長廊、中環天星碼頭</p>
+                    <p><strong>交通：</strong>地鐵尖沙咀站、中環站</p>
+                    <p><strong>最佳時間：</strong>日落前1小時到達</p>
+                </div>
+                <div class="location-card">
+                    <h3>⛰️ 太平山頂</h3>
+                    <p><strong>特色：</strong>俯瞰全港景色</p>
+                    <p><strong>最佳位置：</strong>山頂廣場、獅子亭</p>
+                    <p><strong>交通：</strong>山頂纜車</p>
+                    <p><strong>注意事項：</strong>天氣好時人潮較多</p>
+                </div>
+                <div class="location-card">
+                    <h3>🏖️ 石澳</h3>
+                    <p><strong>特色：</strong>海岸線日出日落</p>
+                    <p><strong>最佳位置：</strong>石澳海灘、大頭洲</p>
+                    <p><strong>交通：</strong>巴士9號或小巴16M</p>
+                    <p><strong>推薦季節：</strong>秋冬季節燒天機率較高</p>
+                </div>
+                <div class="location-card">
+                    <h3>🌉 青馬大橋</h3>
+                    <p><strong>特色：</strong>壯觀的橋樑與燒天</p>
+                    <p><strong>最佳位置：</strong>汀九橋觀景台</p>
+                    <p><strong>交通：</strong>自駕或的士</p>
+                    <p><strong>拍攝貼士：</strong>使用長焦鏡壓縮距離感</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 後製處理技巧 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">🖥️ 後製處理技巧</h2>
+            <div class="section-grid">
+                <div class="tips-section">
+                    <h3>🎨 基本調整</h3>
+                    <ul class="tips-list">
+                        <li><strong>曝光補償：</strong>適度提亮暗部，壓暗高光</li>
+                        <li><strong>色彩飽和度：</strong>輕微提升，避免過度</li>
+                        <li><strong>對比度：</strong>增加適當對比增強層次</li>
+                        <li><strong>清晰度：</strong>適度銳化，增強細節</li>
+                    </ul>
+                </div>
+                <div class="tips-section">
+                    <h3>🌈 進階技巧</h3>
+                    <ul class="tips-list">
+                        <li><strong>HDR合成：</strong>多張不同曝光合成</li>
+                        <li><strong>色彩分級：</strong>調整高光陰影色調</li>
+                        <li><strong>漸層濾鏡：</strong>平衡天空與地面曝光</li>
+                        <li><strong>局部調整：</strong>突出重點區域</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 拍攝注意事項 -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 25px; color: #FFD700;">⚠️ 拍攝注意事項</h2>
+            <div class="tips-section">
+                <ul class="tips-list">
+                    <li><strong>安全第一：</strong>注意地形和天氣變化，避免在危險地帶拍攝</li>
+                    <li><strong>保護器材：</strong>海邊注意鹽分侵蝕，備好防潮箱</li>
+                    <li><strong>尊重環境：</strong>不破壞自然環境，帶走垃圾</li>
+                    <li><strong>遵守規則：</strong>注意拍攝地點的開放時間和規定</li>
+                    <li><strong>備用電池：</strong>低溫會影響電池續航，多準備電池</li>
+                    <li><strong>多拍多試：</strong>燒天瞬間變化，連續拍攝不要停</li>
+                    <li><strong>耐心等待：</strong>最美的燒天往往出現在最後幾分鐘</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+        });
+    </script>
+</body>
+</html>
