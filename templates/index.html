@@ -547,6 +547,14 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
+            .prediction-actions {
+                display: flex;
+                justify-content: center;
+                align-items: stretch;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
         /* 只在非觸控設備上啟用 hover 效果 */
         @media (hover: hover) and (pointer: fine) {
             .refresh-btn:hover {
@@ -562,6 +570,10 @@
                 font-size: 1rem;
                 width: 100%;
                 max-width: 200px;
+            }
+
+            .prediction-actions {
+                gap: 12px;
             }
         }
 
@@ -1507,7 +1519,8 @@
                 flex-direction: row !important;
                 justify-content: center;
                 gap: 15px;
-                min-width: 100% !important;
+                flex: 1 1 0;
+                min-width: 0 !important;
             }
             
             .sun-info > div:first-child {
@@ -1712,12 +1725,14 @@
                         </select>
                     </div>
                     
-                    <button class="refresh-btn" onclick="loadPrediction()" aria-label="重新預測">
-                        🔄 重新預測
-                    </button>
-                    <button class="refresh-btn" id="notificationButton" type="button" onclick="enablePredictionNotifications()" style="margin-left: 8px; background: #495057;" aria-label="開啟高分預測通知">
-                        🔔 開啟高分通知
-                    </button>
+                    <div class="prediction-actions">
+                        <button class="refresh-btn" onclick="loadPrediction()" aria-label="重新預測">
+                            🔄 重新預測
+                        </button>
+                        <button class="refresh-btn" id="notificationButton" type="button" onclick="enablePredictionNotifications()" style="background: #495057;" aria-label="開啟高分預測通知">
+                            🔔 開啟高分通知
+                        </button>
+                    </div>
                 </section>
 
                 <section class="main-card" aria-labelledby="location-recommendations-title" style="margin-top: 20px;">
