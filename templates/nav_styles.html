@@ -68,7 +68,7 @@
     .nav-dropdown-content {
         display: none;
         position: absolute;
-        top: calc(100% + 8px);
+        top: 100%;
         right: 0;
         background: white;
         min-width: 160px;
@@ -77,7 +77,7 @@
         padding: 6px;
         z-index: 1001;
     }
-    .nav-dropdown:hover .nav-dropdown-content { display: block; }
+    .nav-dropdown.open .nav-dropdown-content { display: block; }
     .nav-dropdown-content a {
         display: block;
         padding: 10px 14px;

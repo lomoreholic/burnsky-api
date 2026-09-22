@@ -16,8 +16,8 @@
             
             <!-- 更多選單 -->
             <div class="nav-dropdown">
-                <button class="nav-dropdown-btn">⋯</button>
-                <div class="nav-dropdown-content">
+                <button class="nav-dropdown-btn" type="button" aria-label="更多頁面" aria-expanded="false" aria-controls="navDropdownContent">⋯</button>
+                <div class="nav-dropdown-content" id="navDropdownContent">
                     <a href="/photography-guide">📖 攝影指南</a>
                     <a href="/faq">❓ FAQ</a>
                     <a href="/ml-test">🤖 ML測試</a>
@@ -94,6 +94,8 @@
 
 <script>
 (function() {
+    const navDropdown = document.querySelector('.nav-dropdown');
+    const navDropdownButton = document.querySelector('.nav-dropdown-btn');
     const tabMoreBtn = document.getElementById('tabMoreBtn');
     const mobileDrawer = document.getElementById('mobileDrawer');
     const mobileDrawerOverlay = document.getElementById('mobileDrawerOverlay');
@@ -114,6 +116,38 @@
         tabMoreBtn?.classList.toggle('active', open);
         document.body.style.overflow = open ? 'hidden' : '';
     }
+
+    function toggleNavDropdown(open) {
+        navDropdown?.classList.toggle('open', open);
+        navDropdownButton?.setAttribute('aria-expanded', String(open));
+    }
+
+    navDropdownButton?.addEventListener('click', event => {
+        event.stopPropagation();
+        toggleNavDropdown(!navDropdown.classList.contains('open'));
+    });
+
+    document.addEventListener('click', event => {
+        if (!navDropdown?.contains(event.target)) toggleNavDropdown(false);
+    });
+
+    const prefetchedPages = new Set();
+    function prefetchPage(link) {
+        const href = link.href;
+        if (!href || prefetchedPages.has(href) || link.pathname === currentPath) return;
+
+        const prefetch = document.createElement('link');
+        prefetch.rel = 'prefetch';
+        prefetch.href = href;
+        prefetch.as = 'document';
+        document.head.appendChild(prefetch);
+        prefetchedPages.add(href);
+    }
+
+    document.querySelectorAll('.nav-item, .grid-item, .link-item').forEach(link => {
+        link.addEventListener('pointerenter', () => prefetchPage(link), { once: true });
+        link.addEventListener('focus', () => prefetchPage(link), { once: true });
+    });
     
     tabMoreBtn?.addEventListener('click', e => {
         e.preventDefault();
@@ -136,7 +170,12 @@
     }, { passive: true });
     
     // ESC 關閉
-    document.addEventListener('keydown', e => e.key === 'Escape' && toggleDrawer(false));
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            toggleDrawer(false);
+            toggleNavDropdown(false);
+        }
+    });
     
     highlightCurrentPage();
 })();

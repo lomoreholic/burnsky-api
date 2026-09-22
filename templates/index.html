@@ -4142,8 +4142,6 @@
                 togglePhotoUploadSection();
             }
 
-            // 更新案例數量
-            loadPhotoCasesCount();
         });
 
         async function handlePhotoUpload(event) {
@@ -5462,11 +5460,11 @@
                 initializeFactorsSection();
                 initializeScoreReferenceSection();
                 
-                // 並行載入所有數據
+                // 首屏只等預測結果；案例統計在背景更新，避免延長全頁 loading。
                 const requests = [
-                    { name: '主預測數據', fn: () => loadPrediction() },
-                    { name: '照片案例數量', fn: () => loadPhotoCasesCount() }
+                    { name: '主預測數據', fn: () => loadPrediction() }
                 ];
+                loadPhotoCasesCount();
                 
                 APIUtils.updateLoadingProgress(0, requests.length);
                 
