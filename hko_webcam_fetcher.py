@@ -5,6 +5,7 @@
 
 import requests
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from PIL import Image
 import io
@@ -467,10 +468,14 @@ class HKOWebcamFetcher:
             ]
             
         results = {}
-        for location_id in location_ids:
-            result = self.fetch_webcam_image(location_id)
-            if result:
-                results[location_id] = result
+        if not location_ids:
+            return results
+
+        with ThreadPoolExecutor(max_workers=min(8, len(location_ids))) as executor:
+            fetched_images = executor.map(self.fetch_webcam_image, location_ids)
+            for location_id, result in zip(location_ids, fetched_images):
+                if result:
+                    results[location_id] = result
                 
         return results
         
