@@ -102,7 +102,7 @@
                 "name": "燒天預測的準確率如何？",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "我們的AI預測系統結合香港天文台數據和機器學習算法，準確率約達85%。預測會考慮雲層厚度、濕度、風速、空氣品質等多項因素。"
+                    "text": "系統會把已收集的用戶實拍回饋與當時預測作比對；在驗證樣本達到足夠數量前，不會宣稱固定準確率。每次預測會考慮雲層、濕度、風速、空氣品質和接近日出或日落的時間等因素，結果應配合現場觀察及官方天氣資訊使用。"
                 }
             },
             {
@@ -1953,6 +1953,34 @@
                 </div>
             </div>
         </div>
+
+        <section class="main-card" aria-labelledby="methodology-title" style="max-width: 900px; margin-top: 30px;">
+            <h2 id="methodology-title" style="color: #333; margin: 0 0 14px; font-size: 1.5rem;">BurnSky 如何判讀燒天條件</h2>
+            <p style="color: #555; line-height: 1.8; margin: 0 0 18px;">
+                燒天不是單靠「雲多或雲少」就能判斷的現象。日出和日落前後，陽光需穿過較長的大氣路徑；當中層至高層雲能反射或散射暖色光、近地面的能見度沒有被厚雲或降雨明顯遮蔽時，天空才較有機會出現紅、橙或粉色層次。本工具把這些可觀察的條件整理為每日的拍攝前判讀，協助攝影者決定是否值得提早到場。
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                <article style="padding: 16px; background: #fff8ed; border-left: 4px solid #f59e0b; border-radius: 6px;">
+                    <h3 style="color: #7c4a03; font-size: 1rem; margin: 0 0 8px;">1. 雲層與天空層次</h3>
+                    <p style="color: #5f4a2b; font-size: 0.9rem; line-height: 1.65; margin: 0;">分析雲量、雲層厚薄和可見度，分辨可能出現色彩的薄雲條件與會遮擋光線的厚雲條件。</p>
+                </article>
+                <article style="padding: 16px; background: #eef8ff; border-left: 4px solid #0284c7; border-radius: 6px;">
+                    <h3 style="color: #075985; font-size: 1rem; margin: 0 0 8px;">2. 氣象變化</h3>
+                    <p style="color: #234b62; font-size: 0.9rem; line-height: 1.65; margin: 0;">綜合溫度、濕度、風向風速、降雨和天氣警告，避免只以單一數值推論拍攝效果。</p>
+                </article>
+                <article style="padding: 16px; background: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 6px;">
+                    <h3 style="color: #166534; font-size: 1rem; margin: 0 0 8px;">3. 拍攝時段與回饋</h3>
+                    <p style="color: #285c39; font-size: 0.9rem; line-height: 1.65; margin: 0;">依日出、日落時間產生不同判讀；用戶相片和實際評分會被記錄為驗證樣本，而非未經驗證的準確率宣稱。</p>
+                </article>
+            </div>
+            <h3 style="color: #333; font-size: 1.15rem; margin: 0 0 8px;">資料來源與使用限制</h3>
+            <p style="color: #555; line-height: 1.8; margin: 0 0 12px;">
+                預測使用香港天文台公開天氣資料，並在可用時參考即時天空影像及空氣品質資訊。資料會定期更新，但局部雲層、山勢遮擋、海面霧氣及瞬時天氣都可能令現場畫面與預測不同。分數代表拍攝前的條件參考，不是保證；出發前請查看官方天氣警告並以現場安全為先。
+            </p>
+            <p style="margin: 0; color: #555; line-height: 1.8;">
+                想進一步準備行程，可閱讀 <a href="/photography-guide" style="color: #0066cc;">燒天攝影指南</a>、比較 <a href="/best-locations" style="color: #0066cc;">香港拍攝地點</a>，或在 <a href="/faq" style="color: #0066cc;">常見問題</a> 了解分數的使用方式。
+            </p>
+        </section>
         
         <!-- 詳細免責聲明 -->
         <div class="main-card" style="max-width: 800px;">
