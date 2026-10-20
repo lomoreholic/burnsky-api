@@ -264,8 +264,12 @@
             <h2>10. 聯絡我們</h2>
             <p>如對本使用條款有任何疑問，請聯絡我們：</p>
             <ul>
-                <li>電郵：contact@burnsky.hk</li>
+                {% if CONTACT_EMAIL %}
+                <li>電郵：{{ CONTACT_EMAIL }}</li>
+                {% endif %}
+                <li>GitHub：<a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank" style="color: #667eea; text-decoration: none;">提交 Issue / 建議</a></li>
                 <li>網站：<a href="/" style="color: #667eea; text-decoration: none;">BurnSky 燒天預測系統</a></li>
+                <li>更新日期：2026年10月21日</li>
             </ul>
 
             <div class="highlight">

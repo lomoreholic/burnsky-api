@@ -171,8 +171,11 @@
 
         <h2>4. 聯絡我們</h2>
         <p>如果您對此私隱政策有任何疑問，請聯絡我們：</p>
-        <p><strong>電郵：</strong> privacy@burnsky.hk</p>
-        <p><strong>更新日期：</strong> 2024年12月</p>
+        {% if CONTACT_EMAIL %}
+        <p><strong>電郵：</strong> {{ CONTACT_EMAIL }}</p>
+        {% endif %}
+        <p><strong>GitHub：</strong> <a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">提交 Issue / 建議</a></p>
+        <p><strong>更新日期：</strong> 2026年10月21日</p>
     </div>
 
 </body>

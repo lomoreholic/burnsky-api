@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request, send_from_directory, redirect
+from flask import Flask, jsonify, render_template, request, send_from_directory, redirect, abort
 from flask_caching import Cache
 from flask_compress import Compress
 from flask_cors import CORS
@@ -84,6 +84,9 @@ except ImportError as e:
 
 # 即時攝影機監控系統
 webcam_monitor = RealTimeWebcamMonitor()
+
+def _test_pages_enabled() -> bool:
+    return os.getenv("ENABLE_TEST_PAGES", "false").lower() in {"1", "true", "yes", "y", "on"}
 
 # ========== 以下是原始函數定義（保留用於向後兼容）==========
 # 如果模塊已載入，這些函數將被模塊中的版本覆蓋
@@ -492,6 +495,13 @@ app.config['CACHE_DIR'] = os.getenv('CACHE_DIR', 'cache')  # 文件系統快取�
 
 # 初始化快取
 flask_cache = Cache(app)
+
+@app.context_processor
+def inject_site_meta():
+    return {
+        "CONTACT_EMAIL": os.getenv("CONTACT_EMAIL", "").strip(),
+        "GITHUB_REPO_URL": os.getenv("GITHUB_REPO_URL", "https://github.com/lomoreholic/burnsky-api").strip(),
+    }
 
 # 配置 CORS (跨域資源共享)
 cors_enabled = os.getenv('CORS_ENABLED', 'True').lower() == 'true'
@@ -2641,11 +2651,15 @@ def warning_dashboard_redirect():
 @app.route("/test_api.html")
 def test_api():
     """API 測試頁面"""
+    if not _test_pages_enabled():
+        abort(404)
     return send_from_directory('.', 'test_api.html')
 
 @app.route("/chart_debug.html")
 def chart_debug():
     """圖表調試頁面"""
+    if not _test_pages_enabled():
+        abort(404)
     return send_from_directory('.', 'chart_debug.html')
 
 @app.route("/api/burnsky-dashboard-data")
@@ -2989,6 +3003,8 @@ def old_warning_dashboard_underscore():
 @app.route("/chart-test")
 def chart_test():
     """圖表功能測試頁面"""
+    if not _test_pages_enabled():
+        abort(404)
     return render_template('chart_test.html')
 
 @app.route("/charts-showcase")
@@ -3006,6 +3022,11 @@ def terms_of_service():
     """使用條款頁面"""
     return render_template('terms.html')
 
+@app.route("/about")
+def about_page():
+    """關於 BurnSky"""
+    return render_template("about.html")
+
 @app.route("/photo_analysis")
 def photo_analysis_redirect():
     """重定向舊的照片分析URL到新格式"""
@@ -3019,6 +3040,8 @@ def photo_analysis():
 @app.route("/photo-analysis-test")
 def photo_analysis_test():
     """照片分析測試頁面"""
+    if not _test_pages_enabled():
+        abort(404)
     return render_template('photo_analysis_test.html')
 
 # AdSense 相關路由

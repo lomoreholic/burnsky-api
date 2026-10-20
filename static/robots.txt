@@ -3,9 +3,9 @@ Allow: /
 
 # 主要頁面
 Allow: /
-Allow: /predict*
 Allow: /privacy
 Allow: /terms
+Allow: /about
 
 # AdSense 和驗證文件
 Allow: /ads.txt
@@ -18,9 +18,12 @@ Allow: /static/
 Disallow: /admin/
 Disallow: /*.json$
 Disallow: /api/internal/
+Disallow: /api/
+Disallow: /predict
+Disallow: /predict/
 
 # 網站地圖
-Sitemap: https://burnsky-api.onrender.com/static/sitemap.xml
+Sitemap: https://burnsky-api.onrender.com/sitemap.xml
 
 # 抓取延遲 (建議)
 Crawl-delay: 1
