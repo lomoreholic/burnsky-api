@@ -169,14 +169,36 @@
             <li>遵循行業標準的資料保護實踐</li>
         </ul>
 
-        <h2>4. 聯絡我們</h2>
+        <h2>4. Cookie 與類似技術</h2>
+        <p>我們可能會使用 Cookie、Local Storage 或類似技術，以便：</p>
+        <ul>
+            <li>支援網站基本功能（例如載入效能最佳化）</li>
+            <li>統計匿名化的使用行為，以改善內容與體驗</li>
+            <li>顯示第三方廣告（如 Google AdSense）</li>
+        </ul>
+        <p>您可以在瀏覽器設定中清除或停用 Cookie；但停用後可能影響網站部分功能或廣告顯示。</p>
+
+        <h2>5. 第三方服務（Analytics / AdSense）</h2>
+        <p>本網站可能使用以下第三方服務：</p>
+        <ul>
+            <li><strong>Google Analytics：</strong>用於了解匿名化的流量與使用行為。</li>
+            <li><strong>Google AdSense：</strong>用於投放廣告並維持網站營運。</li>
+        </ul>
+        <p>第三方供應商（包含 Google）可能會使用 Cookie 或類似技術投放廣告，或根據您對本網站與其他網站的瀏覽行為提供更相關的廣告。</p>
+        <ul>
+            <li>Google 廣告偏好設定：<a href="https://adssettings.google.com/" rel="noopener" target="_blank">https://adssettings.google.com/</a></li>
+            <li>Google 的合作夥伴名單與更多說明：<a href="https://policies.google.com/technologies/partner-sites" rel="noopener" target="_blank">https://policies.google.com/technologies/partner-sites</a></li>
+        </ul>
+
+        <h2>6. 聯絡我們</h2>
         <p>如果您對此私隱政策有任何疑問，請聯絡我們：</p>
         {% if CONTACT_EMAIL %}
         <p><strong>電郵：</strong> {{ CONTACT_EMAIL }}</p>
         {% endif %}
         <p><strong>GitHub：</strong> <a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">提交 Issue / 建議</a></p>
-        <p><strong>更新日期：</strong> 2026年10月21日</p>
+        <p><strong>更新日期：</strong> {{ SITE_LAST_UPDATED }}</p>
     </div>
 
+    {% include 'footer_fragment.html' %}
 </body>
 </html>

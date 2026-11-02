@@ -1,0 +1,35 @@
+<footer role="contentinfo" style="margin-top:40px; background: rgba(0, 0, 0, 0.82); color: rgba(255, 255, 255, 0.92); padding: 28px 18px;">
+  <div style="max-width:1100px; margin:0 auto; display:grid; gap:12px;">
+    <div style="display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.2px;">
+      <span aria-hidden="true" style="width:34px; height:34px; border-radius:12px; background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%); display:grid; place-items:center; color:#111;">🔥</span>
+      <span>BurnSky 燒天預測系統</span>
+    </div>
+
+    <nav aria-label="頁尾連結" style="display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;">
+      <a href="/" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">預測</a>
+      <a href="/how-it-works" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">運作原理</a>
+      <a href="/webcam-analysis" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">實況分析</a>
+      <a href="/best-locations" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">拍攝地點</a>
+      <a href="/photography-guide" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">攝影指南</a>
+      <a href="/faq" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">FAQ</a>
+      <a href="/about" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">關於</a>
+      <a href="/contact" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">聯絡</a>
+      <a href="/privacy" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">私隱政策</a>
+      <a href="/terms" style="color:rgba(255,255,255,0.9); text-decoration:none; padding:6px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);">使用條款</a>
+    </nav>
+
+    <div style="color: rgba(255, 255, 255, 0.75); font-size: 0.95rem; line-height: 1.55;">
+      <div>資料來源：香港天文台公開資料（僅供參考；請配合現場觀察與官方預報）</div>
+      <div>
+        {% if CONTACT_EMAIL %}
+          聯絡電郵：<a href="mailto:{{ CONTACT_EMAIL }}" style="color: rgba(255, 255, 255, 0.9); text-decoration: underline; text-underline-offset: 2px;">{{ CONTACT_EMAIL }}</a> ·
+        {% endif %}
+        開源專案：<a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank" style="color: rgba(255, 255, 255, 0.9); text-decoration: underline; text-underline-offset: 2px;">GitHub</a>
+      </div>
+    </div>
+
+    <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">
+      © {{ CURRENT_YEAR }} BurnSky · 最後更新：{{ SITE_LAST_UPDATED }}
+    </div>
+  </div>
+</footer>

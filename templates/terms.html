@@ -183,7 +183,7 @@
             <h1>📄 使用條款</h1>
             
             <div class="highlight">
-                <p><strong>最後更新：</strong>2024年12月29日</p>
+                <p><strong>最後更新：</strong>{{ SITE_LAST_UPDATED }}</p>
                 <p><strong>生效日期：</strong>2024年1月1日</p>
             </div>
 
@@ -269,7 +269,7 @@
                 {% endif %}
                 <li>GitHub：<a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank" style="color: #667eea; text-decoration: none;">提交 Issue / 建議</a></li>
                 <li>網站：<a href="/" style="color: #667eea; text-decoration: none;">BurnSky 燒天預測系統</a></li>
-                <li>更新日期：2026年10月21日</li>
+                <li>更新日期：{{ SITE_LAST_UPDATED }}</li>
             </ul>
 
             <div class="highlight">
@@ -280,5 +280,6 @@
         </div>
     </div>
 
+    {% include 'footer_fragment.html' %}
 </body>
 </html>

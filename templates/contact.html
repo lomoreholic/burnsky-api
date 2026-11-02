@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✉️ 聯絡我們 | BurnSky 燒天預測系統</title>
+    <meta name="description" content="BurnSky 燒天預測系統的聯絡方式與回報管道：問題回報、功能建議、資料更正與合作洽談。">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ SITE_URL }}/contact">
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9322481395670022"
+         crossorigin="anonymous"></script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-4KLPHLD5EQ');
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 20px auto;
+            padding: 0 16px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 18px;
+            padding: 34px 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.3em;
+            color: #667eea;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 26px;
+        }
+
+        h2 {
+            color: #555;
+            margin-top: 26px;
+            margin-bottom: 12px;
+            font-size: 1.35em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 6px;
+        }
+
+        p { margin-bottom: 12px; color: #666; }
+        ul { margin-left: 18px; margin-bottom: 12px; }
+        li { margin-bottom: 8px; color: #666; }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0 2px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 999px;
+            background: rgba(102, 126, 234, 0.10);
+            border: 1px solid rgba(102, 126, 234, 0.20);
+            color: #334155;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .pill:hover {
+            background: rgba(102, 126, 234, 0.16);
+            border-color: rgba(102, 126, 234, 0.30);
+        }
+
+        .hint {
+            background: rgba(255, 193, 7, 0.18);
+            border-left: 4px solid rgba(255, 193, 7, 0.9);
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-top: 14px;
+            color: #5b4b00;
+        }
+    </style>
+    {% include 'nav_styles.html' %}
+</head>
+<body>
+    {% include 'nav_fragment.html' %}
+
+    <div class="container">
+        <div class="card">
+            <h1>✉️ 聯絡我們</h1>
+            <p class="subtitle">問題回報、功能建議、資料更正與合作洽談</p>
+
+            <h2>快速連結</h2>
+            <div class="pill-row">
+                {% if CONTACT_EMAIL %}
+                <a class="pill" href="mailto:{{ CONTACT_EMAIL }}">📮 電郵：{{ CONTACT_EMAIL }}</a>
+                {% endif %}
+                <a class="pill" href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">🧩 GitHub 專案</a>
+                <a class="pill" href="{{ GITHUB_REPO_URL }}/issues" rel="noopener" target="_blank">🐛 回報問題 / 提功能</a>
+            </div>
+
+            <div class="hint">
+                <strong>提交回報前：</strong>請附上（1）日期/時間（2）你所在的大概地區（3）你看到的分數與等級（4）若可提供實拍照片（可打碼/裁切），能幫助我們更快定位問題。
+            </div>
+
+            <h2>我們通常會處理什麼</h2>
+            <ul>
+                <li>預測結果明顯異常（例如分數跳動、資料空白）</li>
+                <li>拍攝地點內容需要更正（交通、視野、最佳時間）</li>
+                <li>頁面載入/行動版體驗問題</li>
+                <li>希望新增資料來源、指標或功能（例如更多觀測站/攝影機）</li>
+            </ul>
+
+            <h2>回覆時間</h2>
+            <p>BurnSky 目前以社群/維護者時間為主，通常會在 1–7 天內回覆（視乎工作量與季節繁忙程度）。</p>
+
+            <h2>私隱與資料</h2>
+            <p>若你的回報涉及個人資料或照片，請先參閱 <a href="/privacy" style="color:#667eea; text-decoration:none; font-weight:600;">私隱政策</a>，並只提供你願意分享的資訊。</p>
+        </div>
+    </div>
+
+    {% include 'footer_fragment.html' %}
+</body>
+</html>
+

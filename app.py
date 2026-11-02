@@ -501,6 +501,9 @@ def inject_site_meta():
     return {
         "CONTACT_EMAIL": os.getenv("CONTACT_EMAIL", "").strip(),
         "GITHUB_REPO_URL": os.getenv("GITHUB_REPO_URL", "https://github.com/lomoreholic/burnsky-api").strip(),
+        "SITE_URL": os.getenv("SITE_URL", "https://burnsky-api.onrender.com").rstrip("/"),
+        "CURRENT_YEAR": datetime.now().year,
+        "SITE_LAST_UPDATED": os.getenv("SITE_LAST_UPDATED", "2026-11-03").strip(),
     }
 
 # 配置 CORS (跨域資源共享)
@@ -2414,6 +2417,8 @@ def webcam_analysis_page():
 @app.route("/ml-test")
 def ml_test():
     """機器學習測試頁面"""
+    if not _test_pages_enabled():
+        abort(404)
     return render_template("ml_test.html")
 
 @app.route("/api/ml-prediction", methods=['POST'])
@@ -2637,6 +2642,16 @@ def best_locations():
 def weather_terms():
     """天氣術語詞彙表 - SEO內容"""
     return render_template('weather_terms.html')
+
+@app.route("/how-it-works")
+def how_it_works():
+    """BurnSky 的運作原理與資料來源說明（內容頁）"""
+    return render_template("how_it_works.html")
+
+@app.route("/contact")
+def contact_page():
+    """聯絡我們（內容頁）"""
+    return render_template("contact.html")
 
 @app.route("/burnsky-dashboard")
 def burnsky_dashboard():
@@ -3010,6 +3025,8 @@ def chart_test():
 @app.route("/charts-showcase")
 def charts_showcase():
     """完整圖表功能展示頁面"""
+    if not _test_pages_enabled():
+        abort(404)
     return render_template('charts_showcase.html')
 
 @app.route("/privacy")

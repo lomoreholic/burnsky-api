@@ -126,7 +126,9 @@
         {% endif %}
         <p><strong>GitHub：</strong> <a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">提交 Issue / 建議</a></p>
 
-        <p class="meta"><strong>更新日期：</strong> 2026年10月21日</p>
+        <p class="meta"><strong>更新日期：</strong> {{ SITE_LAST_UPDATED }}</p>
     </div>
+
+    {% include 'footer_fragment.html' %}
 </body>
 </html>

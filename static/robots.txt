@@ -6,6 +6,8 @@ Allow: /
 Allow: /privacy
 Allow: /terms
 Allow: /about
+Allow: /how-it-works
+Allow: /contact
 
 # AdSense 和驗證文件
 Allow: /ads.txt
@@ -21,6 +23,12 @@ Disallow: /api/internal/
 Disallow: /api/
 Disallow: /predict
 Disallow: /predict/
+
+# 測試/展示頁（預設不對外）
+Disallow: /ml-test
+Disallow: /chart-test
+Disallow: /charts-showcase
+Disallow: /photo-analysis-test
 
 # 網站地圖
 Sitemap: https://burnsky-api.onrender.com/sitemap.xml
