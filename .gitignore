@@ -51,6 +51,12 @@ Thumbs.db
 # 本地測試檔案
 test_*.py
 *_test.py
+!tests/test_prediction_presentation.py
+!tests/test_dashboard_data.py
+!tests/test_weather_presentation.py
+!tests/test_prediction_quality.py
+!tests/test_scorer_missing_inputs.py
+!tests/test_prediction_comparison.py
 
 # 機器學習模型暫存
 *.pkl.tmp

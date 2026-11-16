@@ -3,6 +3,7 @@
 import numpy as np
 from datetime import datetime, timedelta
 from .database import get_season, get_time_category
+from .prediction_presentation import get_condition_level
 
 def convert_numpy_types(obj):
     """將 numpy 類型轉換為 Python 原生類型，以便 JSON 序列化"""
@@ -20,17 +21,8 @@ def convert_numpy_types(obj):
         return obj
 
 def get_prediction_level(score):
-    """根據分數獲取預測等級"""
-    if score >= 80:
-        return "極佳燒天機會"
-    elif score >= 60:
-        return "良好燒天機會"
-    elif score >= 40:
-        return "中等燒天機會"
-    elif score >= 20:
-        return "低等燒天機會"
-    else:
-        return "燒天機會很低"
+    """根據條件指數獲取一致的等級。"""
+    return get_condition_level(score)
 
 def get_optimal_sunset_time():
     """獲取最佳日落拍攝時間"""

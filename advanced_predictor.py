@@ -657,13 +657,13 @@ class AdvancedBurnskyPredictor:
     
     def predict_ml(self, weather_data, forecast_data):
         """使用機器學習模型進行預測"""
+        # 缺失輸入必須在訓練／推論前拒絕，不能生成補值預測。
+        features = self.extract_features(weather_data, forecast_data)
         # 如果模型不存在，先訓練
         if self.regression_model is None or self.classification_model is None:
             print("🤖 模型不存在，正在訓練...")
             self.train_models()
         
-        # 提取特徵
-        features = self.extract_features(weather_data, forecast_data)
         
         # 標準化
         features_scaled = self.scaler.transform([list(features.values())])
@@ -691,73 +691,35 @@ class AdvancedBurnskyPredictor:
     
     def extract_features(self, weather_data, forecast_data):
         """從天氣數據中提取機器學習特徵"""
-        features = {}
-        
-        # 溫度特徵
-        if weather_data and 'temperature' in weather_data:
-            temp_data = weather_data['temperature']['data']
-            hko_temp = next((t['value'] for t in temp_data if t['place'] == '香港天文台'), None)
-            if hko_temp:
-                features['temperature'] = hko_temp
-            else:
-                features['temperature'] = np.mean([t['value'] for t in temp_data])
-        else:
-            features['temperature'] = 28  # 預設值
-        
-        # 濕度特徵
-        if weather_data and 'humidity' in weather_data:
-            humidity_data = weather_data['humidity']['data']
-            hko_humidity = next((h['value'] for h in humidity_data if h['place'] == '香港天文台'), None)
-            if hko_humidity:
-                features['humidity'] = hko_humidity
-            else:
-                features['humidity'] = np.mean([h['value'] for h in humidity_data])
-        else:
-            features['humidity'] = 70  # 預設值
-        
-        # UV指數特徵
-        if weather_data and 'uvindex' in weather_data:
-            if isinstance(weather_data['uvindex'], dict) and 'data' in weather_data['uvindex'] and weather_data['uvindex']['data']:
-                features['uv_index'] = weather_data['uvindex']['data'][0]['value']
-            else:
-                features['uv_index'] = 5  # 預設值
-        else:
-            features['uv_index'] = 5  # 預設值
-        
-        # 降雨量特徵
-        if weather_data and 'rainfall' in weather_data:
-            rainfall_data = weather_data['rainfall']['data']
-            total_rainfall = sum([r.get('max', 0) for r in rainfall_data if r.get('max', 0) > 0])
-            features['rainfall'] = total_rainfall
-        else:
-            features['rainfall'] = 0  # 預設值
-        
-        # 風速特徵
-        if weather_data and 'wind' in weather_data:
-            wind_info = weather_data['wind']
-            # 使用平均風級作為風速特徵
-            min_beaufort = wind_info.get('speed_beaufort_min', 0)
-            max_beaufort = wind_info.get('speed_beaufort_max', 0)
-            avg_beaufort = (min_beaufort + max_beaufort) / 2
-            features['wind_speed'] = avg_beaufort
-        else:
-            features['wind_speed'] = 3  # 預設值
-        
-        # 注意：暫時不添加空氣品質特徵到ML模型，因為現有模型只支援7個特徵
-        # 空氣品質已在傳統算法中處理
-        # TODO: 未來重新訓練模型時可加入空氣品質特徵
-        
-        # 時間因子
-        time_result = self.calculate_time_factor_advanced()
-        features['time_factor'] = time_result['score'] / 25  # 標準化到0-1
-        
-        # 雲層分數
-        if forecast_data and 'forecastDesc' in forecast_data:
-            cloud_result = self.analyze_cloud_types(forecast_data['forecastDesc'])
-            features['cloud_score'] = cloud_result['score']
-        else:
-            features['cloud_score'] = 10  # 預設值
-        
+        from modules.prediction_quality import station_value, highest_rainfall
+        from modules.weather_presentation import number
+        temperature = station_value(weather_data or {}, 'temperature')
+        humidity = station_value(weather_data or {}, 'humidity')
+        uv = (weather_data or {}).get('uvindex', {})
+        entries = uv.get('data') if isinstance(uv, dict) else None
+        uv_value = number(entries[0].get('value')) if isinstance(entries, list) and entries and isinstance(entries[0], dict) else None
+        wind = (weather_data or {}).get('wind', {})
+        wind_min = number(wind.get('speed_beaufort_min')) if isinstance(wind, dict) else None
+        wind_max = number(wind.get('speed_beaufort_max')) if isinstance(wind, dict) else None
+        desc = (forecast_data or {}).get('forecastDesc')
+        if (temperature is None or not -50 <= temperature <= 60 or
+                humidity is None or not 0 <= humidity <= 100 or
+                uv_value is None or not 0 <= uv_value <= 30 or
+                highest_rainfall(weather_data or {}) is None or
+                wind_min is None or wind_max is None or not 0 <= wind_min <= wind_max <= 12 or
+                not isinstance(desc, str) or not any(key in desc for key in self.cloud_types)):
+            raise ValueError('ML特徵資料不足或雲層描述未能識別；不使用預設值')
+        # 保留現有七特徵的單位與順序；模型仍只供研究，不參與正式評分。
+        features = {
+            'temperature': temperature,
+            'humidity': humidity,
+            'uv_index': uv_value,
+            'rainfall': sum(max(0, number(item.get('max', item.get('value'))) or 0)
+                            for item in weather_data['rainfall']['data'] if isinstance(item, dict)),
+            'wind_speed': (wind_min + wind_max) / 2,
+            'time_factor': self.calculate_time_factor_advanced()['score'] / 25,
+            'cloud_score': self.analyze_cloud_types(desc)['score'],
+        }
         return features
     
     def predict_burnsky_intensity(self, burnsky_score):

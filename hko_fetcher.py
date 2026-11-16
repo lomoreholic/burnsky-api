@@ -1,5 +1,5 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import re
 
 # 香港天文台 API URL
@@ -221,12 +221,17 @@ def get_current_wind_data():
         forecast_data = fetch_ninday_forecast()
         
         if forecast_data and 'weatherForecast' in forecast_data:
-            # 獲取今日或最近的預報
-            today_forecast = forecast_data['weatherForecast'][0]
+            # 九天預報的第一項可能是明天，不能當成今天的風力。
+            today = datetime.now(timezone(timedelta(hours=8))).strftime('%Y%m%d')
+            today_forecast = next((item for item in forecast_data['weatherForecast']
+                                   if item.get('forecastDate') == today), {})
             
             if 'forecastWind' in today_forecast:
                 wind_text = today_forecast['forecastWind']
-                return parse_wind_info(wind_text)
+                result = parse_wind_info(wind_text)
+                result['source_updated_at'] = forecast_data.get('updateTime')
+                result['forecast_date'] = today_forecast.get('forecastDate')
+                return result
         
         return {
             'direction': '',

@@ -253,6 +253,18 @@
         </ul>
 
         <h2>🔥 核心 API 端點</h2>
+        <div class="endpoint">
+            <h3><span class="method">GET</span> 原評估與實況對照</h3>
+            <div class="url">GET /api/prediction/cross-check?assessment_id=...</div>
+            <p>先取得預測回應的 <code>assessment_id</code>，再讀取該次不可覆寫的原評估。此端點不重新計算日落分數。缺少或格式無效的 ID 回傳 400，找不到原評估回傳 404，服務失敗回傳 503。</p>
+            <p><code>comparison_state</code>：pending（未到時段）、ended（已過時段而未保存影像）、out_of_window（原評估不在觀賞時段）、insufficient（原資料不足）、unmatched（影像未配對）、aligned_reference（同時段方向的影像更新參考）。</p>
+            <p><code>observations</code> 只包含相符方向的攝影機；<code>source_updated_at</code> 是 HTTP Last-Modified，不是經核實的拍攝時間。<code>captured_at</code> 保持 null；<code>retrieved_at</code> 和 <code>analyzed_at</code> 分開列明。時間配對需在同一觀賞時段及評估時間前後15分鐘內，且圖片更新不超過15分鐘。</p>
+            <p>圖片上半部暖色像素比例並非燒天評分；光線不足時回傳 null。<code>score_difference</code> 及 <code>accuracy</code> 保持 null。此功能不會補造過去時段的影像。</p>
+        </div>
+        <p><strong>分數與時間：</strong><code>burnsky_score</code> 是 0–100 的燒天條件指數，並非發生機率。舊欄位 <code>probability</code> 保留為 <code>null</code>，請勿轉換成百分比機率。</p>
+        <p><strong>資料限制：</strong><code>data_quality.status</code> 目前為 <code>limited</code>；缺失因子回傳 null、不補分，總分上限維持150；input_coverage 列出可用因子及權重覆蓋率。ML暫未通過真實資料驗證，ml_score 為 null，實際權重為傳統100%、ML0%。部分可用因子仍屬間接推算，詳見 <code>limitations</code>。這不代表經校準的信心或準確率。缺少主要溫度、濕度或預報文字時，端點回傳 HTTP 503、<code>error: insufficient_prediction_data</code> 及 <code>burnsky_score: null</code>，並於 <code>message</code> 說明原因；不會計分或新增評分紀錄。</p>
+        <p><code>prediction_timing.generated_at</code> 為指數計算時間，<code>evaluated_at</code> 為實際評估時間，均附香港時區偏移。當前條件的兩者相同；推算評估則相差指定小時數。快取回應保留原本計算時間。</p>
+        <p><code>prediction_timing.event_at</code> 是評估當日的日出／日落參考時間；<code>window_start</code>、<code>window_end</code> 是前後 30 分鐘參考範圍，並非燒天持續時間。<code>within_reference_window</code> 表示評估時間是否在該範圍內。<code>weather_updated_at</code> 為原始天氣觀測更新時間，未提供時為 <code>null</code>。</p>
 
         <div class="endpoint">
             <h3><span class="method">GET</span> 日落燒天預測</h3>

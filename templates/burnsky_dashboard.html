@@ -194,6 +194,12 @@
             <p>燒天預測系統 - 歷史預測數據分析與可視化</p>
         </div>
 
+        <div class="glass-card" role="status" aria-live="polite">
+            <p id="dashboardStatus">正在載入歷史資料；尚未取得統計結果。</p>
+            <button id="dashboardRetry" type="button" onclick="loadDashboardData()" hidden style="margin-top: 12px; padding: 10px 16px; cursor: pointer;">重試載入</button>
+        </div>
+        <p style="margin-bottom: 20px;">統計模型條件分數；準確率另以用戶提交的實際評分計算。</p>
+        <noscript><p>請開啟 JavaScript 以查看歷史統計。本站不會以示例紀錄代替真實資料。</p></noscript>
         <!-- 總覽統計 -->
         <div class="dashboard-grid">
             <div class="stat-card">
@@ -236,7 +242,7 @@
         <div class="glass-card">
             <h2 style="margin-bottom: 20px;">📈 燒天預測時間軸</h2>
             <div class="chart-container">
-                <canvas id="warningTimelineChart"></canvas>
+                <p id="timelineState">尚未載入月度紀錄。</p><canvas id="warningTimelineChart" hidden></canvas>
             </div>
         </div>
 
@@ -245,63 +251,32 @@
             <div class="glass-card">
                 <h2 style="margin-bottom: 20px;">⭐ 評分分布分析</h2>
                 <div class="chart-container">
-                    <canvas id="severityChart"></canvas>
+                    <p id="distributionState">尚未載入評分分布。</p><canvas id="severityChart" hidden></canvas>
                 </div>
             </div>
 
             <div class="glass-card">
-                <h2 style="margin-bottom: 20px;">🔥 近期高影響警告</h2>
-                <div class="warning-list">
-                    <div class="warning-item high">
-                        <div class="warning-time">2024-12-28 18:45</div>
-                        <div class="warning-message">極佳燒天條件：預測評分 95/100，持續時間 25 分鐘</div>
-                    </div>
-                    <div class="warning-item high">
-                        <div class="warning-time">2024-12-25 19:10</div>
-                        <div class="warning-message">聖誕節燒天盛宴：預測評分 92/100，覆蓋全港</div>
-                    </div>
-                    <div class="warning-item medium">
-                        <div class="warning-time">2024-12-22 18:30</div>
-                        <div class="warning-message">中等燒天條件：預測評分 78/100，建議西區拍攝</div>
-                    </div>
-                    <div class="warning-item medium">
-                        <div class="warning-time">2024-12-20 19:05</div>
-                        <div class="warning-message">局部燒天現象：預測評分 71/100，維港東部較佳</div>
-                    </div>
-                    <div class="warning-item low">
-                        <div class="warning-time">2024-12-18 17:45</div>
-                        <div class="warning-message">輕微燒天可能：預測評分 65/100，東區有機會</div>
-                    </div>
+                <h2 style="margin-bottom: 20px;">近期高分模型紀錄</h2>
+                <p style="margin-bottom: 12px;">顯示已保存的模型評分，尚未代表實拍驗證結果。</p>
+                <div class="warning-list" id="highScoreRecords" aria-live="polite">
+                    <p>尚未載入紀錄。</p>
                 </div>
             </div>
         </div>
 
-        <!-- 數據洞察 -->
         <div class="glass-card">
-            <h2 style="margin-bottom: 20px;">💡 數據洞察與建議</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
-                    <strong>🌨️ 季節性模式</strong><br>
-                    冬季月份 (12-2月) 燒天機率最高，建議重點關注
-                </div>
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
-                    <strong>🕐 最佳時段</strong><br>
-                    下午 6:30-7:00 是燒天預警高峰時段
-                </div>
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
-                    <strong>💧 濕度影響</strong><br>
-                    適中濕度範圍內燒天發生機率較高
-                </div>
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
-                    <strong>🌪️ 風向因素</strong><br>
-                    東北風天氣型態較有利燒天形成
-                </div>
+            <h2 style="margin-bottom: 20px;">歷史資料摘要</h2>
+            <p style="margin-bottom: 12px;">以下只描述已保存的紀錄；樣本、季節及紀錄頻率會影響結果。</p>
+            <div id="dashboardInsights" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <p>尚未載入統計。</p>
             </div>
         </div>
     </div>
     <script>
         let timelineChart = null;
         let severityChart = null;
+        let latestDashboardRequest = 0;
+        let lastDashboardData = null;
         
         // 漢堡菜單控制
         const hamburgerBtn = document.getElementById('hamburgerBtn');
@@ -326,19 +301,41 @@
         });
 
         async function loadDashboardData() {
+            const requestId = ++latestDashboardRequest;
+            const status = document.getElementById('dashboardStatus');
+            const retry = document.getElementById('dashboardRetry');
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+            status.textContent = lastDashboardData ? '正在更新；畫面保留上次取得的歷史統計。' : '正在載入歷史資料（最多等候15秒）。';
+            retry.hidden = true;
             try {
-                const response = await fetch('/api/burnsky-dashboard-data');
+                const response = await fetch('/api/burnsky-dashboard-data', { signal: controller.signal });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
+                if (requestId !== latestDashboardRequest) return;
+                if (data.status !== 'success' || data.data_source !== 'prediction_history' || !Number.isFinite(data.statistics?.total_warnings)) {
+                    throw new Error('歷史資料格式不完整');
+                }
                 
                 window.dashboardAccuracy = data.accuracy;
                 updateStatistics(data.statistics);
                 updateCharts(data);
                 updateWarningList(data.high_impact_warnings);
                 updateInsights(data.insights);
+                lastDashboardData = data;
+                const generated = data.generated_at
+                    ? new Date(data.generated_at).toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong', hour12: false }) : '未提供';
+                status.textContent = `${data.has_data ? '已載入已保存的預測紀錄。' : '目前未有已保存的預測紀錄。'} 統計整理時間：${generated}（香港時間）。${data.record_scope || ''}`;
                 
             } catch (error) {
+                if (requestId !== latestDashboardRequest) return;
                 console.error('❌ 加載數據失敗:', error);
-                showErrorNotice('無法加載最新數據，顯示示範內容');
+                status.textContent = lastDashboardData
+                    ? `更新失敗；畫面保留上次取得的歷史統計。上次整理時間：${lastDashboardData.generated_at ? new Date(lastDashboardData.generated_at).toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong', hour12: false }) : '未提供'}（香港時間）。`
+                    : '歷史資料暫時無法載入；目前未能確認紀錄數量，請稍後重試。';
+                retry.hidden = false;
+            } finally {
+                clearTimeout(timeout);
             }
         }
         
@@ -357,7 +354,7 @@
                 accuracyElement.textContent = `${accuracy.percentage.toFixed(1)}%`;
                 accuracyLabel.textContent = accuracy.statistically_ready
                     ? `真實準確率（${accuracy.feedback_count} 筆用戶驗證）`
-                    : `Verified accuracy (limited sample: ${accuracy.feedback_count}/${accuracy.minimum_sample_size})`;
+                    : `驗證結果（樣本有限：${accuracy.feedback_count}/${accuracy.minimum_sample_size}）`;
                 document.getElementById('avgError').textContent = `${accuracy.avg_error.toFixed(1)} 分`;
                 document.getElementById('withinTen').textContent = `${accuracy.within_10_points.toFixed(1)}%`;
                 document.getElementById('highPrecision').textContent = accuracy.high_score_precision === null
@@ -373,14 +370,32 @@
         }
         
         function updateCharts(data) {
+            const timelineState = document.getElementById('timelineState');
+            const distributionState = document.getElementById('distributionState');
+            const timelineCtx = document.getElementById('warningTimelineChart');
+            const severityCtx = document.getElementById('severityChart');
+            if (timelineChart) { timelineChart.destroy(); timelineChart = null; }
+            if (severityChart) { severityChart.destroy(); severityChart = null; }
+            timelineCtx.hidden = true;
+            severityCtx.hidden = true;
+            timelineState.hidden = false;
+            distributionState.hidden = false;
+            if (!data.has_data) {
+                timelineState.textContent = '未有月度預測紀錄。';
+                distributionState.textContent = '未有評分分布紀錄。';
+                return;
+            }
             if (typeof Chart === 'undefined') {
                 console.warn('Chart.js 未載入');
+                timelineState.textContent = '圖表暫時無法顯示；可先閱讀總覽及歷史紀錄。';
+                distributionState.textContent = timelineState.textContent;
                 return;
             }
             
             // 警告時間軸圖表
-            const timelineCtx = document.getElementById('warningTimelineChart');
-            if (timelineCtx && data.monthly_data) {
+            if (timelineCtx && data.monthly_data?.some(month => month.total_count > 0)) {
+                timelineCtx.hidden = false;
+                timelineState.hidden = true;
                 if (timelineChart) timelineChart.destroy();
                 
                 const months = data.monthly_data.map(m => `${m.month}月`);
@@ -428,11 +443,14 @@
                         }
                     }
                 });
+            } else {
+                timelineState.textContent = '最近12個月未有預測紀錄。';
             }
 
             // 嚴重程度分析圖表
-            const severityCtx = document.getElementById('severityChart');
             if (severityCtx && data.statistics) {
+                severityCtx.hidden = false;
+                distributionState.hidden = true;
                 if (severityChart) severityChart.destroy();
                 
                 severityChart = new Chart(severityCtx, {
@@ -468,68 +486,49 @@
         }
         
         function updateWarningList(warnings) {
-            if (!warnings || warnings.length === 0) return;
-            
-            const listContainer = document.querySelector('.warning-list');
-            if (!listContainer) return;
-            
-            listContainer.innerHTML = warnings.map(w => {
-                const severity = w.score >= 80 ? 'high' : w.score >= 60 ? 'medium' : 'low';
-                const timestamp = new Date(w.timestamp).toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                return `
-                    <div class="warning-item ${severity}">
-                        <div class="warning-time">${timestamp}</div>
-                        <div class="warning-message">
-                            ${w.score >= 80 ? '極佳' : w.score >= 60 ? '良好' : '一般'}燒天條件：
-                            預測評分 ${w.score}/100
-                            ${w.factors ? ` - ${w.factors}` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            const container = document.getElementById('highScoreRecords');
+            container.replaceChildren();
+            const records = Array.isArray(warnings) ? warnings.filter(record => Number.isFinite(record.score) && record.timestamp) : [];
+            if (!records.length) {
+                container.textContent = '目前未有高分模型紀錄（70分或以上）。';
+                return;
+            }
+            for (const record of records) {
+                const item = document.createElement('div');
+                item.className = `warning-item ${record.score >= 80 ? 'high' : 'medium'}`;
+                const time = document.createElement('div');
+                time.className = 'warning-time';
+                time.textContent = new Date(record.timestamp).toLocaleString('zh-HK', {
+                    timeZone: 'Asia/Hong_Kong', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                }) + '（香港時間・保存時間）';
+                const message = document.createElement('div');
+                message.className = 'warning-message';
+                message.textContent = `模型條件分數 ${record.score}／100；尚未代表實拍驗證結果。`;
+                item.append(time, message);
+                container.appendChild(item);
+            }
         }
-        
+
         function updateInsights(insights) {
-            if (!insights) return;
-            
-            const insightsContainer = document.querySelector('.glass-card:last-child > div');
-            if (!insightsContainer) return;
-            
-            const cards = [
-                { icon: '🌨️', title: '季節性模式', text: insights.seasonal || '冬季月份 (12-2月) 燒天機率最高' },
-                { icon: '🕐', title: '最佳時段', text: insights.peak_time || '下午 6:30-7:00 是燒天預警高峰時段' },
-                { icon: '💧', title: '濕度影響', text: insights.humidity || '濕度 60-80% 範圍內燒天機率較高' },
-                { icon: '🌪️', title: '風向因素', text: insights.wind || '東北風天氣型態下預測準確率更高' }
+            const container = document.getElementById('dashboardInsights');
+            container.replaceChildren();
+            const fields = [
+                ['seasonal', '季節紀錄'], ['peak_time', '紀錄時段'],
+                ['humidity', '濕度紀錄'], ['wind', '風向紀錄']
             ];
-            
-            insightsContainer.innerHTML = cards.map(card => `
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">
-                    <strong>${card.icon} ${card.title}</strong><br>
-                    ${card.text}
-                </div>
-            `).join('');
-        }
-        
-        function showErrorNotice(message) {
-            const notice = document.createElement('div');
-            notice.style.cssText = `
-                position: fixed; top: 20px; right: 20px; 
-                background: rgba(255, 71, 87, 0.9); color: white;
-                padding: 15px 20px; border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                z-index: 9999;
-            `;
-            notice.textContent = `⚠️ ${message}`;
-            document.body.appendChild(notice);
-            
-            setTimeout(() => notice.remove(), 5000);
+            for (const [key, title] of fields) {
+                const value = insights?.[key];
+                if (typeof value !== 'string' || !value.trim()) continue;
+                const card = document.createElement('div');
+                card.style.cssText = 'background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;';
+                const heading = document.createElement('strong');
+                heading.textContent = title;
+                const description = document.createElement('p');
+                description.textContent = value;
+                card.append(heading, description);
+                container.appendChild(card);
+            }
+            if (!container.childElementCount) container.textContent = '未有足夠紀錄產生統計摘要。';
         }
     </script>
 

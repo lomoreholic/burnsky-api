@@ -1,11 +1,17 @@
 """HTTP transport layer for burnsky prediction endpoints."""
 
 from flask import Blueprint, jsonify, request
+from .prediction_quality import InsufficientPredictionData
 
 
 def create_prediction_blueprint(predict, limiter, cache):
     """Create prediction routes with explicit application dependencies."""
     prediction_bp = Blueprint('prediction', __name__)
+
+    @prediction_bp.errorhandler(InsufficientPredictionData)
+    def insufficient_data(error):
+        return jsonify(error='insufficient_prediction_data', message=str(error),
+                       burnsky_score=None, data_quality=error.quality), 503
 
     @prediction_bp.route('/predict', methods=['GET'])
     @limiter.limit('100 per hour')

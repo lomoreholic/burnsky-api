@@ -1,6 +1,9 @@
 """Build the stable prediction response consumed by API clients and the frontend."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
+
+from .prediction_presentation import HK_TIMEZONE, SCORE_DEFINITION, build_prediction_timing
+from .weather_presentation import build_weather_presentation
 
 
 class PredictionResponseBuilder:
@@ -16,6 +19,9 @@ class PredictionResponseBuilder:
               color_prediction, target_weather, observed_weather, forecast_data, warning_data,
               warning_impact, warning_risk_score, warning_risk_warnings, active_warnings,
               warning_analysis):
+        timing, sun_times = build_prediction_timing(
+            self._now(HK_TIMEZONE), prediction_type, advance_hours, self._get_sun_times
+        )
         cloud_analysis = unified_result.get('cloud_thickness_analysis', {})
         total_warning_impact = min(warning_impact + warning_risk_score, 10.0)
         details = self._analysis_details(
@@ -23,22 +29,35 @@ class PredictionResponseBuilder:
             target_weather, cloud_analysis, warning_impact, warning_risk_score,
             warning_risk_warnings, active_warnings, warning_analysis, total_warning_impact
         )
-        sun_times = self._get_sun_times()
+        details['time_factor'].update({
+            'current_time': timing['generated_at'][11:16],
+            'evaluated_at': timing['evaluated_at'],
+            'target_time': sun_times[timing['event_type']],
+            'target_date': timing['evaluated_at'][:10],
+        })
         result = {
             'burnsky_score': score,
-            'probability': f'{round(min(score, 100))}%',
+            'data_quality': unified_result.get('data_quality'),
+            'score_type': 'condition_index',
+            'score_definition': SCORE_DEFINITION,
+            # Retained as null for existing API clients; this is not calibrated probability.
+            'probability': None,
             'prediction_level': self._get_prediction_level(score),
             'prediction_type': prediction_type,
             'advance_hours': advance_hours,
+            'prediction_timing': timing,
+            'weather_updated_at': observed_weather.get('updateTime'),
             'unified_analysis': unified_result,
             'analysis_details': details,
             'intensity_prediction': intensity_prediction,
             'color_prediction': color_prediction,
             'cloud_thickness_analysis': cloud_analysis,
             'weather_data': target_weather,
+            'weather_presentation': build_weather_presentation(target_weather, observed_weather, advance_hours, timing),
             'original_weather_data': observed_weather if advance_hours > 0 else None,
             'forecast_data': forecast_data,
             'sun_times': {
+                'date': timing['evaluated_at'][:10],
                 'sunrise': sun_times['sunrise'],
                 'sunset': sun_times['sunset'],
                 'method': sun_times.get('method', 'calculated')
@@ -52,7 +71,7 @@ class PredictionResponseBuilder:
                 'total_warning_impact': total_warning_impact,
                 'warning_adjusted': total_warning_impact > 0
             },
-            'scoring_method': 'unified_v1.2_with_advance_warning_risk'
+            'scoring_method': 'unified_v1.3_no_default_scores'
         }
         return self._convert_types(result)
 
@@ -75,7 +94,9 @@ class PredictionResponseBuilder:
                 'warning_impact': warning_impact,
                 'warning_risk_impact': warning_risk_score,
                 'total_warning_impact': total_warning_impact,
-                'weight_explanation': f"智能權重分配: AI模型 {unified_result['weights_used'].get('ml', 0.5) * 100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5) * 100:.0f}%"
+                'input_coverage': unified_result.get('input_coverage', {}),
+                'ml_unavailable_reason': unified_result.get('ml_unavailable_reason'),
+                'weight_explanation': f"實際權重: AI模型 {unified_result['weights_used'].get('ml', 0.5) * 100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5) * 100:.0f}%"
             },
             'top_factors': analysis.get('top_factors', []),
             'analysis_summary': [part.strip() for part in analysis.get('summary', '基於統一計分系統的綜合分析').split('|')],
@@ -92,28 +113,32 @@ class PredictionResponseBuilder:
                 'has_future_risks': warning_risk_score > 0,
                 'detailed_analysis': warning_analysis
             },
-            'time_factor': self._factor('time', factor_scores.get('time', 0), 18, prediction_type, advance_hours, target_weather),
-            'temperature_factor': self._factor('temperature', factor_scores.get('temperature', 0), 15, prediction_type, advance_hours, target_weather),
-            'humidity_factor': self._factor('humidity', factor_scores.get('humidity', 0), 20, prediction_type, advance_hours, target_weather),
-            'visibility_factor': self._factor('visibility', factor_scores.get('visibility', 0), 20, prediction_type, advance_hours, target_weather),
-            'pressure_factor': self._factor('pressure', factor_scores.get('pressure', 0), 10, prediction_type, advance_hours, target_weather),
-            'cloud_analysis_factor': self._factor('cloud', factor_scores.get('cloud', 0), 35, prediction_type, advance_hours, target_weather),
-            'uv_factor': self._factor('uv', factor_scores.get('uv', 0), 2, prediction_type, advance_hours, target_weather),
-            'wind_factor': self._factor('wind', factor_scores.get('wind', 0), 15, prediction_type, advance_hours, target_weather),
-            'air_quality_factor': self._factor('air_quality', factor_scores.get('air_quality', 0), 15, prediction_type, advance_hours, target_weather),
+            'time_factor': self._factor('time', factor_scores.get('time'), 18, prediction_type, advance_hours, target_weather),
+            'temperature_factor': self._factor('temperature', factor_scores.get('temperature'), 15, prediction_type, advance_hours, target_weather),
+            'humidity_factor': self._factor('humidity', factor_scores.get('humidity'), 20, prediction_type, advance_hours, target_weather),
+            'visibility_factor': self._factor('visibility', factor_scores.get('visibility'), 20, prediction_type, advance_hours, target_weather),
+            'pressure_factor': self._factor('pressure', factor_scores.get('pressure'), 10, prediction_type, advance_hours, target_weather),
+            'cloud_analysis_factor': self._factor('cloud', factor_scores.get('cloud'), 35, prediction_type, advance_hours, target_weather),
+            'uv_factor': self._factor('uv', factor_scores.get('uv'), 2, prediction_type, advance_hours, target_weather),
+            'wind_factor': self._factor('wind', factor_scores.get('wind'), 15, prediction_type, advance_hours, target_weather),
+            'air_quality_factor': self._factor('air_quality', factor_scores.get('air_quality'), 15, prediction_type, advance_hours, target_weather),
             'ml_feature_analysis': unified_result.get('ml_feature_analysis', {})
         }
 
     def _factor(self, name, score, max_score, prediction_type, advance_hours, weather):
-        factor = {'score': round(score, 1), 'max_score': max_score, 'description': f'{name.title()}因子評分: {round(score, 1)}/{max_score}分'}
+        factor = {'score': round(score, 1) if score is not None else None, 'max_score': max_score,
+                  'available': score is not None,
+                  'description': (f'{name.title()}因子評分: {round(score, 1)}/{max_score}分'
+                                  if score is not None else '資料不足或未能識別，不參與計分；沒有補預設分。')}
         if name == 'time':
-            hk_now = self._now(timezone(timedelta(hours=8)))
-            factor.update({'current_time': hk_now.strftime('%H:%M'), 'target_time': '18:30' if prediction_type == 'sunset' else '06:30',
-                           'target_type': prediction_type, 'advance_hours': advance_hours})
+            factor.update({'target_type': prediction_type, 'advance_hours': advance_hours})
         elif name == 'temperature' and 'temperature' in weather:
             factor['current_temp'] = weather['temperature']
         elif name == 'humidity' and 'humidity' in weather:
             factor['current_humidity'] = weather['humidity']
         elif name == 'wind' and isinstance(weather.get('wind'), dict) and 'speed' in weather['wind']:
             factor['wind_speed'] = weather['wind']['speed']
+        elif name == 'air_quality':
+            factor.update({'source_kind': 'unavailable' if score is None else 'provided', 'aqhi': weather.get('air_quality', {}).get('aqhi') if score is not None else None, 'pm25': None,
+                           'note': '此回應未提供空氣品質監測值；因子分數並非AQHI。'})
         return factor

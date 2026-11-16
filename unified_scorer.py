@@ -12,6 +12,8 @@ from datetime import datetime, time
 import pytz
 from advanced_predictor import AdvancedBurnskyPredictor
 from air_quality_fetcher import AirQualityFetcher
+from modules.prediction_quality import highest_rainfall, station_value
+from modules.weather_presentation import number
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -83,8 +85,8 @@ class UnifiedBurnskyScorer:
             },
             'factor_scores': {},
             'traditional_score': 0,
-            'ml_score': 0,
-            'final_score': 0,
+            'ml_score': None,
+            'final_score': None,
             'adjustments': {},
             'analysis': {}
         }
@@ -95,9 +97,21 @@ class UnifiedBurnskyScorer:
                 weather_data, forecast_data, ninday_data, prediction_type, advance_hours
             )
             result['factor_scores'] = factor_scores
+            if factor_scores['temperature'] is None or factor_scores['humidity'] is None:
+                raise ValueError('主要溫度或濕度資料不足，暫停評分')
             
             # 2. 計算傳統算法總分
-            traditional_total = sum(factor_scores.values())
+            available = {key: value for key, value in factor_scores.items() if value is not None}
+            traditional_total = sum(available.values())
+            available_max = sum(self.SCORING_CONFIG['factor_max_scores'][key] for key in available)
+            result['input_coverage'] = {
+                'available_factors': list(available),
+                'missing_factors': [key for key, value in factor_scores.items() if value is None],
+                'available_max_score': available_max,
+                'total_max_score': self.MAX_TRADITIONAL_SCORE,
+                'weighted_percent': round(available_max / self.MAX_TRADITIONAL_SCORE * 100, 1),
+                'normalization': 'fixed_total_no_missing_points',
+            }
             result['traditional_score'] = traditional_total
             
             # 3. 標準化傳統算法分數 (150分 → 100分)
@@ -105,12 +119,12 @@ class UnifiedBurnskyScorer:
             result['traditional_normalized'] = traditional_normalized
             
             # 4. 獲取機器學習分數
-            ml_score = self._get_ml_score(weather_data, forecast_data)
+            ml_score = self._get_ml_score(weather_data, forecast_data, result)
             result['ml_score'] = ml_score
             
             # 5. 確定權重並計算加權分數
-            weights = self._determine_weights(advance_hours)
-            weighted_score = traditional_normalized * weights['traditional'] + ml_score * weights['ml']
+            weights = self._determine_weights(advance_hours) if ml_score is not None else {'traditional': 1.0, 'ml': 0.0}
+            weighted_score = traditional_normalized * weights['traditional'] + (ml_score or 0) * weights['ml']
             result['weighted_score'] = weighted_score
             result['weights_used'] = weights
             
@@ -135,7 +149,7 @@ class UnifiedBurnskyScorer:
         except Exception as e:
             # 錯誤處理
             result['error'] = str(e)
-            result['final_score'] = 0
+            result['final_score'] = None
             return result
     
     def _calculate_all_factors(self, weather_data, forecast_data, ninday_data, prediction_type, advance_hours):
@@ -178,20 +192,13 @@ class UnifiedBurnskyScorer:
     def _calculate_temperature_factor(self, weather_data):
         """計算溫度因子 (0-15分)"""
         if not weather_data or 'temperature' not in weather_data:
-            return 0
+            return None
         
         try:
             # 獲取香港天文台溫度
-            hko_temp = None
-            for temp_record in weather_data['temperature']['data']:
-                if temp_record['place'] == '香港天文台':
-                    hko_temp = temp_record['value']
-                    break
-            
-            if hko_temp is None:
-                # 使用平均溫度
-                temps = [record['value'] for record in weather_data['temperature']['data']]
-                hko_temp = sum(temps) / len(temps) if temps else 25
+            hko_temp = station_value(weather_data, 'temperature')
+            if hko_temp is None or not -50 <= hko_temp <= 60:
+                return None
             
             # 溫度評分邏輯（收緊標準）
             if 26 <= hko_temp <= 31:
@@ -206,23 +213,18 @@ class UnifiedBurnskyScorer:
                 return 1   # 過高或過低
                 
         except:
-            return 0
+            return None
     
     def _calculate_humidity_factor(self, weather_data):
         """計算濕度因子 (0-20分)"""
         if not weather_data or 'humidity' not in weather_data:
-            return 0
+            return None
         
         try:
             # 獲取香港天文台濕度
-            hko_humidity = None
-            for humidity_record in weather_data['humidity']['data']:
-                if humidity_record['place'] == '香港天文台':
-                    hko_humidity = humidity_record['value']
-                    break
-            
-            if hko_humidity is None:
-                return 0
+            hko_humidity = station_value(weather_data, 'humidity')
+            if hko_humidity is None or not 0 <= hko_humidity <= 100:
+                return None
             
             # 濕度評分邏輯（收緊標準）
             if 55 <= hko_humidity <= 70:
@@ -239,19 +241,18 @@ class UnifiedBurnskyScorer:
                 return 1   # 極端濕度
                 
         except:
-            return 0
+            return None
     
     def _calculate_visibility_factor(self, weather_data):
         """計算能見度因子 (0-20分) - 提高重要性"""
         try:
-            score = 4  # 基礎分數（降低預設值）
+            score = None
             
             # 檢查降雨量
             if 'rainfall' in weather_data and 'data' in weather_data['rainfall']:
-                total_rainfall = 0
-                for r in weather_data['rainfall']['data']:
-                    if isinstance(r, dict) and 'value' in r and r['value'] > 0:
-                        total_rainfall += r['value']
+                total_rainfall = highest_rainfall(weather_data)
+                if total_rainfall is None:
+                    return score
                 
                 if total_rainfall == 0:
                     score = 20  # 無降雨，能見度佳（滿分）
@@ -269,20 +270,20 @@ class UnifiedBurnskyScorer:
             return score
             
         except:
-            return 3  # 降低錯誤時的預設值
+            return None
     
     def _calculate_pressure_factor(self, weather_data):
         """計算氣壓因子 (0-10分)"""
         if not weather_data:
-            return 3  # 預設值（降低）
+            return None
         
         try:
             # 檢查簡化數據格式
-            if 'pressure' in weather_data and isinstance(weather_data['pressure'], (int, float)):
+            if number(weather_data.get('pressure')) is not None and 850 <= weather_data['pressure'] <= 1100:
                 pressure_value = float(weather_data['pressure'])
             else:
                 # 檢查複雜數據格式
-                return 5  # 暫時返回預設值，因為HKO API沒有提供氣壓數據
+                return None
             
             # 氣壓評分邏輯 (hPa)
             if pressure_value >= 1020:
@@ -299,12 +300,12 @@ class UnifiedBurnskyScorer:
             return score
             
         except:
-            return 3  # 錯誤時返回預設值（降低）
+            return None
     
     def _calculate_cloud_factor(self, forecast_data):
         """計算雲層因子 (0-35分) - 最重要因子（已修正邏輯）"""
         if not forecast_data or 'forecastDesc' not in forecast_data:
-            return 0
+            return None
         
         try:
             desc = forecast_data['forecastDesc'].lower()
@@ -330,19 +331,21 @@ class UnifiedBurnskyScorer:
             elif '大雨' in desc or '暴雨' in desc:
                 return 1   # 大雨完全無法拍攝
             else:
-                return 5   # 預設值（降低）
+                return None  # 未識別文字不補分
                 
         except:
-            return 0
+            return None
     
     def _calculate_uv_factor(self, weather_data):
         """計算UV指數因子 (0-2分) - 降低重要性"""
         if not weather_data or 'uvindex' not in weather_data:
-            return 1  # 預設值（降低）
+            return None
         
         try:
             uv_data = weather_data['uvindex']['data'][0]
-            uv_value = uv_data['value']
+            uv_value = number(uv_data.get('value'))
+            if uv_value is None or not 0 <= uv_value <= 30:
+                return None
             
             # UV指數評分邏輯（降低分數範圍）
             # UV只是參考指標，不是決定性因素
@@ -356,16 +359,19 @@ class UnifiedBurnskyScorer:
                 return 0.5 # 陰天
                 
         except:
-            return 1  # 降低錯誤時預設值
+            return None
     
     def _calculate_wind_factor(self, weather_data):
         """計算風速因子 (0-15分)"""
         if not weather_data or 'wind' not in weather_data:
-            return 5  # 預設值（降低）
+            return None
         
         try:
             wind_data = weather_data['wind']
-            wind_speed = wind_data.get('speed', 0)
+            wind_speed = number(wind_data.get('speed'))
+            # 每日預報風級範圍不是實測風速，不取中點冒充讀數。
+            if wind_speed is None or not 0 <= wind_speed <= 300:
+                return None
             
             # 風速評分邏輯（收緊標準）
             if 6 <= wind_speed <= 12:
@@ -382,14 +388,16 @@ class UnifiedBurnskyScorer:
                 return 1   # 烈風不利拍攝
                 
         except:
-            return 5  # 降低錯誤時預設值
+            return None
     
     def _calculate_air_quality_factor(self, weather_data):
         """計算空氣品質因子 (0-15分)"""
         try:
             # 使用空氣品質獲取器
-            air_quality_data = self.air_quality_fetcher.get_air_quality_score()
-            aqhi = air_quality_data.get('aqhi', 5)
+            air_quality_data = weather_data.get('air_quality', {})
+            aqhi = number(air_quality_data.get('aqhi'))
+            if aqhi is None or not 1 <= aqhi <= 11:
+                return None
             
             # AQHI評分邏輯
             if aqhi <= 3:
@@ -404,15 +412,14 @@ class UnifiedBurnskyScorer:
                 return 2   # 極差空氣
                 
         except:
-            return 5  # 預設值（降低）
+            return None
     
-    def _get_ml_score(self, weather_data, forecast_data):
-        """獲取機器學習分數"""
-        try:
-            ml_result = self.advanced_predictor.predict_ml(weather_data, forecast_data)
-            return ml_result.get('ml_burnsky_score', 50)
-        except:
-            return 50  # 預設值
+    def _get_ml_score(self, weather_data, forecast_data, diagnostics=None):
+        """現有模型以模擬資料訓練，且沿用缺失特徵補值；暫停參與正式評分。"""
+        if diagnostics is not None:
+            diagnostics['ml_score_source'] = 'unavailable'
+            diagnostics['ml_unavailable_reason'] = '現有ML模型以模擬資料訓練，尚未驗證缺失輸入及目標時段；暫不參與評分，不補50分。'
+        return None
     
     def _determine_weights(self, advance_hours):
         """確定權重配置"""
@@ -429,30 +436,9 @@ class UnifiedBurnskyScorer:
         adjustments = {}
         total_adjustment = 0  # 記錄總調整分數
         
-        # 1. 雲層厚度調整
-        cloud_analysis = None
-        try:
-            cloud_analysis = self.advanced_predictor.analyze_cloud_thickness_and_color_visibility(
-                weather_data, forecast_data
-            )
-            color_visibility = cloud_analysis.get('color_visibility_percentage', 50)
-            
-            if color_visibility < 30:
-                adjustment = self.SCORING_CONFIG['adjustment_factors']['cloud_visibility_low']
-                total_adjustment += adjustment
-                adjustments['cloud_thickness'] = f'厚雲調整 {adjustment:+.0f}分'
-            elif color_visibility > 80:
-                adjustment = self.SCORING_CONFIG['adjustment_factors']['cloud_visibility_high']
-                total_adjustment += adjustment
-                adjustments['cloud_thickness'] = f'極佳條件加分 {adjustment:+.0f}分'
-                
-        except:
-            pass
-        
-        # 保存雲層分析結果到 result 中
-        if cloud_analysis:
-            result['cloud_thickness_analysis'] = cloud_analysis
-        
+        # 舊雲厚度流程含預設值，暫停額外加減分。
+        result['cloud_adjustment_status'] = 'unavailable'
+
         # 2. 季節調整
         if use_seasonal:
             month = datetime.now().month
@@ -484,12 +470,12 @@ class UnifiedBurnskyScorer:
             },
             'top_factors': [],
             'recommendation': '',
-            'confidence': 'high'
+            'confidence': 'limited'
         }
         
         # 找出得分最高的因子
         factor_scores = result['factor_scores']
-        sorted_factors = sorted(factor_scores.items(), key=lambda x: x[1], reverse=True)
+        sorted_factors = sorted(((key, value) for key, value in factor_scores.items() if value is not None), key=lambda x: x[1], reverse=True)
         
         factor_names = {
             'time': '時間因子',
@@ -507,9 +493,11 @@ class UnifiedBurnskyScorer:
             for factor, score in sorted_factors[:3]
         ]
         
-        # 生成建議
+        # 生成建議；資料覆蓋不足時不能以低分推斷燒天機會。
         final_score = result['final_score']
-        if final_score >= 70:
+        if result.get('input_coverage', {}).get('missing_factors'):
+            analysis['recommendation'] = '資料有限，缺失因子不補分；先查看天空實況，再更新觀賞時段條件。'
+        elif final_score >= 70:
             analysis['recommendation'] = '建議準備相機，前往拍攝地點'
         elif final_score >= 50:
             analysis['recommendation'] = '密切關注天空變化，準備拍攝'
@@ -529,7 +517,9 @@ class UnifiedBurnskyScorer:
         summary_parts = []
         
         # 總體評估
-        if final_score >= 70:
+        if result.get('input_coverage', {}).get('missing_factors'):
+            summary_parts.append('資料有限；低分亦可能反映資料不足')
+        elif final_score >= 70:
             summary_parts.append("🔥 燒天條件極佳")
         elif final_score >= 50:
             summary_parts.append("🌅 燒天條件良好")
@@ -539,7 +529,9 @@ class UnifiedBurnskyScorer:
             summary_parts.append("☁️ 燒天條件較差")
         
         # AI vs 傳統分析對比
-        if abs(ml_score - traditional_score) > 20:
+        if ml_score is None:
+            summary_parts.append('ML未參與；缺失因子不補分，總分上限維持150')
+        elif abs(ml_score - result['traditional_normalized']) > 20:
             if ml_score > traditional_score:
                 summary_parts.append("AI模型較樂觀")
             else:
@@ -552,9 +544,9 @@ class UnifiedBurnskyScorer:
         
         # 時段分析
         if advance_hours > 0:
-            summary_parts.append(f"提前{advance_hours}小時預測")
+            summary_parts.append(f"{advance_hours}小時後條件推算（評估時間見上方）")
         else:
-            summary_parts.append("即時分析")
+            summary_parts.append("當前條件評估（評估時間見上方）")
             
         analysis['summary'] = " | ".join(summary_parts)
         

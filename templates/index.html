@@ -118,7 +118,7 @@
                 "name": "如何知道今天會不會有燒天？",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "使用我們的燒天預測系統，輸入網址即可看到當日的燒天機率評分、預測等級和詳細分析。系統每小時更新數據，提供最即時的預測。"
+                    "text": "使用燒天預測系統可查看燒天條件指數（0–100）、條件等級及評估日期時間。指數反映所列時刻的條件有利程度，並非燒天發生機率；日出日落時間另列作參考。"
                 }
             }
         ]
@@ -521,15 +521,15 @@
         .level-medium { background: linear-gradient(45deg, #feca57, #ff9ff3); color: white; }
         .level-low { background: linear-gradient(45deg, #48dbfb, #0abde3); color: white; }
 
-        .probability {
-            font-size: 1.3rem;
+        #predictionTiming {
+            font-size: 1rem;
             color: #666;
             margin-bottom: 20px;
         }
 
         @media (max-width: 768px) {
-            .probability {
-                font-size: 1rem;
+            #predictionTiming {
+                font-size: 0.95rem;
                 margin-bottom: 12px;
             }
         }
@@ -1535,17 +1535,49 @@
         
         <!-- 主要應用程式內容 -->
         <main class="main-card" role="main">
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>正在分析天氣數據...</p>
+            <section id="viewingPlan" aria-labelledby="viewingPlanTitle" style="padding: 20px; margin-bottom: 18px; border-radius: 16px; background: #fff5e9; color: #342a24; line-height: 1.7;">
+                <p style="font-size: 0.85rem; color: #79513c;">幾時睇 · 下一步做咩</p>
+                <h2 id="viewingPlanTitle" style="font-size: 1.4rem; margin: 6px 0;">正在查找下一次觀賞時段</h2>
+                <p id="viewingPlanTime" style="font-size: 1.05rem; font-weight: 600;">正在取得香港日出／日落時間…</p>
+                <p id="viewingPlanStatus" role="status" aria-live="polite" style="margin-top: 12px; font-weight: 600;">尚未確認觀賞條件</p>
+                <p id="viewingPlanAction" style="margin: 8px 0 14px;">可先查看天空實況，或選好拍攝地點。</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <button id="viewingPlanButton" class="refresh-btn" type="button" onclick="assessViewingWindow()">取得觀賞時段條件參考</button>
+                    <a href="/webcam-analysis" style="color: #1254a1; text-decoration: underline;">查看天空實況</a>
+                    <a href="/best-locations" style="color: #1254a1; text-decoration: underline;">揀拍攝地點</a>
+                </div>
+                <p id="viewingPlanReference" style="margin-top: 12px; font-size: 0.8rem; color: #65574e;">觀賞時間參考不代表會出現燒天；出發前請核對天氣警告。</p>
+            </section>
+            <div id="loading" role="status" aria-live="polite" style="padding: 14px; margin-bottom: 16px; border-radius: 10px; background: #eef4ff; color: #234;">
+                <p id="predictionStatusText">正在取得條件評估；你可以先查看天空實況及拍攝地點。</p>
+                <button id="predictionRetry" class="refresh-btn" type="button" onclick="loadPrediction()" hidden>重試評估</button>
             </div>
+            <noscript><p>請開啟 JavaScript 以取得條件評估。你仍可閱讀下方說明及查看拍攝地點。</p></noscript>
 
-            <div id="content" style="display: none; text-align: center;">
-                    <!-- 🔥 燒天機率進度條 -->
+            <div id="content" style="text-align: center;">
+                <details id="assessmentDetails" style="text-align: left; margin: 12px 0;">
+                    <summary style="cursor: pointer; padding: 12px; font-weight: 600; color: #345;">查看條件指數、資料限制及其他評估時段</summary>
+                    <div id="predictionTiming" role="region" aria-label="評估時段" aria-live="polite" style="margin: 12px auto; padding: 14px; max-width: 600px; border-radius: 10px; background: #eef4ff; color: #234; line-height: 1.8; text-align: left;">
+                        <h2 id="assessmentHeadline" style="font-size: 1.15rem; margin-bottom: 8px;">尚未取得可用評估</h2>
+                        <p id="evaluationTime" style="font-weight: 600;">評估時間：尚未取得</p>
+                        <p id="eventReference"></p>
+                        <p id="predictionScope" style="font-size: 0.85rem;"></p>
+                        <p id="assessmentNextStep" style="margin-top: 8px;"></p>
+                        <p id="dataQualitySummary" style="margin-top: 12px; font-weight: 600;"></p>
+                        <details id="dataQualityDetails" style="margin-top: 8px;">
+                            <summary>查看評分資料限制</summary>
+                            <p id="dataQualityLimitations" style="margin-top: 8px; line-height: 1.7; white-space: pre-line;"></p>
+                        </details>
+                        <a href="/webcam-analysis" style="color: #1254a1; text-decoration: underline;">查看天空實況</a>
+                    </div>
+                    <details id="conditionScoreDetails" open style="margin: 12px auto; max-width: 600px;">
+                    <summary id="conditionScoreToggle" hidden style="cursor: pointer; padding: 12px; color: #345;">查看所列時間的條件指數（非日出／日落預測）</summary>
+                    <!-- 燒天條件指數，並非發生機率 -->
                     <div class="burnsky-progress-container" id="burnskyProgress" style="margin: 0 auto 20px; max-width: 400px;">
+                        <h2 style="font-size: 1.15rem; color: #444; margin-bottom: 8px;">燒天條件指數</h2>
                         <div class="progress-score-display" style="text-align: center; margin-bottom: 12px;">
                             <span id="progressScore" style="font-size: 3.5rem; font-weight: 800; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">--</span>
-                            <span style="font-size: 1.2rem; color: #999; margin-left: 4px;">分</span>
+                            <span style="font-size: 1.2rem; color: #666; margin-left: 4px;">／100</span>
                         </div>
                         
                         <!-- 漸變進度條 -->
@@ -1572,17 +1604,54 @@
                             <span>100</span>
                         </div>
                         
-                        <!-- 機率等級標籤 -->
+                        <!-- 條件等級標籤 -->
                         <div id="progressLevelBadge" style="margin-top: 10px; display: inline-block; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; background: #e9ecef; color: #666;">
-                            載入中...
+                            尚未取得評估
                         </div>
                     </div>
                     
                     <div class="prediction-level" id="predictionLevel" aria-live="polite" style="display: none;">載入中...</div>
-                    <div class="probability" id="probability" aria-live="polite">計算中...</div>
+                    <p id="scoreDefinition" style="color: #555; font-size: 0.9rem; line-height: 1.7;">指數反映氣象條件的有利程度，並非燒天發生機率，亦不保證出現。</p>
+                    </details>
                     
+                <div class="last-updated" id="lastUpdated">
+                    <!-- 最後更新時間 -->
+                </div>
+                    <!-- 預測控制項 (手機版精簡) -->
+                    <div class="prediction-controls" style="margin: 16px 0; display: flex; gap: 10px; justify-content: center; align-items: stretch; flex-wrap: wrap;">
+                        <select id="predictionType" style="padding: 10px 14px; border-radius: 10px; border: 2px solid #ddd; font-size: 0.9rem; flex: 1; min-width: 120px; max-width: 150px;" aria-label="評估模式">
+                            <option value="sunset">🌅 日落模式</option>
+                            <option value="sunrise">🌄 日出模式</option>
+                        </select>
+                        <select id="advanceHours" style="padding: 10px 14px; border-radius: 10px; border: 2px solid #ddd; font-size: 0.9rem; flex: 1; min-width: 120px; max-width: 150px;" aria-label="評估時間">
+                            <option value="0" selected>⏰ 當前條件</option>
+                            <option value="1">1小時後</option>
+                            <option value="2">2小時後</option>
+                            <option value="3">3小時後</option>
+                            <option value="6">6小時後</option>
+                            <option value="12">12小時後</option>
+                        </select>
+                    </div>
+
+                    <div class="prediction-actions">
+                        <button class="refresh-btn" onclick="loadPrediction()" aria-label="重新預測">
+                            🔄 重新預測
+                        </button>
+                        <button class="refresh-btn" id="notificationButton" type="button" onclick="enablePredictionNotifications()" style="background: #495057;" aria-label="開啟時段內高分通知">
+                            🔔 開啟時段內高分通知
+                        </button>
+                    </div>
+
+                <!-- 智能分析摘要區域 -->
+                <section class="summary-section" aria-labelledby="summary-title">
+                    <h2 class="summary-title" id="summary-title">💡 智能分析摘要</h2>
+                    <div id="analysisSummary" role="region" aria-live="polite">
+                        <p style="color: #666;">取得評估後會顯示條件摘要。出發前請同時查看天空實況及天氣警告。</p>
+                    </div>
+                </section>
+
                     <!-- 🌅 日出日落倒數計時器 (手機優化版) -->
-                    <div id="sunCountdownContainer" class="sun-countdown-container" style="margin: 16px auto; max-width: 600px;">
+                    <div id="sunCountdownContainer" class="sun-countdown-container" style="display: none; margin: 16px auto; max-width: 600px;">
                         <div class="sun-countdown-card" style="background: linear-gradient(135deg, #ff9a56 0%, #ff6b6b 50%, #ee5a52 100%); border-radius: 14px; padding: 14px 16px; box-shadow: 0 6px 20px rgba(255, 107, 107, 0.25); color: white;">
                             <!-- 倒數計時核心 (手機版置頂突出) -->
                             <div class="countdown-core" style="text-align: center; padding: 10px 16px; background: rgba(255,255,255,0.15); border-radius: 10px; backdrop-filter: blur(5px); margin-bottom: 12px;">
@@ -1599,13 +1668,13 @@
                             <div style="display: flex; justify-content: space-around; align-items: center;">
                                 <div class="sun-info" style="text-align: center;">
                                     <span style="font-size: 1.2rem;">🌄</span>
-                                    <span style="font-size: 0.75rem; opacity: 0.9; margin: 0 4px;">日出</span>
+                                    <span style="font-size: 0.75rem; opacity: 0.9; margin: 0 4px;">評估當日日出</span>
                                     <span id="sunriseTime" style="font-size: 1.1rem; font-weight: bold;">--:--</span>
                                 </div>
                                 <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.3);"></div>
                                 <div class="sun-info" style="text-align: center;">
                                     <span style="font-size: 1.2rem;">🌅</span>
-                                    <span style="font-size: 0.75rem; opacity: 0.9; margin: 0 4px;">日落</span>
+                                    <span style="font-size: 0.75rem; opacity: 0.9; margin: 0 4px;">評估當日日落</span>
                                     <span id="sunsetTime" style="font-size: 1.1rem; font-weight: bold;">--:--</span>
                                 </div>
                             </div>
@@ -1620,32 +1689,32 @@
                     <!-- 燒天指數對照表 (手機版摺疊) -->
                     <div class="score-reference-card" style="margin: 12px auto; max-width: 500px;">
                         <div class="score-reference-header" onclick="toggleScoreReference()" style="cursor: pointer; padding: 10px 16px; background: linear-gradient(45deg, #667eea, #764ba2); color: white; border-radius: 10px; text-align: center; user-select: none;">
-                            <span style="font-weight: 600; font-size: 0.9rem;">📊 燒天指數對照</span>
+                            <span style="font-weight: 600; font-size: 0.9rem;">📊 燒天條件指數對照</span>
                             <span id="scoreReferenceToggleIcon" style="float: right;">🔽</span>
                         </div>
                         <div id="scoreReferenceContent" style="display: none; background: white; border: 2px solid #667eea; border-top: none; border-radius: 0 0 10px 10px; padding: 12px;">
                             <div class="score-ranges" style="display: grid; gap: 6px; font-size: 0.8rem;">
-                                <div style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #ff6b6b, #ee5a52); color: white;">
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #ff6b6b, #ee5a52); color: white;">
                                     <div style="font-weight: bold; width: 50px;">80-100</div>
                                     <div style="flex: 1;">🔥 極高</div>
-                                    <div style="font-size: 0.7rem; opacity: 0.9;">必拍</div>
+                                    <div style="font-size: 0.7rem; opacity: 0.9;">配合實況準備</div>
                                 </div>
-                                <div style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #fd9644, #e55a4e); color: white;">
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #fd9644, #e55a4e); color: white;">
                                     <div style="font-weight: bold; width: 50px;">65-79</div>
                                     <div style="flex: 1;">🌅 高</div>
                                     <div style="font-size: 0.7rem; opacity: 0.9;">推薦</div>
                                 </div>
-                                <div style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #feca57, #ff9ff3); color: white;">
-                                    <div style="font-weight: bold; width: 50px;">50-64</div>
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #feca57, #ff9ff3); color: white;">
+                                    <div style="font-weight: bold; width: 50px;">45-64</div>
                                     <div style="flex: 1;">⛅ 中等</div>
                                     <div style="font-size: 0.7rem; opacity: 0.9;">可試</div>
                                 </div>
-                                <div style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #48dbfb, #0abde3); color: white;">
-                                    <div style="font-weight: bold; width: 50px;">30-49</div>
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #48dbfb, #0abde3); color: white;">
+                                    <div style="font-weight: bold; width: 50px;">30-44</div>
                                     <div style="flex: 1;">🌤️ 較低</div>
                                     <div style="font-size: 0.7rem; opacity: 0.9;">碰運氣</div>
                                 </div>
-                                <div style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #74b9ff, #0984e3); color: white;">
+                                <div class="score-range-item" style="display: flex; align-items: center; padding: 6px 10px; border-radius: 6px; background: linear-gradient(45deg, #74b9ff, #0984e3); color: white;">
                                     <div style="font-weight: bold; width: 50px;">0-29</div>
                                     <div style="flex: 1;">❄️ 極低</div>
                                     <div style="font-size: 0.7rem; opacity: 0.9;">不建議</div>
@@ -1654,53 +1723,7 @@
                         </div>
                     </div>
                     
-                    <!-- 預測控制項 (手機版精簡) -->
-                    <div class="prediction-controls" style="margin: 16px 0; display: flex; gap: 10px; justify-content: center; align-items: stretch; flex-wrap: wrap;">
-                        <select id="predictionType" style="padding: 10px 14px; border-radius: 10px; border: 2px solid #ddd; font-size: 0.9rem; flex: 1; min-width: 120px; max-width: 150px;" aria-label="預測類型">
-                            <option value="sunset">🌅 日落</option>
-                            <option value="sunrise">🌄 日出</option>
-                        </select>
-                        <select id="advanceHours" style="padding: 10px 14px; border-radius: 10px; border: 2px solid #ddd; font-size: 0.9rem; flex: 1; min-width: 120px; max-width: 150px;" aria-label="提前時間">
-                            <option value="0" selected>⏰ 即時</option>
-                            <option value="1">1小時後</option>
-                            <option value="2">2小時後</option>
-                            <option value="3">3小時後</option>
-                            <option value="6">6小時後</option>
-                            <option value="12">12小時後</option>
-                        </select>
-                    </div>
-                    
-                    <div class="prediction-actions">
-                        <button class="refresh-btn" onclick="loadPrediction()" aria-label="重新預測">
-                            🔄 重新預測
-                        </button>
-                        <button class="refresh-btn" id="notificationButton" type="button" onclick="enablePredictionNotifications()" style="background: #495057;" aria-label="開啟高分預測通知">
-                            🔔 開啟高分通知
-                        </button>
-                    </div>
-                </section>
-
-                <section class="main-card" aria-labelledby="location-recommendations-title" style="margin-top: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px;">
-                        <h2 id="location-recommendations-title" style="color: #333; margin: 0; font-size: 1.25rem;">推薦出發地點</h2>
-                        <a href="/best-locations" style="color: #0066cc; font-size: 0.85rem;">全部地點</a>
-                    </div>
-                    <div id="locationRecommendations" aria-live="polite" style="display: grid; gap: 10px;">
-                        <p style="margin: 0; color: #666;">正在配對拍攝地點...</p>
-                    </div>
-                    <p id="locationDataFreshness" style="margin: 12px 0 0; color: #666; font-size: 0.8rem;"></p>
-                </section>
-
-                <!-- 天氣數據區域 -->
-                <section class="weather-section" aria-labelledby="weather-title" style="margin-top: 20px;">
-                    <h2 class="weather-title" id="weather-title">🌦️ 天氣數據</h2>
-                    
-                    <div class="weather-data" id="weatherData" role="region" aria-live="polite">
-                        <!-- 天氣數據將動態載入 -->
-                        <!-- 天氣警告卡片將在這裡動態添加 -->
-                    </div>
-                </section>
-
+                </details>
                 <!-- 📷 即時攝影機預覽區域 -->
                 <section class="webcam-preview-section" aria-labelledby="webcam-preview-title" style="margin-top: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -1716,85 +1739,49 @@
                     </div>
                 </section>
 
-                <!-- 智能分析摘要區域 -->
-                <section class="summary-section" aria-labelledby="summary-title">
-                    <h2 class="summary-title" id="summary-title">💡 智能分析摘要</h2>
-                    <div id="analysisSummary" role="region" aria-live="polite">
-                        <!-- 分析摘要將動態載入 -->
+                <section class="main-card" aria-labelledby="location-recommendations-title" style="margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px;">
+                        <h2 id="location-recommendations-title" style="color: #333; margin: 0; font-size: 1.25rem;">推薦出發地點</h2>
+                        <a href="/best-locations" style="color: #0066cc; font-size: 0.85rem;">全部地點</a>
                     </div>
+                    <div id="locationRecommendations" aria-live="polite" style="display: grid; gap: 10px;">
+                        <p style="margin: 0; color: #666;">正在配對拍攝地點...</p>
+                    </div>
+                    <p id="locationDataFreshness" style="margin: 12px 0 0; color: #666; font-size: 0.8rem;"></p>
                 </section>
 
-                <section class="main-card" aria-labelledby="photo-upload-title" style="margin-top: 30px;">
-                    <h2 id="photo-upload-title" style="color: #333; margin: 0 0 10px 0; font-size: 1.4rem;">相片驗證預測</h2>
-                    <p style="margin: 0 0 20px; color: #666;">上傳剛拍攝的照片和您的實際評分，建立可追溯的預測驗證紀錄。</p>
-                    <form id="photoUploadForm" enctype="multipart/form-data">
-                        <div style="margin-bottom: 15px;">
-                            <label for="photoFile" style="display: block; margin-bottom: 6px; font-weight: 600;">照片</label>
-                            <input id="photoFile" name="photo" type="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
-                        </div>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px;">
-                            <label>拍攝地點
-                                <input name="location" type="text" placeholder="例如：維多利亞港" style="display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                            </label>
-                            <label>實際燒天評分：<span id="ratingDisplay">5/10</span>
-                                <input name="visual_rating" type="range" min="1" max="10" value="5" oninput="updateRatingDisplay(this.value)" style="display: block; width: 100%; margin-top: 12px;">
-                            </label>
-                        </div>
-                        <label for="weatherNotes" style="display: block; margin-bottom: 6px; font-weight: 600;">補充說明</label>
-                        <textarea id="weatherNotes" name="weather_notes" rows="2" placeholder="例如：實際雲層、能見度或顏色變化" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; resize: vertical;"></textarea>
-                        <label style="display: flex; gap: 8px; align-items: flex-start; margin: 16px 0; color: #495057;">
-                            <input name="confirm_feedback" type="checkbox" value="true">
-                            <span>將此相片和我的評分作為目前預測的實際驗證結果。</span>
-                        </label>
-                        <button type="submit" class="refresh-btn">分析並提交相片</button>
-                    </form>
-                    <div id="photoAnalysisResult" aria-live="polite"></div>
+                <section class="main-card" id="comparisonSection" aria-labelledby="comparison-title" style="margin-top:20px;">
+                    <h2 id="comparison-title" style="font-size:1.25rem;">預測與實況對照</h2>
+                    <p>保留原本評估，再於目標時段查看相同方向的天空影像。</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;">
+                        <button type="button" class="refresh-btn" id="comparisonRefresh">載入／更新對照</button>
+                        <button type="button" class="refresh-btn" id="comparisonPin">保留這次評估</button>
+                        <button type="button" class="refresh-btn" id="comparisonUnpin" hidden>跟隨目前評估</button>
+                    </div>
+                    <p id="comparisonStatus" role="status">取得評估後，可載入實況對照。</p>
+                    <div id="comparisonPrediction"></div>
+                    <div id="comparisonObservations" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:12px;"></div>
+                    <p style="font-size:.85rem; color:#666;">來源更新時間並非已核實的拍攝時間。條件指數與影像像素指標用途不同，這裏不計分數差異或準確率。</p>
+                    <a href="/webcam-analysis">查看其他攝影機</a>
                 </section>
-
-                <!-- 用戶反饋區域 -->
-                <section class="main-card" aria-labelledby="feedback-title" style="margin-top: 30px; background: #fff3cd; border-left: 4px solid #ffc107;" id="feedbackSection">
-                    <h2 id="feedback-title" style="color: #856404; margin: 0 0 15px 0; font-size: 1.4rem;">📸 實際燒天如何？</h2>
-                    <p style="margin: 0 0 20px 0; font-size: 1rem; color: #856404;">您的反饋幫助我們改進預測準確率</p>
+                <!-- 天氣數據區域 -->
+                <section class="weather-section" aria-labelledby="weather-title" style="margin-top: 20px;">
+                    <h2 class="weather-title" id="weather-title">🌦️ 天氣數據</h2>
+                    <p id="weatherSourceSummary" style="font-size: 0.9rem; line-height: 1.7; margin-bottom: 14px;">取得資料後會逐項列明來源、更新時間及是否估算。</p>
                     
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #856404;">實際燒天評分 (0-100)：</label>
-                        <input type="range" id="userRating" min="0" max="100" value="50" 
-                               style="width: 100%; height: 8px; margin-bottom: 10px; border-radius: 4px;"
-                               oninput="document.getElementById('ratingValue').textContent = this.value">
-                        <div style="text-align: center; font-size: 2rem; font-weight: bold; color: #856404; margin-bottom: 10px;">
-                            <span id="ratingValue">50</span> 分
-                        </div>
-                        <div style="text-align: center; font-size: 0.9rem; color: #666; margin-top: 5px;">
-                            <span id="ratingDescription">拖動滑塊設置您的評分</span>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #856404;">補充說明（選填）：</label>
-                        <textarea id="feedbackComment" rows="3" 
-                                  style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; resize: vertical; font-size: 1rem;"
-                                  placeholder="例如：實際顏色更豐富、雲層較預期厚、能見度比預期好..."></textarea>
-                    </div>
-                    
-                    <button onclick="submitFeedback(event)" 
-                            style="background: linear-gradient(45deg, #28a745, #20c997); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; font-weight: 600; width: 100%; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);"
-                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40, 167, 69, 0.4)'"
-                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.3)'">
-                        ✅ 提交反饋
-                    </button>
-                    
-                    <div style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.7); border-radius: 8px; font-size: 0.9rem; color: #666; text-align: center;">
-                        💡 您的反饋將用於計算系統的真實準確率，幫助改進預測算法
+                    <div class="weather-data" id="weatherData" role="region" aria-live="polite">
+                        <!-- 天氣數據將動態載入 -->
+                        <!-- 天氣警告卡片將在這裡動態添加 -->
                     </div>
                 </section>
 
                 <!-- 分析因子區域 -->
                 <section class="main-card" aria-labelledby="factors-title" style="margin-top: 30px;" id="factorsSection">
-                    <div class="toggle-header" onclick="toggleFactorsSection()">
+                    <button type="button" class="toggle-header" id="factorsToggle" aria-expanded="false" aria-controls="analysisGrid" onclick="toggleFactorsSection()" style="width: 100%; border: 0; background: transparent; font: inherit;">
                         <h2 id="factors-title" style="text-align: left; color: #333; margin: 0; font-size: 1.4rem;">📊 詳細分析因子</h2>
                         <div id="factorsToggleIcon" class="toggle-icon">🔽</div>
-                    </div>
-                    <div class="analysis-grid" id="analysisGrid" role="region" aria-live="polite" style="margin-top: 30px;">
+                    </button>
+                    <div class="analysis-grid" id="analysisGrid" role="region" aria-live="polite" style="display: none; margin-top: 30px;">
                         <!-- 分析因子將動態載入 -->
                     </div>
                 </section>
@@ -1948,11 +1935,73 @@
                     </div>
                 </section>
 
-                <div class="last-updated" id="lastUpdated">
-                    <!-- 最後更新時間 -->
-                </div>
+                <section class="main-card" aria-labelledby="photo-upload-title" style="margin-top: 30px;">
+                    <h2 id="photo-upload-title" style="color: #333; margin: 0 0 10px 0; font-size: 1.4rem;">相片驗證預測</h2>
+                    <p style="margin: 0 0 20px; color: #666;">上傳剛拍攝的照片和您的實際評分，建立可追溯的預測驗證紀錄。</p>
+                    <form id="photoUploadForm" enctype="multipart/form-data">
+                        <div style="margin-bottom: 15px;">
+                            <label for="photoFile" style="display: block; margin-bottom: 6px; font-weight: 600;">照片</label>
+                            <input id="photoFile" name="photo" type="file" accept="image/jpeg,image/png,image/gif,image/webp" required>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                            <label>拍攝地點
+                                <input name="location" type="text" placeholder="例如：維多利亞港" style="display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            </label>
+                            <label>實際燒天評分：<span id="ratingDisplay">5/10</span>
+                                <input name="visual_rating" type="range" min="1" max="10" value="5" oninput="updateRatingDisplay(this.value)" style="display: block; width: 100%; margin-top: 12px;">
+                            </label>
+                        </div>
+                        <label for="weatherNotes" style="display: block; margin-bottom: 6px; font-weight: 600;">補充說明</label>
+                        <textarea id="weatherNotes" name="weather_notes" rows="2" placeholder="例如：實際雲層、能見度或顏色變化" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; resize: vertical;"></textarea>
+                        <label style="display: flex; gap: 8px; align-items: flex-start; margin: 16px 0; color: #495057;">
+                            <input name="confirm_feedback" type="checkbox" value="true">
+                            <span>將此相片和我的評分作為目前預測的實際驗證結果。</span>
+                        </label>
+                        <button type="submit" class="refresh-btn">分析並提交相片</button>
+                    </form>
+                    <div id="photoAnalysisResult" aria-live="polite"></div>
+                </section>
+
+                <!-- 用戶反饋區域 -->
+                <section class="main-card" aria-labelledby="feedback-title" style="margin-top: 30px; background: #fff3cd; border-left: 4px solid #ffc107;" id="feedbackSection">
+                    <h2 id="feedback-title" style="color: #856404; margin: 0 0 15px 0; font-size: 1.4rem;">📸 實際燒天如何？</h2>
+                    <p style="margin: 0 0 20px 0; font-size: 1rem; color: #856404;">您的反饋幫助我們改進預測準確率</p>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #856404;">實際燒天評分 (0-100)：</label>
+                        <input type="range" id="userRating" min="0" max="100" value="50"
+                               style="width: 100%; height: 8px; margin-bottom: 10px; border-radius: 4px;"
+                               oninput="document.getElementById('ratingValue').textContent = this.value">
+                        <div style="text-align: center; font-size: 2rem; font-weight: bold; color: #856404; margin-bottom: 10px;">
+                            <span id="ratingValue">50</span> 分
+                        </div>
+                        <div style="text-align: center; font-size: 0.9rem; color: #666; margin-top: 5px;">
+                            <span id="ratingDescription">拖動滑塊設置您的評分</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #856404;">補充說明（選填）：</label>
+                        <textarea id="feedbackComment" rows="3"
+                                  style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; resize: vertical; font-size: 1rem;"
+                                  placeholder="例如：實際顏色更豐富、雲層較預期厚、能見度比預期好..."></textarea>
+                    </div>
+
+                    <button onclick="submitFeedback(event)"
+                            style="background: linear-gradient(45deg, #28a745, #20c997); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; font-weight: 600; width: 100%; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40, 167, 69, 0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40, 167, 69, 0.3)'">
+                        ✅ 提交反饋
+                    </button>
+
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.7); border-radius: 8px; font-size: 0.9rem; color: #666; text-align: center;">
+                        💡 您的反饋將用於計算系統的真實準確率，幫助改進預測算法
+                    </div>
+                </section>
+
+
             </div>
-        </div>
+        </main>
 
         <section class="main-card" aria-labelledby="methodology-title" style="max-width: 900px; margin-top: 30px;">
             <h2 id="methodology-title" style="color: #333; margin: 0 0 14px; font-size: 1.5rem;">BurnSky 如何判讀燒天條件</h2>
@@ -2007,6 +2056,8 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='prediction_presentation.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='prediction_comparison.js') }}"></script>
     <script>
         // 香港時區處理函數
         // 強制刷新函數 - 清除所有緩存
@@ -2049,9 +2100,12 @@
 
         // ==================== 🌅 日出日落倒數計時器 ====================
         let sunCountdownInterval = null;
-        let currentSunTimes = null;
         let currentPredictionTypeForCountdown = 'sunset';
-        let currentBurnskyScore = 0;
+        let currentPredictionTiming = null;
+        let latestPredictionRequest = 0;
+        let lastSuccessfulPrediction = null;
+        let predictionSelectionChanged = false;
+        let latestLocationRequest = 0;
         
         /**
          * 🔥 更新燒天進度條
@@ -2065,8 +2119,8 @@
             
             if (!progressScore || !progressBarFill) return;
             
-            // 動態更新分數 (帶動畫)
-            animateNumber(progressScore, score);
+            // 分數即時可讀，避免背景分頁暫停動畫後仍顯示空值或舊分數。
+            progressScore.textContent = Math.round(score);
             
             // 更新進度條寬度
             setTimeout(() => {
@@ -2078,27 +2132,27 @@
             if (score >= 80) {
                 bgColor = 'linear-gradient(135deg, #ff6b6b, #ee5a52)';
                 textColor = '#fff';
-                levelText = '極高機率';
+                levelText = '條件極佳';
                 emoji = '🔥';
             } else if (score >= 65) {
                 bgColor = 'linear-gradient(135deg, #fd9644, #e55a4e)';
                 textColor = '#fff';
-                levelText = '高機率';
+                levelText = '條件良好';
                 emoji = '🌅';
-            } else if (score >= 50) {
+            } else if (score >= 45) {
                 bgColor = 'linear-gradient(135deg, #feca57, #ff9ff3)';
                 textColor = '#fff';
-                levelText = '中等機率';
+                levelText = '條件一般';
                 emoji = '⛅';
             } else if (score >= 30) {
                 bgColor = 'linear-gradient(135deg, #48dbfb, #0abde3)';
                 textColor = '#fff';
-                levelText = '較低機率';
+                levelText = '條件偏低';
                 emoji = '🌤️';
             } else {
                 bgColor = 'linear-gradient(135deg, #74b9ff, #0984e3)';
                 textColor = '#fff';
-                levelText = '機率極低';
+                levelText = '條件很低';
                 emoji = '❄️';
             }
             
@@ -2106,7 +2160,7 @@
             if (progressLevelBadge) {
                 progressLevelBadge.style.background = bgColor;
                 progressLevelBadge.style.color = textColor;
-                progressLevelBadge.innerHTML = `${emoji} ${levelText}`;
+                progressLevelBadge.textContent = `${emoji} ${level || levelText}`;
             }
             
             // 高分時添加發光效果
@@ -2151,9 +2205,7 @@
             if (!container) return;
             
             try {
-                const response = await fetch('/api/webcam/current');
-                if (!response.ok) throw new Error('載入失敗');
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI('/api/webcam/current');
                 
                 if (!data.webcam_data || Object.keys(data.webcam_data).length === 0) {
                     container.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6); font-size: 0.85rem;">暫無攝影機資料</div>';
@@ -2238,14 +2290,14 @@
         }
 
         async function loadLocationRecommendations(predictionType) {
+            const requestId = ++latestLocationRequest;
             const container = document.getElementById('locationRecommendations');
             const freshness = document.getElementById('locationDataFreshness');
             if (!container) return;
 
             try {
-                const response = await fetch(`/api/locations/recommendations?type=${predictionType}`);
-                if (!response.ok) throw new Error('載入地點建議失敗');
-                const data = await response.json();
+                const data = await APIUtils.fetchAPI(`/api/locations/recommendations?type=${predictionType}`);
+                if (requestId !== latestLocationRequest) return;
                 const favorites = getFavoriteLocations();
                 container.innerHTML = data.recommendations.map(location => {
                     const isFavorite = favorites.includes(location.id);
@@ -2263,11 +2315,12 @@
                             <div style="color: #4b5563; font-size: 0.82rem; margin-top: 4px;">實況：${location.recommendation_reason}</div>
                             <a href="/webcam-analysis" style="display: inline-block; margin-top: 8px; color: #0066cc; font-size: 0.82rem;">查看 ${location.webcam_name} 實況</a>
                         </article>`;
-                }).join('');
-                freshness.textContent = data.data_freshness.message;
+                }).join('') || '<p>暫無地點建議；可<a href="/best-locations">瀏覽拍攝地點</a>。</p>';
+                freshness.textContent = data.data_freshness?.message || '';
             } catch (error) {
+                if (requestId !== latestLocationRequest) return;
                 console.error('載入地點建議失敗:', error);
-                container.innerHTML = '<p style="margin: 0; color: #666;">暫時未能載入地點建議。</p>';
+                container.innerHTML = '<p style="margin: 0; color: #666;">暫時未能載入地點建議。可<a href="/best-locations">瀏覽拍攝地點</a>，或<button type="button" onclick="loadLocationRecommendations(document.getElementById(\'predictionType\').value)">重試</button>。</p>';
                 freshness.textContent = '';
             }
         }
@@ -2276,7 +2329,7 @@
             const button = document.getElementById('notificationButton');
             if (!button || !('Notification' in window)) return;
             if (Notification.permission === 'granted') {
-                button.textContent = '🔔 高分通知已開啟';
+                button.textContent = '🔔 時段內高分通知已開啟';
                 button.disabled = true;
             } else if (Notification.permission === 'denied') {
                 button.textContent = '🔕 瀏覽器已封鎖通知';
@@ -2292,16 +2345,17 @@
             const permission = await Notification.requestPermission();
             updateNotificationButton();
             if (permission === 'granted') {
-                APIUtils.showToast('已開啟高分燒天通知', 'success');
+                APIUtils.showToast('已開啟時段內高分通知；只通知對準日出／日落參考時段的有效評估。', 'success');
             }
         }
 
         function notifyHighPotentialPrediction(data) {
+            if (!BurnSkyPresentation.describePrediction(data).scorePrimary) return;
             if (!('Notification' in window) || Notification.permission !== 'granted' || data.burnsky_score < 70) return;
             const notificationKey = `${data.prediction_type}-${data.advance_hours}-${currentPredictionTimestamp}`;
             if (localStorage.getItem('lastHighPotentialNotification') === notificationKey) return;
             new Notification('BurnSky 高分預測', {
-                body: `${data.prediction_type === 'sunrise' ? '日出' : '日落'}燒天潛力 ${Math.round(data.burnsky_score)} 分，${data.prediction_level}`
+                body: `${BurnSkyPresentation.formatHongKongDateTime(data.prediction_timing?.evaluated_at)}（香港時間）燒天條件指數 ${Math.round(data.burnsky_score)}／100，${data.prediction_level}`
             });
             localStorage.setItem('lastHighPotentialNotification', notificationKey);
         }
@@ -2337,10 +2391,9 @@
          * @param {string} predictionType - 預測類型 ('sunrise' 或 'sunset')
          * @param {number} burnskyScore - 燒天預測分數
          */
-        function updateSunCountdown(sunTimes, predictionType, burnskyScore) {
-            currentSunTimes = sunTimes;
+        function updateSunCountdown(sunTimes, predictionType, timing) {
+            currentPredictionTiming = timing;
             currentPredictionTypeForCountdown = predictionType || 'sunset';
-            currentBurnskyScore = burnskyScore || 0;
             
             // 更新日出日落時間顯示
             document.getElementById('sunriseTime').textContent = sunTimes.sunrise || '--:--';
@@ -2360,190 +2413,14 @@
          * 更新倒數計時顯示
          */
         function updateCountdownDisplay() {
-            if (!currentSunTimes) return;
-            
-            const now = new Date();
-            // 獲取香港時間
-            const hkNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
-            
-            // 解析日出日落時間
-            const [sunriseHour, sunriseMin] = currentSunTimes.sunrise.split(':').map(Number);
-            const [sunsetHour, sunsetMin] = currentSunTimes.sunset.split(':').map(Number);
-            
-            // 創建今日的日出日落時間
-            const todaySunrise = new Date(hkNow);
-            todaySunrise.setHours(sunriseHour, sunriseMin, 0, 0);
-            
-            const todaySunset = new Date(hkNow);
-            todaySunset.setHours(sunsetHour, sunsetMin, 0, 0);
-            
-            // 計算最佳燒天時間（日落前40分鐘，日出後10分鐘）
-            const goldenHourSunset = new Date(todaySunset.getTime() - 40 * 60 * 1000);
-            const goldenHourSunrise = new Date(todaySunrise.getTime() + 10 * 60 * 1000);
-            
-            let targetTime, targetLabel, isGoldenHour = false;
-            let statusIcon = '⏳';
-            let statusText = '';
-            let photoAdvice = '';
-            
-            // 判斷當前應該倒數到哪個時間點
-            const predictionType = currentPredictionTypeForCountdown;
-            
-            if (predictionType === 'sunrise') {
-                // 日出模式
-                if (hkNow < todaySunrise) {
-                    // 還未到日出
-                    if (hkNow >= new Date(todaySunrise.getTime() - 60 * 60 * 1000)) {
-                        // 日出前1小時內
-                        isGoldenHour = true;
-                        statusIcon = '🌄';
-                        statusText = '準備出發拍攝日出燒天！';
-                    } else {
-                        statusIcon = '🌙';
-                        statusText = '等待日出時刻';
-                    }
-                    targetTime = todaySunrise;
-                    targetLabel = '距離日出還有';
-                    photoAdvice = getPhotoAdvice('before_sunrise', currentBurnskyScore);
-                } else if (hkNow < goldenHourSunrise) {
-                    // 日出中，黃金時段
-                    isGoldenHour = true;
-                    targetTime = goldenHourSunrise;
-                    targetLabel = '黃金時段剩餘';
-                    statusIcon = '🔥';
-                    statusText = '最佳日出燒天拍攝時間！';
-                    photoAdvice = getPhotoAdvice('golden_hour_sunrise', currentBurnskyScore);
-                } else {
-                    // 日出已過
-                    targetTime = new Date(todaySunrise.getTime() + 24 * 60 * 60 * 1000);
-                    targetLabel = '距離明日日出';
-                    statusIcon = '☀️';
-                    statusText = '今日日出已過';
-                    photoAdvice = getPhotoAdvice('after_sunrise', currentBurnskyScore);
-                }
-            } else {
-                // 日落模式（預設）
-                if (hkNow < goldenHourSunset) {
-                    // 還未到黃金時段
-                    if (hkNow >= new Date(goldenHourSunset.getTime() - 60 * 60 * 1000)) {
-                        // 黃金時段前1小時內
-                        statusIcon = '🎯';
-                        statusText = '即將進入最佳拍攝時間';
-                    } else {
-                        statusIcon = '⏳';
-                        statusText = '等待黃金時段';
-                    }
-                    targetTime = goldenHourSunset;
-                    targetLabel = '距離黃金時段';
-                    photoAdvice = getPhotoAdvice('before_sunset', currentBurnskyScore);
-                } else if (hkNow < todaySunset) {
-                    // 黃金時段中！
-                    isGoldenHour = true;
-                    targetTime = todaySunset;
-                    targetLabel = '黃金時段剩餘';
-                    statusIcon = '🔥';
-                    statusText = '現在是最佳燒天拍攝時間！';
-                    photoAdvice = getPhotoAdvice('golden_hour_sunset', currentBurnskyScore);
-                } else if (hkNow < new Date(todaySunset.getTime() + 30 * 60 * 1000)) {
-                    // 日落後30分鐘內（餘暉期）
-                    isGoldenHour = true;
-                    targetTime = new Date(todaySunset.getTime() + 30 * 60 * 1000);
-                    targetLabel = '餘暉時段剩餘';
-                    statusIcon = '🌆';
-                    statusText = '把握餘暉最後時刻！';
-                    photoAdvice = getPhotoAdvice('afterglow', currentBurnskyScore);
-                } else {
-                    // 日落已過
-                    const tomorrowSunset = new Date(todaySunset.getTime() + 24 * 60 * 60 * 1000);
-                    const tomorrowGoldenHour = new Date(tomorrowSunset.getTime() - 40 * 60 * 1000);
-                    targetTime = tomorrowGoldenHour;
-                    targetLabel = '距離明日黃金時段';
-                    statusIcon = '🌙';
-                    statusText = '今日日落已過，明天繼續';
-                    photoAdvice = getPhotoAdvice('after_sunset', currentBurnskyScore);
-                }
-            }
-            
-            // 計算剩餘時間
-            const diff = targetTime - hkNow;
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            
-            // 格式化時間
-            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            // 更新 DOM
-            document.getElementById('countdownLabel').textContent = targetLabel;
-            
-            const timerElement = document.getElementById('countdownTimer');
-            timerElement.textContent = timeStr;
-            
-            // 添加閃爍動畫效果
-            if (seconds === 0) {
-                timerElement.classList.add('countdown-tick');
-                setTimeout(() => timerElement.classList.remove('countdown-tick'), 300);
-            }
-            
-            document.getElementById('statusIcon').textContent = statusIcon;
-            document.getElementById('statusText').textContent = statusText;
-            document.getElementById('photoAdviceText').textContent = photoAdvice;
-            
-            // 更新卡片樣式（黃金時段特效）
-            const card = document.querySelector('.sun-countdown-card');
-            if (isGoldenHour) {
-                card.classList.add('golden-hour-active');
-            } else {
-                card.classList.remove('golden-hour-active');
-            }
+            const countdown = BurnSkyPresentation.getCountdown(currentPredictionTiming);
+            document.getElementById('countdownLabel').textContent = countdown?.label || '參考時段未提供';
+            document.getElementById('countdownTimer').textContent = countdown?.timer || '--:--:--';
+            document.getElementById('statusIcon').textContent = countdown?.inWindow ? '📷' : '⏳';
+            document.getElementById('statusText').textContent = countdown?.status || '請重新載入以取得評估日期及時間。';
+            document.getElementById('photoAdviceText').textContent = countdown?.advice || '暫不能確認此指數的適用時段。';
+            document.querySelector('.sun-countdown-card').classList.toggle('golden-hour-active', Boolean(countdown?.inWindow));
         }
-        
-        /**
-         * 根據情境和分數生成拍攝建議
-         */
-        function getPhotoAdvice(situation, score) {
-            const advices = {
-                before_sunrise: {
-                    high: '高機率燒天！建議提前30分鐘到達拍攝地點，準備好器材',
-                    medium: '有機會出現燒天，可以嘗試早起拍攝',
-                    low: '今日日出燒天機率較低，但仍可能有驚喜'
-                },
-                golden_hour_sunrise: {
-                    high: '🔥 現在是最佳拍攝時機！快捕捉這美麗瞬間！',
-                    medium: '黃金時段進行中，留意天空變化',
-                    low: '持續觀察，或許會有意外收穫'
-                },
-                after_sunrise: {
-                    high: '今日有高機率燒天，可關注日落時段',
-                    medium: '今日天氣適中，日落可能有燒天',
-                    low: '明日日出再見！'
-                },
-                before_sunset: {
-                    high: '高機率燒天！建議提前40分鐘到達最佳拍攝地點',
-                    medium: '有燒天機會，建議準備相機待命',
-                    low: '機率較低，但天氣瞬息萬變，可持續觀察'
-                },
-                golden_hour_sunset: {
-                    high: '🔥 絕佳燒天時刻！把握每一秒！',
-                    medium: '⚡ 留意天空顏色變化，隨時準備拍攝',
-                    low: '🎲 碰碰運氣，說不定有驚喜！'
-                },
-                afterglow: {
-                    high: '✨ 餘暉依然精彩，繼續拍攝！',
-                    medium: '餘暉漸退，可嘗試長曝光',
-                    low: '夕陽西下，明日再來'
-                },
-                after_sunset: {
-                    high: '明日燒天機率依然高，記得設好鬧鐘！',
-                    medium: '今日精彩結束，明日繼續關注',
-                    low: '好好休息，明天再看天氣'
-                }
-            };
-            
-            const level = score >= 65 ? 'high' : (score >= 40 ? 'medium' : 'low');
-            return advices[situation]?.[level] || '持續關注天氣變化';
-        }
-        
         // 頁面卸載時清理計時器
         window.addEventListener('beforeunload', function() {
             if (sunCountdownInterval) {
@@ -2645,6 +2522,9 @@
             
             // 統一的API請求處理
             async fetchAPI(url, options = {}) {
+                const { timeoutMs = 20000, ...fetchOptions } = options;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
                 const defaultOptions = {
                     cache: 'no-cache',
                     headers: {
@@ -2655,9 +2535,15 @@
                 };
                 
                 try {
-                    const response = await fetch(url, { ...defaultOptions, ...options });
+                    const response = await fetch(url, { ...defaultOptions, ...fetchOptions, signal: controller.signal });
                     
                     if (!response.ok) {
+                        const body = await response.json().catch(() => null);
+                        if (body?.error === 'insufficient_prediction_data') {
+                            const error = new Error(body.message);
+                            error.predictionReason = body.message;
+                            throw error;
+                        }
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
@@ -2665,6 +2551,8 @@
                 } catch (error) {
                     console.error(`API請求失敗 (${url}):`, error);
                     throw error;
+                } finally {
+                    clearTimeout(timeoutId);
                 }
             },
             
@@ -2691,91 +2579,125 @@
         };
 
         /**
-         * 🌅 根據當前時間和天文台日出日落時間自動判斷應該預測日出還是日落
-         * - 日落後30分鐘 ~ 隔日日出後30分鐘：預測日出
-         * - 其他時間：預測日落
+         * Select the next unexpired Hong Kong solar reference independently of weather scoring.
          */
         let cachedSunTimes = null;
+        let sunTimesLoading = false;
+        let viewingAssessmentState = 'idle';
+        let viewingAssessmentReason = '';
+
+        function updateViewingPlan() {
+            const plan = BurnSkyPresentation.describeViewingPlan(cachedSunTimes, lastSuccessfulPrediction?.data,
+                viewingAssessmentState, new Date(), viewingAssessmentReason);
+            document.getElementById('viewingPlanTitle').textContent = plan.title;
+            document.getElementById('viewingPlanTime').textContent = plan.timeLabel;
+            document.getElementById('viewingPlanStatus').textContent = plan.status;
+            document.getElementById('viewingPlanAction').textContent = plan.action;
+            document.getElementById('viewingPlanReference').textContent = plan.referenceNote;
+            const button = document.getElementById('viewingPlanButton');
+            button.textContent = sunTimesLoading ? '正在取得觀賞時間…'
+                : viewingAssessmentState === 'loading' ? '正在取得條件參考…' : plan.buttonLabel;
+            button.disabled = sunTimesLoading || viewingAssessmentState === 'loading'
+                || (plan.window !== null && plan.advanceHours === null);
+            if (sunTimesLoading && !cachedSunTimes) {
+                document.getElementById('viewingPlanTitle').textContent = '正在查找下一次觀賞時段';
+                document.getElementById('viewingPlanTime').textContent = '正在取得香港日出／日落時間…';
+            }
+        }
+
+        function selectViewingWindow(plan) {
+            if (!plan.window || plan.advanceHours === null) return false;
+            document.getElementById('predictionType').value = plan.window.event_type;
+            const select = document.getElementById('advanceHours');
+            const value = String(plan.advanceHours);
+            if (!Array.from(select.options).some(option => option.value === value)) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = `${value}小時後（觀賞時段參考）`;
+                select.appendChild(option);
+            }
+            select.value = value;
+            return true;
+        }
+
+        async function assessViewingWindow() {
+            if (!BurnSkyPresentation.getNextViewingWindow(cachedSunTimes, new Date())) await fetchSunTimes();
+            const plan = BurnSkyPresentation.describeViewingPlan(cachedSunTimes, lastSuccessfulPrediction?.data, 'idle', new Date());
+            if (!selectViewingWindow(plan)) return false;
+            predictionSelectionChanged = true;
+            return loadPrediction();
+        }
         
         async function fetchSunTimes() {
+            sunTimesLoading = true;
+            updateViewingPlan();
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             try {
-                const response = await fetch('/api/sun-times');
+                const response = await fetch('/api/sun-times', { signal: controller.signal });
                 if (response.ok) {
                     const data = await response.json();
-                    cachedSunTimes = data;
-                    console.log('🌅 從天文台獲取日出日落時間:', data);
-                    return data;
+                    if (BurnSkyPresentation.getNextViewingWindow(data, new Date())) {
+                        cachedSunTimes = data;
+                        return data;
+                    }
                 }
             } catch (e) {
-                console.warn('無法獲取日出日落時間，使用估算值');
+                console.warn('無法獲取可用觀賞時間，請稍後重試');
+            } finally {
+                clearTimeout(timeoutId);
+                sunTimesLoading = false;
+                updateViewingPlan();
             }
             return null;
         }
         
-        function getAutoPredictionType() {
-            const now = new Date();
-            const hkNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }));
-            const currentHour = hkNow.getHours();
-            const currentMinute = hkNow.getMinutes();
-            const currentTimeMinutes = currentHour * 60 + currentMinute;
-            
-            // 如果有天文台數據，使用精確時間
-            if (cachedSunTimes && cachedSunTimes.sunset && cachedSunTimes.sunrise) {
-                const [sunsetH, sunsetM] = cachedSunTimes.sunset.split(':').map(Number);
-                const [sunriseH, sunriseM] = cachedSunTimes.sunrise.split(':').map(Number);
-                
-                const sunsetMinutes = sunsetH * 60 + sunsetM;
-                const sunriseMinutes = sunriseH * 60 + sunriseM;
-                
-                // 日落後30分鐘 ~ 隔日日出後30分鐘 = 預測日出
-                // 即：currentTime > sunset+30 OR currentTime < sunrise+30
-                const sunsetThreshold = sunsetMinutes + 30;
-                const sunriseThreshold = sunriseMinutes + 30;
-                
-                if (currentTimeMinutes > sunsetThreshold || currentTimeMinutes < sunriseThreshold) {
-                    return 'sunrise';
-                }
-                return 'sunset';
-            }
-            
-            // 備用：簡單估算
-            const month = hkNow.getMonth() + 1;
-            let sunsetHour = 18;
-            if (month >= 5 && month <= 8) sunsetHour = 19;
-            else if (month >= 11 || month <= 2) sunsetHour = 17;
-            
-            let sunriseHour = 6;
-            if (month >= 5 && month <= 8) sunriseHour = 5;
-            
-            if (currentHour >= sunsetHour + 1 || currentHour < sunriseHour + 1) {
-                return 'sunrise';
-            }
-            return 'sunset';
-        }
-        
         /**
-         * 🔄 初始化時自動設置預測類型（先獲取天文台時間）
+         * Initialize a condition reference near the next viewing window.
          */
         async function initAutoPredictionType() {
-            // 先嘗試獲取天文台日出日落時間
-            if (!cachedSunTimes) {
+            // Refresh the solar calendar when the Hong Kong date changes.
+            const hkDate = new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
+            if (!cachedSunTimes || cachedSunTimes.today?.date !== hkDate) {
                 await fetchSunTimes();
             }
             
             const predictionTypeElement = document.getElementById('predictionType');
-            if (predictionTypeElement) {
-                const autoType = getAutoPredictionType();
-                predictionTypeElement.value = autoType;
-                
-                const sunInfo = cachedSunTimes 
-                    ? `(日出:${cachedSunTimes.sunrise} 日落:${cachedSunTimes.sunset})`
-                    : '(估算)';
-                console.log(`🌅 自動切換預測類型: ${autoType === 'sunrise' ? '日出' : '日落'} ${sunInfo}`);
+            if (predictionTypeElement && !predictionSelectionChanged) {
+                selectViewingWindow(BurnSkyPresentation.describeViewingPlan(cachedSunTimes, lastSuccessfulPrediction?.data, 'idle', new Date()));
+            }
+        }
+
+        function setPredictionStatus(state, selection, reason = '') {
+            viewingAssessmentState = state;
+            viewingAssessmentReason = reason;
+            updateViewingPlan();
+            const status = document.getElementById('loading');
+            const message = document.getElementById('predictionStatusText');
+            const retry = document.getElementById('predictionRetry');
+            const previous = lastSuccessfulPrediction;
+            const previousLabel = previous
+                ? `畫面保留上次${previous.type === 'sunrise' ? '日出' : '日落'}模式・${previous.hours === '0' ? '當前條件' : previous.hours + '小時後'}結果；請核對下方評估及計算時間。`
+                : '';
+            status.style.display = 'block';
+            status.style.background = state === 'error' ? '#fff3cd' : '#eef4ff';
+            retry.hidden = state !== 'error';
+            document.getElementById('burnskyProgress').setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+            if (state === 'loading') {
+                message.textContent = `正在取得${selection}（最多等候20秒）。${previousLabel || '你可以先查看天空實況及拍攝地點。'}`;
+            } else if (state === 'error') {
+                message.textContent = `暫時未能取得${selection}。${reason ? `原因：${reason}` : '可能是連線中斷或服務忙碌。'}${previousLabel || '目前沒有可用評估；請稍後重試，或先查看天空實況。'}`;
+                if (!previous) document.getElementById('progressLevelBadge').textContent = '尚未取得評估';
+            } else {
+                const generatedAt = Date.parse(previous.data.prediction_timing?.generated_at);
+                message.textContent = !Number.isFinite(generatedAt) ? '已取得評估；服務未提供計算時間，請審慎參考。'
+                    : Date.now() - generatedAt > 15 * 60 * 1000 ? '已取得評估，但計算時間距今超過15分鐘；請核對資料時間及天空實況。'
+                    : '已取得評估；請核對評估時段，並配合天空實況判斷。';
             }
         }
 
         async function loadPrediction() {
-            const loading = document.getElementById('loading');
+            const requestId = ++latestPredictionRequest;
             const content = document.getElementById('content');
             
             // 獲取預測選項
@@ -2785,8 +2707,9 @@
             const predictionType = predictionTypeElement ? predictionTypeElement.value : 'general';
             const advanceHours = advanceHoursElement ? advanceHoursElement.value : '0';
             
-            loading.style.display = 'block';
-            content.style.display = 'none';
+            const selection = `${predictionType === 'sunrise' ? '日出' : '日落'}模式・${advanceHours === '0' ? '當前條件' : advanceHours + '小時後'}`;
+            content.style.display = 'block';
+            setPredictionStatus('loading', selection);
             
             try {
                 // 根據預測類型選擇 API 端點
@@ -2801,6 +2724,10 @@
                 }
                 
                 const data = await APIUtils.fetchAPI(apiUrl);
+                if (requestId !== latestPredictionRequest) return;
+                if (!data || !Number.isFinite(data.burnsky_score) || data.burnsky_score < 0 || data.burnsky_score > 100 || !data.prediction_level) {
+                    throw new Error('Invalid prediction response');
+                }
                 
                 // 如果對照表已展開，更新高亮
                 const scoreReferenceContent = document.getElementById('scoreReferenceContent');
@@ -2818,7 +2745,7 @@
                 levelElement.className = 'prediction-level';
                 if (data.burnsky_score >= 70) {
                     levelElement.classList.add('level-high');
-                } else if (data.burnsky_score >= 40) {
+                } else if (data.burnsky_score >= 45) {
                     levelElement.classList.add('level-medium');
                 } else {
                     levelElement.classList.add('level-low');
@@ -2827,19 +2754,16 @@
                 // 🔥 更新燒天進度條
                 updateBurnskyProgress(data.burnsky_score, data.prediction_level);
                 
-                // 更新機率
-                let probabilityText = `預測機率: ${data.probability}`;
-                
-                // 如果有提前預測，顯示天氣數據來源
-                if (data.advance_hours > 0) {
-                    if (data.original_weather_data) {
-                        probabilityText += ` <span style="color: #007acc; font-size: 0.85em;">🔮 使用${data.advance_hours}小時後推算數據</span>`;
-                    } else {
-                        probabilityText += ` <span style="color: #28a745; font-size: 0.85em;">⏰ ${data.advance_hours}小時提前預測</span>`;
-                    }
-                }
-                
-                document.getElementById('probability').innerHTML = probabilityText;
+                const presentation = BurnSkyPresentation.describePrediction(data);
+                document.getElementById('assessmentHeadline').textContent = presentation.headline;
+                document.getElementById('assessmentNextStep').textContent = presentation.nextStep;
+                document.getElementById('dataQualitySummary').textContent = data.data_quality?.summary || '未取得評分資料完整性說明。';
+                document.getElementById('dataQualityLimitations').textContent = (data.data_quality?.limitations || []).join('\n');
+                document.getElementById('conditionScoreDetails').open = presentation.scorePrimary;
+                document.getElementById('conditionScoreToggle').hidden = presentation.scorePrimary;
+                document.getElementById('evaluationTime').textContent = presentation.evaluation;
+                document.getElementById('eventReference').textContent = presentation.event;
+                document.getElementById('predictionScope').textContent = presentation.scope;
                 
                 // 更新分析因子
                 updateAnalysisFactors(data.analysis_details);
@@ -2848,56 +2772,53 @@
                 updateCurrentWarnings(data.analysis_details);
                 
                 // 更新天氣數據
-                updateWeatherData(data.weather_data);
+                updateWeatherData(data.weather_data, data.weather_presentation);
                 
                 // 更新空氣品質數據
-                if (data.analysis_details && data.analysis_details.air_quality_factor) {
-                    updateAirQualityData(data.analysis_details.air_quality_factor);
-                }
+                updateAirQualityData(data.analysis_details?.air_quality_factor);
                 
                 // 更新分析摘要 - 修復數據路徑
-                updateAnalysisSummary(data.analysis_summary || (data.analysis_details && data.analysis_details.analysis_summary));
+                document.getElementById('summary-title').textContent = presentation.scorePrimary ? '💡 條件分析摘要' : '💡 如何使用這次評估';
+                updateAnalysisSummary(presentation.scorePrimary
+                    ? data.analysis_summary || (data.analysis_details && data.analysis_details.analysis_summary)
+                    : [presentation.headline, presentation.scope, presentation.nextStep]);
                 
-                // 更新時間 - 強制使用香港時區
-                document.getElementById('lastUpdated').textContent = 
-                    `最後更新: ${getHongKongTime()} (香港時間)`;
+                // 使用伺服器的計算時間，快取讀取不會被誤標為剛剛更新。
+                document.getElementById('lastUpdated').textContent = presentation.generated
+                    + ` · 氣象觀測更新：${BurnSkyPresentation.formatHongKongDateTime(data.weather_updated_at)}（香港時間）`;
                 
                 // 🌅 更新日出日落倒數計時器
                 if (data.sun_times) {
-                    updateSunCountdown(data.sun_times, data.prediction_type, data.burnsky_score);
+                    updateSunCountdown(data.sun_times, data.prediction_type, data.prediction_timing);
                 }
                 loadLocationRecommendations(data.prediction_type);
                 
                 // 保存預測分數以供用戶反饋使用
                 currentPredictedScore = data.burnsky_score;
-                currentPredictionTimestamp = new Date().toISOString();
-                notifyHighPotentialPrediction(data);
+                currentPredictionTimestamp = data.prediction_timing?.generated_at || null;
+                if (presentation.scorePrimary) {
+                    try { notifyHighPotentialPrediction(data); } catch (error) { console.warn('通知暫時不可用', error); }
+                }
                 console.log('✅ 預測分數已保存:', {
                     score: currentPredictedScore,
                     timestamp: currentPredictionTimestamp,
                     level: data.prediction_level
                 });
                 
-                loading.style.display = 'none';
-                content.style.display = 'block';
+                lastSuccessfulPrediction = { data, type: predictionType, hours: advanceHours };
+                if (typeof window !== 'undefined' && window.BurnSkyComparison) window.BurnSkyComparison.setPrediction(data);
+                setPredictionStatus('success', selection);
+                document.getElementById('sunCountdownContainer').style.display = data.sun_times ? 'block' : 'none';
                 
                 // 攝影機實況會在用戶接近該區塊時才載入，避免阻塞首屏。
                 scheduleWebcamPreview();
+                return true;
                 
             } catch (error) {
+                if (requestId !== latestPredictionRequest) return;
                 console.error('❌ 載入預測數據失敗:', error);
-                APIUtils.showToast('無法載入預測數據，請檢查網路連接', 'error');
-                
-                loading.innerHTML = `
-                    <div style="color: #ff6b6b;">
-                        <h3>載入失敗</h3>
-                        <p>無法取得預測數據，請檢查網路連接或稍後再試</p>
-                        <button class="refresh-btn" onclick="loadPrediction()" style="margin-top: 15px;">
-                            🔄 重新載入
-                        </button>
-                    </div>
-                `;
-                throw error; // 重新拋出錯誤以便上層處理
+                setPredictionStatus('error', selection, error.predictionReason);
+                return false;
             }
         }
 
@@ -2960,7 +2881,7 @@
             // 原有的複雜數據格式處理
             const factorNames = {
                 'time_factor': { 
-                    name: '實時時間因子', 
+                    name: '評估時間因子',
                     icon: '🌅', 
                     maxScore: 18,
                     explanation: '基於真實日出/日落時間評分（12%權重）：黃金30分鐘內（15-18分）、1小時內（12分）、2小時內（8分）、其他時段（4分）'
@@ -3001,6 +2922,10 @@
                     maxScore: 15,
                     explanation: '影響雲層擴散（10%權重）：理想6-12km/h（15分）、良好4-16km/h（12分）、可接受2-20km/h（9分）、偏大≤25km/h（5分）、強風≤30km/h（2分）、烈風>30km/h（1分）。適度風速有助雲層形態變化'
                 },
+                'pressure_factor': {
+                    name: '氣壓因子', icon: '📈', maxScore: 10,
+                    explanation: '只使用可用氣壓讀數；缺失時不參與計分。'
+                },
                 'air_quality_factor': { 
                     name: '空氣品質因子', 
                     icon: '🌫️', 
@@ -3027,16 +2952,16 @@
                 card.innerHTML = `
                     <div class="factor-header">
                         <div class="factor-name">
-                            🤖 AI智能分析 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
+                            📊 條件評分組成 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                         </div>
                         <div class="factor-score">${Math.round(breakdown.final_weighted_score)}分</div>
                     </div>
                     <div class="factor-description">
-                        傳統算法: ${Math.round(breakdown.traditional_normalized || breakdown.traditional_score)}分<br>
-                        機器學習: ${Math.round(breakdown.ml_score)}分<br>
+                        傳統算法: ${Math.round(breakdown.traditional_normalized ?? breakdown.traditional_score)}分<br>
+                        機器學習: ${Number.isFinite(breakdown.ml_score) ? Math.round(breakdown.ml_score) + "分" : "未參與"}<br>
                         加權結果: ${Math.round(breakdown.final_weighted_score)}分<br>
                         ${breakdown.weight_explanation ? `<small style="color: #007acc; font-weight: 500;">💡 ${breakdown.weight_explanation}</small><br>` : ''}
-                        <small style="color: #888; font-style: italic;">📊 結合傳統天氣分析與AI機器學習的智能綜合評分，提前1-2小時預測為黃金時段(AI 65%權重)，即時預測時AI 55%權重</small>
+                        <small style="color: #888; font-style: italic;">${breakdown.ml_unavailable_reason || "依照可用模型計算實際權重。"}<br>因子權重覆蓋：${breakdown.input_coverage?.weighted_percent ?? "—"}%；缺失因子不補分，總分上限維持150。低分亦可能反映資料不足。</small>
                     </div>
                 `;
                 addMobileToggle(card);
@@ -3055,12 +2980,12 @@
                                 <div class="factor-name">
                                     ${factorNames[key].icon} ${factorNames[key].name} <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                                 </div>
-                                <div class="factor-score">${value.score}/${value.max_score || factorNames[key].maxScore}分</div>
+                                <div class="factor-score">${Number.isFinite(value.score) ? value.score + "/" + (value.max_score || factorNames[key].maxScore) + "分" : "未參與"}</div>
                             </div>
                             <div class="factor-description">
                                 ${value.description}<br>
-                                <small>當前時間: ${value.current_time} | ${value.target_type}時間: ${value.target_time}</small>
-                                ${value.advance_hours > 0 ? `<br><small>提前預測: ${value.advance_hours}小時</small>` : ''}
+                                <small>評估時間：${BurnSkyPresentation.formatHongKongDateTime(value.evaluated_at)}（香港時間）</small>
+                                <br><small>評估當日${value.target_type === 'sunrise' ? '日出' : '日落'}參考：${value.target_date} ${value.target_time}（香港時間）</small>
                                 <br><small style="color: #888; font-style: italic;">📊 ${factorNames[key].explanation}</small>
                             </div>
                         `;
@@ -3083,7 +3008,7 @@
                                 <div class="factor-name">
                                     ${factorNames[key].icon} ${factorNames[key].name} <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                                 </div>
-                                <div class="factor-score">${value.score}/${value.max_score || factorNames[key].maxScore}分</div>
+                                <div class="factor-score">${Number.isFinite(value.score) ? value.score + "/" + (value.max_score || factorNames[key].maxScore) + "分" : "未參與"}</div>
                             </div>
                             <div class="factor-description">
                                 ${value.description}${cloudInfo}
@@ -3097,7 +3022,7 @@
                                 <div class="factor-name">
                                     ${factorNames[key].icon} ${factorNames[key].name} <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                                 </div>
-                                <div class="factor-score">${value.score}/${value.max_score || factorNames[key].maxScore}分</div>
+                                <div class="factor-score">${Number.isFinite(value.score) ? value.score + "/" + (value.max_score || factorNames[key].maxScore) + "分" : "未參與"}</div>
                             </div>
                             <div class="factor-description">
                                 ${value.description}
@@ -3124,10 +3049,8 @@
                         <div class="factor-score">${Math.round(ml.ml_burnsky_score)}分</div>
                     </div>
                     <div class="factor-description">
-                        AI預測類別: ${ml.ml_class === 2 ? '高機率' : ml.ml_class === 1 ? '中機率' : '低機率'}<br>
-                        <small>機率分布: 低=${Math.round(ml.ml_class_probabilities.low * 100)}% | 
-                        中=${Math.round(ml.ml_class_probabilities.medium * 100)}% | 
-                        高=${Math.round(ml.ml_class_probabilities.high * 100)}%</small>
+                        模型條件分類：${ml.ml_class === 2 ? '較有利' : ml.ml_class === 1 ? '一般' : '較不利'}<br>
+                        <small>分類結果並非經校準的燒天發生機率。</small>
                         <br><small style="color: #888; font-style: italic;">🤖 基於歷史氣象數據訓練的機器學習模型，分析複雜氣象模式進行分類預測</small>
                     </div>
                 `;
@@ -3159,7 +3082,7 @@
                         <div class="factor-score">TOP 5</div>
                     </div>
                     <div class="factor-description">
-                        <strong>影響燒天機率的關鍵因子：</strong><br>
+                        <strong>影響燒天條件指數的關鍵因子：</strong><br>
                         ${featureList}
                         <br><small style="color: #888; font-style: italic;">🎯 機器學習模型分析各氣象因子對燒天預測的貢獻程度</small>
                     </div>
@@ -3193,36 +3116,15 @@
                 grid.appendChild(intensityCard);
             }
             
-            // 添加即時相片交叉驗證卡片
-            const crossCheckCard = document.createElement('div');
-            crossCheckCard.className = 'factor-card';
-            crossCheckCard.style.borderLeft = '4px solid #00b894';
-            crossCheckCard.innerHTML = `
-                <div class="factor-header">
-                    <div class="factor-name">
-                        📷 即時相片驗證 <span style="opacity: 0.6; font-size: 0.8em;">🔄</span>
-                    </div>
-                    <div class="factor-score" id="crossCheckScore">載入中...</div>
-                </div>
-                <div class="factor-description" id="crossCheckContent">
-                    <small style="color: #888;">正在分析天文台即時相片...</small>
-                </div>
-            `;
-            addMobileToggle(crossCheckCard);
-            grid.appendChild(crossCheckCard);
-            
-            // 異步載入cross check數據
-            loadCrossCheckData();
-            
             // 添加雲層厚度與顏色可見度分析卡片
-            if (details.cloud_visibility_analysis) {
+            if (details.cloud_visibility_analysis && Number.isFinite(details.cloud_visibility_analysis.color_visibility_percentage)) {
                 const cloudVisibilityCard = document.createElement('div');
                 cloudVisibilityCard.className = 'factor-card';
                 cloudVisibilityCard.style.borderLeft = '4px solid #74b9ff';
                 const analysis = details.cloud_visibility_analysis;
                 
                 // 顏色可見度百分比圓環
-                const visibilityPercentage = analysis.color_visibility_percentage || 50;
+                const visibilityPercentage = analysis.color_visibility_percentage;
                 const visibilityCircle = `
                     <div style="display: inline-block; margin: 10px 0;">
                         <svg width="60" height="60" style="transform: rotate(-90deg);">
@@ -3262,7 +3164,7 @@
                 const satelliteInfo = analysis.satellite_analysis ? 
                     `<div style="margin-top: 8px; padding: 8px; background: rgba(0, 255, 127, 0.1); border-radius: 6px; border-left: 3px solid #00ff7f;">
                         <small style="color: #00aa55; font-weight: bold;">📡 衛星數據增強</small><br>
-                        <small style="color: #666;">可信度: ${analysis.satellite_analysis.data_confidence || 0}% | 
+                        <small style="color: #666;">分析參考指標（非準確率）: ${Math.round(analysis.satellite_analysis.data_confidence || 0)}/100 |
                         雲覆蓋: ${analysis.satellite_analysis.cloud_analysis?.coverage_estimate || 'N/A'}%</small>
                      </div>` : '';
                 
@@ -3275,7 +3177,7 @@
                         <div class="factor-name">
                             ☁️ 雲層厚度分析 <span style="opacity: 0.6; font-size: 0.8em;">👁️</span>
                         </div>
-                        <div class="factor-score">${Math.round(analysis.technical_details?.combined_score || 50)}/100分</div>
+                        <div class="factor-score">${Number.isFinite(analysis.technical_details?.combined_score) ? Math.round(analysis.technical_details.combined_score) + '/100分' : '未參與'}</div>
                     </div>
                     <div class="factor-description">
                         ${visibilityCircle}
@@ -3315,10 +3217,10 @@
                         <div class="factor-name">
                             📡 衛星雲圖分析 <span style="opacity: 0.6; font-size: 0.8em;">🛰️</span>
                         </div>
-                        <div class="factor-score" style="color: ${confidenceColor};">${satellite.data_confidence || 0}%</div>
+                        <div class="factor-score" style="color: ${confidenceColor};">${Math.round(satellite.data_confidence || 0)}/100</div>
                     </div>
                     <div class="factor-description">
-                        <strong>數據可信度:</strong> <span style="color: ${confidenceColor}; font-weight: bold;">${satellite.data_confidence || 0}%</span><br>
+                        <strong>分析參考指標（非準確率）:</strong> <span style="color: ${confidenceColor}; font-weight: bold;">${Math.round(satellite.data_confidence || 0)}/100</span><br>
                         ${satellite.cloud_analysis ? `<strong>雲覆蓋率:</strong> ${satellite.cloud_analysis.coverage_estimate}%<br>` : ''}
                         ${satellite.cloud_analysis ? `<strong>主要雲型:</strong> ${satellite.cloud_analysis.dominant_type}<br>` : ''}
                         ${satellite.visibility_prediction ? `<strong>透明度:</strong> ${satellite.visibility_prediction.transparency_percentage}%<br>` : ''}
@@ -3413,13 +3315,12 @@
                     </div>
                     <div class="factor-description">
                         <strong>適宜度等級:</strong> <span style="color: ${levelColor}; font-weight: bold;">${levelText}</span><br>
-                        <strong>成功機率:</strong> ${suitability.probability || 'N/A'}<br>
                         <strong>預期品質:</strong> ${suitability.expected_quality || 'N/A'}<br>
                         <div style="margin-top: 10px; padding: 8px; background: rgba(253, 203, 110, 0.1); border-radius: 8px;">
                             <strong>💡 建議:</strong><br>
                             <small>${suitability.recommendation || '基於當前條件進行拍攝'}</small>
                         </div>
-                        <br><small style="color: #888; font-style: italic;">🎯 綜合氣象與衛星數據，評估當前燒天拍攝的成功機率</small>
+                        <br><small style="color: #888; font-style: italic;">🎯 綜合資料評估條件有利程度，並非拍攝成功機率</small>
                     </div>
                 `;
                 addMobileToggle(suitabilityCard);
@@ -3621,357 +3522,67 @@
             return HKO_WEATHER_ICONS[iconCode] || `未知天氣狀況 (代碼: ${iconCode})`;
         }
 
-        function updateWeatherData(weatherData) {
-            const container = document.getElementById('weatherData');
-            container.innerHTML = '';
-            
-            if (!weatherData) {
-                container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.8);">暫無天氣數據</p>';
-                return;
+        function appendWeatherCard(data) {
+            const item = document.createElement('div');
+            item.className = 'weather-card';
+            const label = document.createElement('div');
+            label.className = 'weather-label';
+            label.textContent = data.label;
+            const value = document.createElement('div');
+            value.className = 'weather-value';
+            value.style.fontSize = '1.3rem';
+            const available = data.value !== null && data.value !== undefined;
+            value.textContent = available
+                ? (data.key === 'weather_icon' ? getWeatherIconDescription(data.value) : String(data.value) + (data.unit || '')) : '--';
+            const origin = document.createElement('p');
+            origin.style.cssText = 'font-size: 0.8rem; line-height: 1.6; margin-top: 8px; overflow-wrap: anywhere;';
+            const kinds = { observed: '官方觀測', estimated: '模型估算', forecast: '官方每日預報', unavailable: '暫缺資料' };
+            const kind = available && kinds[data.source_kind] ? data.source_kind : 'unavailable';
+            origin.textContent = [kinds[kind], data.source, data.station].filter(Boolean).join(' · ');
+            const timestamp = document.createElement('p');
+            timestamp.style.cssText = 'font-size: 0.75rem; line-height: 1.6;';
+            const format = BurnSkyPresentation.formatHongKongDateTime;
+            let valid = data.valid_at;
+            if (typeof valid === 'string' && /^\d{8}$/.test(valid)) {
+                valid = valid.slice(0, 4) + '-' + valid.slice(4, 6) + '-' + valid.slice(6);
             }
-            
-            // 檢查是否為簡化的測試數據格式
-            if (typeof weatherData.temperature === 'number') {
-                // 簡化數據格式 (測試服務器)
-                const cards = [];
-                
-                // 溫度
-                if (weatherData.temperature) {
-                    let tempDescription = '當前溫度';
-                    if (weatherData.temperature >= 32) tempDescription += '<br><small>偏熱，有利燒天形成</small>';
-                    else if (weatherData.temperature >= 25) tempDescription += '<br><small>理想燒天溫度</small>';
-                    else if (weatherData.temperature >= 20) tempDescription += '<br><small>適中溫度</small>';
-                    else tempDescription += '<br><small>偏涼</small>';
-                    
-                    cards.push(`
-                        <div class="weather-card">
-                            <div class="weather-icon">🌡️</div>
-                            <div class="weather-value">${weatherData.temperature}°C</div>
-                            <div class="weather-label">${tempDescription}</div>
-                        </div>
-                    `);
-                }
-                
-                // 濕度
-                if (weatherData.humidity) {
-                    let humidityDescription = '相對濕度';
-                    if (weatherData.humidity >= 80) humidityDescription += '<br><small>偏高，不利燒天</small>';
-                    else if (weatherData.humidity >= 50) humidityDescription += '<br><small>適中，有利燒天</small>';
-                    else humidityDescription += '<br><small>偏低</small>';
-                    
-                    cards.push(`
-                        <div class="weather-card">
-                            <div class="weather-icon">💧</div>
-                            <div class="weather-value">${weatherData.humidity}%</div>
-                            <div class="weather-label">${humidityDescription}</div>
-                        </div>
-                    `);
-                }
-                
-                // 雲量
-                if (weatherData.cloud_cover) {
-                    let cloudDescription = '雲層覆蓋';
-                    if (weatherData.cloud_cover >= 80) cloudDescription += '<br><small>多雲，不利燒天</small>';
-                    else if (weatherData.cloud_cover >= 40) cloudDescription += '<br><small>適量雲層，有利燒天</small>';
-                    else cloudDescription += '<br><small>少雲</small>';
-                    
-                    cards.push(`
-                        <div class="weather-card">
-                            <div class="weather-icon">☁️</div>
-                            <div class="weather-value">${weatherData.cloud_cover}%</div>
-                            <div class="weather-label">${cloudDescription}</div>
-                        </div>
-                    `);
-                }
-                
-                // 風速
-                if (weatherData.wind_speed) {
-                    let windDescription = '風速';
-                    if (weatherData.wind_speed >= 20) windDescription += '<br><small>風較大，雲層移動快</small>';
-                    else if (weatherData.wind_speed >= 10) windDescription += '<br><small>微風，適合拍攝</small>';
-                    else windDescription += '<br><small>輕風</small>';
-                    
-                    cards.push(`
-                        <div class="weather-card">
-                            <div class="weather-icon">💨</div>
-                            <div class="weather-value">${weatherData.wind_speed} km/h</div>
-                            <div class="weather-label">${windDescription}</div>
-                        </div>
-                    `);
-                }
-                
-                // 氣壓
-                if (weatherData.pressure) {
-                    let pressureDescription = '氣壓';
-                    if (weatherData.pressure >= 1020) pressureDescription += '<br><small>高氣壓，天氣穩定</small>';
-                    else if (weatherData.pressure >= 1000) pressureDescription += '<br><small>正常氣壓</small>';
-                    else pressureDescription += '<br><small>低氣壓</small>';
-                    
-                    cards.push(`
-                        <div class="weather-card">
-                            <div class="weather-icon">📊</div>
-                            <div class="weather-value">${weatherData.pressure} hPa</div>
-                            <div class="weather-label">${pressureDescription}</div>
-                        </div>
-                    `);
-                }
-                
-                // 能見度
-                if (weatherData.visibility) {
-                    let visibilityDescription = '能見度';
-                    if (weatherData.visibility >= 15) visibilityDescription += '<br><small>極佳，適合拍攝</small>';
-                    else if (weatherData.visibility >= 10) visibilityDescription += '<br><small>良好</small>';
-                    else visibilityDescription += '<br><small>一般</small>';
-                    
-                    cards.push(`
-                        <div class="weather-card">
-                            <div class="weather-icon">👁️</div>
-                            <div class="weather-value">${weatherData.visibility} km</div>
-                            <div class="weather-label">${visibilityDescription}</div>
-                        </div>
-                    `);
-                }
-                
-                container.innerHTML = cards.join('');
-                return;
-            }
-            
-            // 原有的HKO複雜數據格式處理
-            // 溫度數據
-            if (weatherData.temperature && weatherData.temperature.data) {
-                const hkoTemp = weatherData.temperature.data.find(t => t.place === '香港天文台');
-                if (hkoTemp) {
-                    let tempDescription = '香港天文台測量';
-                    if (hkoTemp.value >= 32) tempDescription += '<br><small>偏熱，有利燒天形成</small>';
-                    else if (hkoTemp.value >= 25) tempDescription += '<br><small>理想燒天溫度</small>';
-                    else if (hkoTemp.value >= 20) tempDescription += '<br><small>適中溫度</small>';
-                    else tempDescription += '<br><small>偏涼</small>';
-                    
-                    container.innerHTML += `
-                        <div class="weather-card">
-                            <div class="weather-icon">🌡️</div>
-                            <div class="weather-value">${hkoTemp.value}°C</div>
-                            <div class="weather-label">${tempDescription}</div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // 濕度數據
-            if (weatherData.humidity && weatherData.humidity.data) {
-                const hkoHumidity = weatherData.humidity.data.find(h => h.place === '香港天文台');
-                if (hkoHumidity) {
-                    let humidityDescription = '相對濕度';
-                    if (hkoHumidity.value >= 80) humidityDescription += '<br><small>偏高，不利燒天</small>';
-                    else if (hkoHumidity.value >= 50) humidityDescription += '<br><small>適中，有利燒天</small>';
-                    else humidityDescription += '<br><small>偏低，需注意空氣品質</small>';
-                    
-                    container.innerHTML += `
-                        <div class="weather-card">
-                            <div class="weather-icon">💧</div>
-                            <div class="weather-value">${hkoHumidity.value}%</div>
-                            <div class="weather-label">${humidityDescription}</div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // UV指數 - 總是顯示 UV 指數卡片
-            let uvValue = '';
-            let uvDescription = 'UV指數';
-            
-            // 嘗試從不同格式中提取 UV 值
-            if (typeof weatherData.uvindex === 'object' && weatherData.uvindex.data && weatherData.uvindex.data.length > 0) {
-                uvValue = weatherData.uvindex.data[0].value;
-            } else if (typeof weatherData.uvindex === 'string' && weatherData.uvindex.trim() !== '') {
-                uvValue = weatherData.uvindex.trim();
-            } else if (typeof weatherData.uvindex === 'number') {
-                uvValue = weatherData.uvindex;
-            }
-            
-            // 如果有有效的 UV 值，顯示正常的 UV 卡片
-            if (uvValue !== '' && uvValue !== undefined && uvValue !== null && !isNaN(uvValue)) {
-                const uvNum = parseFloat(uvValue);
-                if (uvNum >= 8) uvDescription += '<br><small>極高，日照充足</small>';
-                else if (uvNum >= 6) uvDescription += '<br><small>高，日照良好</small>';
-                else if (uvNum >= 3) uvDescription += '<br><small>中等</small>';
-                else if (uvNum > 0) uvDescription += '<br><small>低</small>';
-                else uvDescription += '<br><small>無或極低</small>';
-                
-                container.innerHTML += `
-                    <div class="weather-card">
-                        <div class="weather-icon">☀️</div>
-                        <div class="weather-value">${uvValue}</div>
-                        <div class="weather-label">${uvDescription}</div>
-                    </div>
-                `;
-            } else {
-                // 當UV數據為空或無效時，總是顯示夜間狀態
-                container.innerHTML += `
-                    <div class="weather-card">
-                        <div class="weather-icon">🌙</div>
-                        <div class="weather-value">--</div>
-                        <div class="weather-label">UV指數<br><small>夜間或無數據</small></div>
-                    </div>
-                `;
-            }
-            
-            // 風速數據
-            if (weatherData.wind && weatherData.wind.description) {
-                const windData = weatherData.wind;
-                let windComment = '';
-                
-                // 根據風級給出燒天影響評估
-                const avgBeaufort = (windData.speed_beaufort_min + windData.speed_beaufort_max) / 2;
-                if (avgBeaufort <= 2) windComment = '<br><small>微風，有利燒天持續</small>';
-                else if (avgBeaufort <= 4) windComment = '<br><small>和風，條件適中</small>';
-                else if (avgBeaufort <= 6) windComment = '<br><small>強風，可能影響燒天</small>';
-                else windComment = '<br><small>烈風，不利燒天形成</small>';
-                
-                // 顯示風級範圍
-                let windLevel = '';
-                if (windData.speed_beaufort_min === windData.speed_beaufort_max) {
-                    windLevel = `${windData.speed_beaufort_min}級`;
-                } else {
-                    windLevel = `${windData.speed_beaufort_min}-${windData.speed_beaufort_max}級`;
-                }
-                
-                // 從原始描述中提取風向，而不是使用英文縮寫
-                let windDirection = '';
-                const description = windData.description || '';
-                
-                // 從描述中匹配風向 - 按長度排序，避免誤匹配
-                if (description.includes('東北風')) windDirection = '東北';
-                else if (description.includes('東南風')) windDirection = '東南';
-                else if (description.includes('西南風')) windDirection = '西南';
-                else if (description.includes('西北風')) windDirection = '西北';
-                else if (description.includes('偏北風')) windDirection = '偏北';
-                else if (description.includes('偏東風')) windDirection = '偏東';
-                else if (description.includes('偏南風')) windDirection = '偏南';
-                else if (description.includes('偏西風')) windDirection = '偏西';
-                else if (description.includes('北風')) windDirection = '北';
-                else if (description.includes('東風')) windDirection = '東';
-                else if (description.includes('南風')) windDirection = '南';
-                else if (description.includes('西風')) windDirection = '西';
-                else {
-                    // 如果沒有匹配到，使用英文縮寫轉換
-                    const directionMap = {
-                        'N': '北', 'NE': '東北', 'E': '東', 'SE': '東南',
-                        'S': '南', 'SW': '西南', 'W': '西', 'NW': '西北'
-                    };
-                    windDirection = directionMap[windData.direction] || windData.direction || '';
-                }
-                
-                container.innerHTML += `
-                    <div class="weather-card">
-                        <div class="weather-icon">💨</div>
-                        <div class="weather-value">${windLevel}</div>
-                        <div class="weather-label">${windDirection}風 (${windData.speed_kmh_min}-${windData.speed_kmh_max}km/h)${windComment}</div>
-                    </div>
-                `;
-            }
-            
-            // 天氣圖標
-            if (weatherData.icon && weatherData.icon.length > 0) {
-                const iconCode = weatherData.icon[0];
-                const iconDescription = getWeatherIconDescription(iconCode);
-                container.innerHTML += `
-                    <div class="weather-card">
-                        <div class="weather-icon">🌤️</div>
-                        <div class="weather-value">${iconDescription}</div>
-                        <div class="weather-label">當前天氣狀況</div>
-                    </div>
-                `;
-            }
-            
-            // 降雨量數據
-            if (weatherData.rainfall && weatherData.rainfall.data) {
-                let totalRainfall = 0;
-                weatherData.rainfall.data.forEach(r => {
-                    if (typeof r === 'object' && r.value && r.value > 0) {
-                        totalRainfall += r.value;
-                    }
-                });
-                
-                let rainDescription = '過去一小時降雨量';
-                if (totalRainfall === 0) rainDescription += '<br><small>無降雨，空氣清晰</small>';
-                else if (totalRainfall < 5) rainDescription += '<br><small>輕微降雨</small>';
-                else if (totalRainfall < 15) rainDescription += '<br><small>中等降雨</small>';
-                else rainDescription += '<br><small>大雨，不利燒天</small>';
-                
-                container.innerHTML += `
-                    <div class="weather-card">
-                        <div class="weather-icon">🌧️</div>
-                        <div class="weather-value">${totalRainfall.toFixed(1)}mm</div>
-                        <div class="weather-label">${rainDescription}</div>
-                    </div>
-                `;
-            }
-            
-            // 天氣警告
-            if (weatherData.warningMessage && weatherData.warningMessage.length > 0) {
-                // 取得第一個警告的主要內容，去除時效信息
-                let warningContent = weatherData.warningMessage[0];
-                // 截取警告的主要部分 (去除時效說明)
-                let mainWarning = warningContent.split('，')[0]; // 取第一部分
-                if (mainWarning.includes('警告')) {
-                    mainWarning = mainWarning.replace(/現正生效.*/, '').trim();
-                }
-                
-                container.innerHTML += `
-                    <div class="weather-card" style="border-left: 4px solid #ff6b6b;">
-                        <div class="weather-icon">⚠️</div>
-                        <div class="weather-value" style="font-size: 1.3rem;">${mainWarning}</div>
-                        <div class="weather-label">天氣警告生效中<br><small>可能影響拍攝條件</small></div>
-                    </div>
-                `;
-            }
-        }
-        
-        function updateAirQualityData(airQualityData) {
-            const container = document.getElementById('weatherData');
-            
-            // 空氣品質數據
-            if (airQualityData) {
-                const aqhi = airQualityData.aqhi || 4;
-                const level = airQualityData.level || '中';
-                const pm25 = airQualityData.pm25 || 25;
-                const impact = airQualityData.impact || '一般';
-                const source = airQualityData.source || '未知';
-                
-                // 根據 AQHI 選擇圖標和顏色
-                let icon = '🌫️';
-                let borderColor = '#4CAF50';
-                let description = '空氣品質一般';
-                
-                if (aqhi <= 3) {
-                    icon = '✨';
-                    borderColor = '#4CAF50';
-                    description = `空氣清澈透明<br><small>極佳燒天條件</small>`;
-                } else if (aqhi <= 6) {
-                    icon = '🌫️';
-                    borderColor = '#FFC107';
-                    description = `空氣品質一般<br><small>良好燒天條件</small>`;
-                } else if (aqhi <= 9) {
-                    icon = '😷';
-                    borderColor = '#FF9800';
-                    description = `空氣品質欠佳<br><small>影響色彩飽和度</small>`;
-                } else {
-                    icon = '🚫';
-                    borderColor = '#F44336';
-                    description = `空氣污染嚴重<br><small>大幅影響燒天品質</small>`;
-                }
-                
-                container.innerHTML += `
-                    <div class="weather-card" style="border-left: 4px solid ${borderColor};">
-                        <div class="weather-icon">${icon}</div>
-                        <div class="weather-value">AQHI ${aqhi}</div>
-                        <div class="weather-label">${description}<br><small>PM2.5: ${pm25}μg/m³ | ${source}</small></div>
-                    </div>
-                `;
-            }
+            timestamp.textContent = (kind === 'estimated' ? '基礎觀測更新：' : '來源更新：') + format(data.updated_at) + '（香港時間）'
+                + (valid ? ' · 適用：' + (/^\d{4}-\d{2}-\d{2}$/.test(valid) ? valid : format(valid) + '（香港時間）') : '');
+            const note = document.createElement('p');
+            note.style.cssText = 'font-size: 0.8rem; line-height: 1.6; margin-top: 6px;';
+            note.textContent = data.note || '';
+            item.append(label, value, origin, timestamp, note);
+            document.getElementById('weatherData').appendChild(item);
         }
 
+        function updateWeatherData(weatherData, presentation) {
+            const container = document.getElementById('weatherData');
+            container.replaceChildren();
+            const source = document.getElementById('weatherSourceSummary');
+            if (!presentation || !Array.isArray(presentation.cards)) {
+                source.textContent = '未取得可確認來源的天氣資料，請重新載入。';
+                return;
+            }
+            source.textContent = presentation.summary;
+            for (const card of presentation.cards) appendWeatherCard(card);
+        }
+
+        function updateAirQualityData(airQualityData) {
+            // A model factor score is not an AQHI or PM2.5 measurement.
+            const data = airQualityData || {};
+            const kind = data.source_kind;
+            const numeric = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+            const usable = ['observed', 'estimated'].includes(kind);
+            const aqhi = usable && numeric(data.aqhi) ? data.aqhi : null;
+            const pm25 = usable && numeric(data.pm25) ? data.pm25 : null;
+            appendWeatherCard({ key: 'aqhi', label: '空氣品質健康指數 AQHI', value: aqhi,
+                source_kind: aqhi === null ? 'unavailable' : kind, source: data.source,
+                updated_at: data.timestamp, station: data.station,
+                note: aqhi === null ? '未提供可用監測數據；空氣品質因子分數並非AQHI。' : data.note });
+            if (pm25 !== null) appendWeatherCard({ key: 'pm25', label: 'PM2.5', value: pm25, unit: ' μg/m³',
+                source_kind: kind, source: data.source, updated_at: data.timestamp, station: data.station,
+                note: kind === 'estimated' ? '模型估算，並非污染物實測。' : data.note });
+        }
         function updateAnalysisSummary(summary) {
             const container = document.getElementById('analysisSummary');
             container.innerHTML = '';
@@ -4103,6 +3714,8 @@
             
             if (grid.style.maxHeight === '0px' || grid.style.maxHeight === '') {
                 // 收起狀態 -> 展開
+                grid.style.display = 'grid';
+                document.getElementById('factorsToggle').setAttribute('aria-expanded', 'true');
                 grid.style.maxHeight = 'none';
                 grid.style.opacity = '1';
                 grid.style.marginTop = '30px';
@@ -4113,6 +3726,8 @@
                 localStorage.setItem('factorsExpanded', 'true');
             } else {
                 // 展開狀態 -> 收起
+                grid.style.display = 'none';
+                document.getElementById('factorsToggle').setAttribute('aria-expanded', 'false');
                 grid.style.maxHeight = '0px';
                 grid.style.opacity = '0';
                 grid.style.marginTop = '0px';
@@ -4437,71 +4052,6 @@
             }
         }
         
-        // 載入即時相片交叉驗證數據
-        async function loadCrossCheckData() {
-            try {
-                const data = await APIUtils.fetchAPI('/api/prediction/cross-check');
-                
-                if (data.status === 'success') {
-                    const crossCheck = data.cross_check;
-                    const webcam = data.webcam_data;
-                    
-                    // 更新分數顯示
-                    const scoreElement = document.getElementById('crossCheckScore');
-                    const contentElement = document.getElementById('crossCheckContent');
-                    
-                    if (scoreElement && contentElement) {
-                        // 根據一致性設定顏色
-                        let consistencyColor = '#00b894';
-                        if (crossCheck.consistency === 'excellent') consistencyColor = '#00b894';
-                        else if (crossCheck.consistency === 'good') consistencyColor = '#fdcb6e';
-                        else if (crossCheck.consistency === 'fair') consistencyColor = '#e17055';
-                        else consistencyColor = '#d63031';
-                        
-                        scoreElement.textContent = crossCheck.consistency_text;
-                        scoreElement.style.color = consistencyColor;
-                        
-                        // 構建內容
-                        let content = `
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
-                                <div style="text-align: center; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 8px;">
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;">${crossCheck.prediction_score}</div>
-                                    <div style="font-size: 0.85rem; color: #666;">算法預測</div>
-                                </div>
-                                <div style="text-align: center; padding: 10px; background: rgba(0, 184, 148, 0.1); border-radius: 8px;">
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: #00b894;">${crossCheck.webcam_score}</div>
-                                    <div style="font-size: 0.85rem; color: #666;">即時相片</div>
-                                </div>
-                            </div>
-                            <div style="margin: 10px 0; padding: 10px; background: rgba(${consistencyColor === '#00b894' ? '0, 184, 148' : consistencyColor === '#fdcb6e' ? '253, 203, 110' : '214, 48, 49'}, 0.1); border-radius: 8px; border-left: 3px solid ${consistencyColor};">
-                                <strong>評估：</strong>${crossCheck.consistency_text}<br>
-                                <small>分數差異: ${crossCheck.score_difference}分</small>
-                            </div>
-                        `;
-                        
-                        if (!webcam.is_sunset_time) {
-                            content += `<small style="color: #e17055;">⏰ 當前非燒天時段，實況分數已調整</small><br>`;
-                        }
-                        
-                        if (data.analysis_notes && data.analysis_notes.length > 0) {
-                            content += `<small style="color: #666;">💡 ${data.analysis_notes.join(' | ')}</small><br>`;
-                        }
-                        
-                        content += `<br><small style="color: #888; font-style: italic;">📊 ${data.recommendation}</small>`;
-                        content += `<br><br><small style="color: #999;">已分析 ${webcam.webcam_count} 個攝影機位置</small>`;
-                        
-                        contentElement.innerHTML = content;
-                    }
-                }
-            } catch (error) {
-                console.error('❌ 載入交叉驗證失敗:', error);
-                const scoreElement = document.getElementById('crossCheckScore');
-                const contentElement = document.getElementById('crossCheckContent');
-                if (scoreElement) scoreElement.textContent = '載入失敗';
-                if (contentElement) contentElement.innerHTML = '<small style="color: #999;">無法載入即時相片分析</small>';
-            }
-        }
-
         function displayPhotoCases(result) {
             const resultDiv = document.getElementById('photoAnalysisResult');
             
@@ -4629,14 +4179,18 @@
             const icon = document.getElementById('factorsToggleIcon');
             const expanded = localStorage.getItem('factorsExpanded');
             
-            // 預設展開，除非用戶之前收起過
-            if (expanded === 'false') {
+            // 首次閱讀先看摘要；曾展開的用戶保留偏好。
+            if (expanded !== 'true') {
+                grid.style.display = 'none';
+                document.getElementById('factorsToggle').setAttribute('aria-expanded', 'false');
                 grid.style.maxHeight = '0px';
                 grid.style.opacity = '0';
                 grid.style.marginTop = '0px';
                 icon.style.transform = 'rotate(0deg)';
                 icon.textContent = '🔽';
             } else {
+                grid.style.display = 'grid';
+                document.getElementById('factorsToggle').setAttribute('aria-expanded', 'true');
                 grid.style.maxHeight = 'none';
                 grid.style.opacity = '1';
                 grid.style.marginTop = '30px';
@@ -4678,8 +4232,7 @@
 
         // 高亮當前燒天分數對應的範圍
         function highlightCurrentScoreRange() {
-            const scoreElement = document.getElementById('scoreNumber');
-            const currentScore = parseInt(scoreElement.textContent) || 0;
+            const currentScore = Number(currentPredictedScore) || 0;
             const scoreItems = document.querySelectorAll('.score-range-item');
             
             // 清除所有高亮
@@ -4695,10 +4248,10 @@
                 targetItem = scoreItems[0]; // 80-100
             } else if (currentScore >= 65) {
                 targetItem = scoreItems[1]; // 65-79
-            } else if (currentScore >= 50) {
-                targetItem = scoreItems[2]; // 50-64
+            } else if (currentScore >= 45) {
+                targetItem = scoreItems[2]; // 45-64
             } else if (currentScore >= 30) {
-                targetItem = scoreItems[3]; // 30-49
+                targetItem = scoreItems[3]; // 30-44
             } else {
                 targetItem = scoreItems[4]; // 0-29
             }
@@ -5473,78 +5026,35 @@
         // ==================== 頁面初始化 ====================
         // 並行載入優化版本 - 所有API同時載入
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 開始並行載入頁面數據...');
-            const startTime = performance.now();
             updateNotificationButton();
-            
-            // 顯示載入狀態
-            APIUtils.showGlobalLoading('正在載入燒天預測系統...');
-            
-            try {
-                // 🌅 自動根據時間設置預測類型（日落後自動切換到日出）
-                initAutoPredictionType();
-                
-                // 初始化區塊狀態（同步操作，不耗時）
-                initializeFactorsSection();
-                initializeScoreReferenceSection();
-                
-                // 首屏只等預測結果；案例統計在背景更新，避免延長全頁 loading。
-                const requests = [
-                    { name: '主預測數據', fn: () => loadPrediction() }
-                ];
-                loadPhotoCasesCount();
-                
-                APIUtils.updateLoadingProgress(0, requests.length);
-                
-                // 使用 Promise.allSettled 確保所有請求都完成（即使部分失敗）
-                const results = await Promise.allSettled(
-                    requests.map((req, index) => {
-                        return req.fn().then(result => {
-                            APIUtils.updateLoadingProgress(index + 1, requests.length);
-                            console.log(`✅ ${req.name} 載入完成`);
-                            return result;
-                        });
-                    })
-                );
-                
-                // 統計結果
-                const successCount = results.filter(r => r.status === 'fulfilled').length;
-                const failCount = results.length - successCount;
-                
-                const endTime = performance.now();
-                const loadTime = ((endTime - startTime) / 1000).toFixed(2);
-                
-                console.log(`🎉 頁面載入完成！耗時 ${loadTime}秒 (成功: ${successCount}, 失敗: ${failCount})`);
-                
-                // 顯示成功提示
-                if (failCount === 0) {
-                    APIUtils.showToast(`頁面載入成功 (${loadTime}秒)`, 'success', 3000);
-                } else {
-                    APIUtils.showToast(`頁面部分載入成功 (${failCount}個請求失敗)`, 'warning', 4000);
-                }
-                
-                // 處理失敗的請求
-                results.forEach((result, index) => {
-                    if (result.status === 'rejected') {
-                        console.error(`❌ ${requests[index].name} 載入失敗:`, result.reason);
-                    }
+            initializeFactorsSection();
+            initializeScoreReferenceSection();
+            // 靜態內容及實況不等待主評估成功。
+            scheduleWebcamPreview();
+            loadPhotoCasesCount();
+            loadLocationRecommendations(document.getElementById('predictionType').value);
+            for (const id of ['predictionType', 'advanceHours']) {
+                document.getElementById(id).addEventListener('change', () => {
+                    predictionSelectionChanged = true;
+                    loadPrediction();
                 });
-                
-            } catch (error) {
-                console.error('❌ 頁面初始化錯誤:', error);
-                APIUtils.showToast('頁面載入失敗，請重新整理頁面', 'error', 8000);
-            } finally {
-                // 隱藏載入狀態
-                APIUtils.hideGlobalLoading();
             }
+            // 使用者已手動選擇時，不覆蓋其選項或再發出重複請求。
+            await initAutoPredictionType();
+            if (!predictionSelectionChanged) loadPrediction();
         });
-        
         // 每5分鐘自動更新（同樣並行載入）
+        // Keep solar references current across an event ending and Hong Kong midnight.
+        setInterval(() => {
+            updateViewingPlan();
+            const hkDate = new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
+            if (!sunTimesLoading && (!cachedSunTimes || cachedSunTimes.today?.date !== hkDate)) fetchSunTimes();
+        }, 60000);
         setInterval(async () => {
             console.log('🔄 自動更新預測數據...');
             try {
                 // 🌅 每次更新時也檢查是否需要切換預測類型
-                initAutoPredictionType();
+                await initAutoPredictionType();
                 
                 await Promise.allSettled([
                     loadPrediction(),

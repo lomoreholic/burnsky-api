@@ -27,12 +27,15 @@ import json
 from modules.feedback import calculate_real_accuracy, feedback_bp
 from modules.history import history_bp
 from modules.prediction_routes import create_prediction_blueprint
+from modules.prediction_comparison import AssessmentStore, build_comparison
+from modules.prediction_quality import require_prediction_inputs
 from modules.scheduler_service import HourlyPredictionScheduler
 from modules.weather_inputs import WeatherInputService
 from modules.warning_risk import FutureWarningRiskService
 from modules.warning_assessment import CurrentWarningAssessmentService
 from modules.warning_rules import calculate_warning_impact_advanced
 from modules.prediction_response import PredictionResponseBuilder
+from modules.prediction_presentation import HK_TIMEZONE, build_viewing_windows, get_condition_level
 
 # ========== 模塊化組件導入 ==========
 # 優先使用模塊化組件，如果不可用則使用內嵌函數
@@ -1781,19 +1784,8 @@ def parse_warning_details(warning_input):
     return warning_info
 
 def get_prediction_level(score):
-    """根據燒天分數返回預測等級 - 調整後更符合實際情況"""
-    if score >= 80:
-        return "極高 - 絕佳燒天機會"
-    elif score >= 65:
-        return "高 - 良好燒天機會"
-    elif score >= 45:
-        return "中等 - 明顯燒天機會"
-    elif score >= 30:
-        return "輕微 - 有燒天可能"
-    elif score >= 15:
-        return "低 - 燒天機會較小"
-    else:
-        return "極低 - 幾乎不會燒天"
+    """以條件有利程度描述指數，不宣稱發生機率。"""
+    return get_condition_level(score)
 
 @app.route("/")
 def home():
@@ -1814,6 +1806,8 @@ warning_assessment_service = CurrentWarningAssessmentService(
     parse_warning=parse_warning_details,
     calculate_impact=calculate_warning_impact_advanced
 )
+assessment_store = AssessmentStore(PREDICTION_HISTORY_DB)
+
 prediction_response_builder = PredictionResponseBuilder(
     get_prediction_level=get_prediction_level,
     get_sun_times=get_seasonal_sun_times,
@@ -1840,6 +1834,9 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     forecast_data = inputs.forecast_data
     ninday_data = inputs.ninday_data
     warning_data = inputs.warning_data
+
+    # Validate original observations too: forecast defaults must not conceal an outage.
+    data_quality = require_prediction_inputs(future_weather_data, weather_data, forecast_data, advance_hours)
     
     print(f"🚨 獲取天氣警告數據: {len(warning_data.get('details', [])) if warning_data else 0} 個警告")
     
@@ -1853,6 +1850,16 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     unified_result = calculate_burnsky_score_unified(
         future_weather_data, forecast_data, ninday_data, prediction_type, advance_hours
     )
+
+    if unified_result.get('error'):
+        raise RuntimeError('評分計算失敗，未產生有效評估')
+    unified_result['data_quality'] = data_quality
+    data_quality['input_coverage'] = unified_result.get('input_coverage', {})
+    if unified_result.get('ml_score_source') == 'unavailable':
+        data_quality['limitations'].append(unified_result['ml_unavailable_reason'])
+    data_quality['limitations'].append('舊雲厚度額外加減分含預設值，暫停使用。')
+    unified_result['analysis'].update(confidence='limited', recommendation=data_quality['summary'],
+                                      summary=data_quality['summary'])
     
     # 從統一結果中提取分數和詳情
     score = unified_result['final_score']
@@ -1940,6 +1947,11 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         warning_analysis=warning_analysis
     )
     
+    try:
+        result['assessment_id'] = assessment_store.save(result)
+    except sqlite3.Error:
+        result['assessment_id'] = None
+        result['comparison_unavailable_reason'] = '未能保存這次評估；稍後重試。'
     flask_cache.set(prediction_cache_key, result, timeout=180)
     print(f"✅ 預測結果已快取: {prediction_cache_key}")
     
@@ -2012,7 +2024,6 @@ def api_docs_page():
     return render_template("api_docs.html")
 
 @app.route("/api/sun-times")
-@flask_cache.cached(timeout=1800)  # 30分鐘快取
 def get_sun_times_api():
     """
     四季日出日落時間自動調整 API
@@ -2020,7 +2031,8 @@ def get_sun_times_api():
     """
     from datetime import date, timedelta
     
-    today = date.today()
+    generated_at = datetime.now(HK_TIMEZONE)
+    today = generated_at.date()
     tomorrow = today + timedelta(days=1)
     
     # 使用四季自動調整系統獲取精確時間
@@ -2075,6 +2087,8 @@ def get_sun_times_api():
     
     return jsonify({
         "status": "success",
+        "generated_at": generated_at.isoformat(),
+        "viewing_windows": build_viewing_windows(generated_at, get_seasonal_sun_times),
         "calculation_method": today_sun['method'],
         "calculation_note": "使用" + ("天文計算精確時間" if today_sun['method'] == 'astral' else "月度時間表近似值"),
         "today": {
@@ -2121,105 +2135,19 @@ def get_sun_times_api():
     })
 
 @app.route("/api/prediction/cross-check", methods=["GET"])
-@flask_cache.cached(timeout=120, query_string=True)
 def cross_check_prediction_with_webcam():
-    """
-    交叉驗證預測與即時攝影機分析
-    
-    對比算法預測分數與即時相片分析結果，提供準確度參考
-    """
+    """Compare the immutable assessment selected by the user, never a new sunset score."""
+    identifier = request.args.get('assessment_id', '')
+    if len(identifier) != 64 or any(char not in '0123456789abcdef' for char in identifier):
+        return jsonify(status='error', message='請先取得並選擇一筆已保存的評估。'), 400
     try:
-        # 獲取當前預測
-        prediction_result = predict_burnsky_core('sunset', 0)
-        prediction_score = prediction_result.get('burnsky_score', 0)
-        
-        # 獲取即時攝影機分析
-        webcam_conditions = webcam_monitor.get_current_conditions(detailed=True)
-        webcam_score = webcam_conditions.get('overall_sunset_potential', 0)
-        
-        # 計算差異
-        score_diff = abs(prediction_score - webcam_score)
-        
-        # 判斷一致性
-        if score_diff <= 10:
-            consistency = 'excellent'
-            consistency_text = '預測與實況高度一致'
-        elif score_diff <= 20:
-            consistency = 'good'
-            consistency_text = '預測與實況基本一致'
-        elif score_diff <= 30:
-            consistency = 'fair'
-            consistency_text = '預測與實況有些差異'
-        else:
-            consistency = 'poor'
-            consistency_text = '預測與實況差異較大'
-        
-        # 分析差異原因
-        analysis_notes = []
-        if prediction_score > webcam_score + 15:
-            analysis_notes.append('算法預測較樂觀，實際天空狀況可能不如預期')
-        elif webcam_score > prediction_score + 15:
-            analysis_notes.append('實際天空狀況優於預測，可能出現驚喜')
-        
-        # 檢查是否在燒天時段
-        webcam_analyses = webcam_conditions.get('individual_analyses', {})
-        is_sunset_time = False
-        if webcam_analyses:
-            first_analysis = next(iter(webcam_analyses.values()))
-            is_sunset_time = first_analysis.get('analysis', {}).get('sunset_potential', {}).get('is_sunset_time', False)
-        
-        if not is_sunset_time:
-            analysis_notes.append('當前非燒天時段，實況分數已調整降低')
-        
-        return jsonify({
-            'status': 'success',
-            'cross_check': {
-                'prediction_score': round(prediction_score, 1),
-                'webcam_score': round(webcam_score, 1),
-                'score_difference': round(score_diff, 1),
-                'consistency': consistency,
-                'consistency_text': consistency_text
-            },
-            'prediction_data': {
-                'score': prediction_score,
-                'level': prediction_result.get('prediction_level', 'Unknown'),
-                'method': prediction_result.get('scoring_method', 'unified')
-            },
-            'webcam_data': {
-                'overall_score': webcam_score,
-                'webcam_count': webcam_conditions.get('webcam_count', 0),
-                'locations': webcam_conditions.get('recommended_locations', []),
-                'is_sunset_time': is_sunset_time
-            },
-            'analysis_notes': analysis_notes,
-            'timestamp': datetime.now().isoformat(),
-            'recommendation': _generate_cross_check_recommendation(
-                prediction_score, webcam_score, is_sunset_time
-            )
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'交叉驗證失敗: {str(e)}',
-            'timestamp': datetime.now().isoformat()
-        }), 500
-
-def _generate_cross_check_recommendation(prediction_score, webcam_score, is_sunset_time):
-    """生成交叉驗證建議"""
-    avg_score = (prediction_score + webcam_score) / 2
-    
-    if not is_sunset_time:
-        return '當前非燒天時段，建議稍後再查看或關注即將到來的燒天時段'
-    
-    if avg_score >= 65:
-        return '✅ 預測與實況均顯示良好條件，建議立即前往拍攝'
-    elif avg_score >= 50:
-        return '⚠️ 條件尚可，建議密切觀察天空變化'
-    elif avg_score >= 35:
-        return '📊 條件一般，可考慮等待更好時機'
-    else:
-        return '❌ 當前條件不佳，建議等待明天或其他時段'
+        prediction = assessment_store.get(identifier)
+        if prediction is None:
+            return jsonify(status='error', message='找不到原評估；請重新取得評估。'), 404
+        return jsonify(build_comparison(prediction, webcam_monitor.fetcher, datetime.now(HK_TIMEZONE),
+                                        clock=lambda: datetime.now(HK_TIMEZONE)))
+    except Exception:
+        return jsonify(status='error', message='實況對照暫時未能載入，請稍後重試。'), 503
 
 @app.route("/api/webcam/current", methods=["GET"])
 @flask_cache.cached(timeout=120, query_string=True)  # 2分鐘快取，攝影機狀態變化較快
@@ -2680,6 +2608,9 @@ def chart_debug():
 @app.route("/api/burnsky-dashboard-data")
 def burnsky_dashboard_data():
     """燒天歷史儀表板數據API"""
+    from datetime import datetime, timezone
+    from modules.prediction_presentation import HK_TIMEZONE
+    conn = None
     try:
         conn = sqlite3.connect(PREDICTION_HISTORY_DB)
         cursor = conn.cursor()
@@ -2691,7 +2622,7 @@ def burnsky_dashboard_data():
         cursor.execute('SELECT COUNT(*) FROM prediction_history WHERE score >= 50 AND score < 70')
         medium_warnings = cursor.fetchone()[0]
         
-        cursor.execute('SELECT COUNT(*) FROM prediction_history WHERE score >= 30 AND score < 50')
+        cursor.execute('SELECT COUNT(*) FROM prediction_history WHERE score < 50')
         low_warnings = cursor.fetchone()[0]
         
         total_warnings = high_warnings + medium_warnings + low_warnings
@@ -2729,13 +2660,13 @@ def burnsky_dashboard_data():
                 strftime('%H', timestamp) as hour,
                 COUNT(*) as count
             FROM prediction_history 
-            WHERE score >= 60
+            WHERE score >= 70
             GROUP BY hour
             ORDER BY count DESC
             LIMIT 1
         ''')
         peak_hour_data = cursor.fetchone()
-        peak_hour = f"{peak_hour_data[0]}:00-{int(peak_hour_data[0])+1}:00" if peak_hour_data else "18:00-19:00"
+        peak_hour = f"{(int(peak_hour_data[0])+8) % 24:02d}:00-{(int(peak_hour_data[0])+9) % 24:02d}:00" if peak_hour_data else None
         
         # 季節性分析
         cursor.execute('''
@@ -2756,13 +2687,16 @@ def burnsky_dashboard_data():
         # 分析季節性模式（使用真實數據）
         season_names = {'winter': '冬季', 'spring': '春季', 'summer': '夏季', 'autumn': '秋季'}
         season_scores = {row[0]: {'avg': row[1], 'count': row[2]} for row in seasonal_data}
-        best_season = max(season_scores.items(), key=lambda x: x[1]['avg']) if season_scores else ('winter', {'avg': 0, 'count': 0})
-        seasonal_insight = f"{season_names.get(best_season[0], '冬季')}燒天機率最高（平均分數 {best_season[1]['avg']:.1f}），共 {best_season[1]['count']} 次記錄"
+        best_season = max(season_scores.items(), key=lambda x: x[1]['avg']) if season_scores else None
+        seasonal_insight = (
+            f"已記錄季節中，{season_names[best_season[0]]}的平均條件分數最高（{best_season[1]['avg']:.1f}分，{best_season[1]['count']}筆）；不代表實際燒天發生率。"
+            if len(season_scores) >= 2 else "季節紀錄未足以比較，暫無統計結論。"
+        )
         
         # 分析濕度影響（從 factors JSON 中提取）
         cursor.execute('''
             SELECT factors FROM prediction_history 
-            WHERE score >= 60 AND factors IS NOT NULL
+            WHERE score >= 70 AND factors IS NOT NULL
             LIMIT 200
         ''')
         factors_data = cursor.fetchall()
@@ -2814,7 +2748,7 @@ def burnsky_dashboard_data():
                 COUNT(CASE WHEN CAST(strftime('%w', timestamp) AS INTEGER) NOT IN (0, 6) THEN 1 END) as weekday_count,
                 COUNT(*) as total_count
             FROM prediction_history 
-            WHERE score >= 60
+            WHERE score >= 70
         ''')
         day_pattern = cursor.fetchone()
         
@@ -2825,14 +2759,12 @@ def burnsky_dashboard_data():
             weekend_ratio = 0
             weekday_ratio = 0
         
-        # 計算季節機率（基於記錄數量）
+        # 季節紀錄佔比只描述樣本分布，不能當作燒天機率。
         total_seasonal_count = sum(s[2] for s in seasonal_data) if seasonal_data else 1
         winter_count = next((s[2] for s in seasonal_data if s[0] == 'winter'), 0)
         summer_count = next((s[2] for s in seasonal_data if s[0] == 'summer'), 0)
-        winter_probability = round((winter_count / total_seasonal_count) * 100) if total_seasonal_count > 0 else 0
-        summer_probability = round((summer_count / total_seasonal_count) * 100) if total_seasonal_count > 0 else 0
-        
-        conn.close()
+        winter_record_share = round((winter_count / total_seasonal_count) * 100) if seasonal_data else None
+        summer_record_share = round((summer_count / total_seasonal_count) * 100) if seasonal_data else None
         
         # 處理高影響警告數據
         high_impact_warnings = []
@@ -2840,8 +2772,11 @@ def burnsky_dashboard_data():
             timestamp, score, factors_json, warnings_json = record
             try:
                 # 解析時間
-                from datetime import datetime
                 dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                # SQLite CURRENT_TIMESTAMP 儲存 UTC；轉換後才交給畫面顯示。
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                dt = dt.astimezone(HK_TIMEZONE)
                 formatted_time = dt.strftime('%Y-%m-%d %H:%M')
                 
                 # 生成警告描述
@@ -2860,16 +2795,9 @@ def burnsky_dashboard_data():
                 
                 description = f"{severity}：預測評分 {score}/100"
                 
-                # 添加建議地點 (基於評分)
-                if score >= 85:
-                    description += "，覆蓋全港"
-                elif score >= 75:
-                    description += "，建議維港拍攝"
-                else:
-                    description += "，建議西區拍攝"
-                
                 high_impact_warnings.append({
                     'time': formatted_time,
+                    'timestamp': dt.isoformat(),
                     'message': description,
                     'severity_class': severity_class,
                     'score': score
@@ -2879,6 +2807,11 @@ def burnsky_dashboard_data():
         
         # 構建返回數據
         response_data = {
+            'status': 'success',
+            'data_source': 'prediction_history',
+            'has_data': total_warnings > 0,
+            'generated_at': datetime.now(timezone.utc).isoformat(),
+            'record_scope': '總覽及高分紀錄涵蓋已保存的歷史預測；月度圖表涵蓋最近12個月。統計描述模型評分，並非實拍結果或最佳拍攝時間。',
             'overview': {
                 'total_warnings': total_warnings,
                 'high_warnings': high_warnings,
@@ -2907,13 +2840,16 @@ def burnsky_dashboard_data():
             },
             'time_pattern': {
                 'peak_hour': peak_hour,
+                'timezone': 'Asia/Hong_Kong',
                 'weekend_ratio': weekend_ratio,
                 'weekday_ratio': weekday_ratio
             },
             'seasonal': {
-                'winter_probability': winter_probability,
-                'summer_probability': summer_probability,
-                'current_trend': 'up' if best_season[0] == 'winter' else 'stable'
+                'winter_probability': None,
+                'summer_probability': None,
+                'winter_record_share': winter_record_share,
+                'summer_record_share': summer_record_share,
+                'current_trend': None
             },
             'monthly_data': [
                 {
@@ -2930,7 +2866,7 @@ def burnsky_dashboard_data():
             'high_impact_warnings': high_impact_warnings[:4],
             'insights': {
                 'seasonal': seasonal_insight,
-                'peak_time': f"{peak_hour} 是燒天預警高峰時段",
+                'peak_time': f"高分模型紀錄最常在 {peak_hour}（香港時間）保存（{peak_hour_data[1]}筆）；這是紀錄時間，並非最佳拍攝時間。" if peak_hour else '未有高分紀錄，暫無時段統計。',
                 'humidity': humidity_insight,
                 'wind': wind_insight
             }
@@ -2950,66 +2886,19 @@ def burnsky_dashboard_data():
         
     except Exception as e:
         print(f"Warning dashboard data error: {e}")
-        # 返回模擬數據作為備份
         return jsonify({
-            'overview': {
-                'total_warnings': 256,
-                'high_warnings': 87,
-                'medium_warnings': 123,
-                'low_warnings': 46
-            },
-            'accuracy': {
-                'percentage': 87.3,
-                'trend': 'up'
-            },
-            'time_pattern': {
-                'peak_hour': '18:30-19:30',
-                'weekend_ratio': 68,
-                'weekday_ratio': 42
-            },
-            'seasonal': {
-                'winter_probability': 45,
-                'summer_probability': 23,
-                'current_trend': 'up'
-            },
-            'monthly_timeline': [
-                {'month': f"{i}月", 'total': 20+i*3, 'high': 5+i} for i in range(1, 13)
-            ],
-            'high_impact_warnings': [
-                {
-                    'time': '2024-12-28 18:45',
-                    'message': '極佳燒天條件：預測評分 95/100，持續時間 25 分鐘',
-                    'severity_class': 'warning-high',
-                    'score': 95
-                },
-                {
-                    'time': '2024-12-25 19:10', 
-                    'message': '聖誕節燒天盛宴：預測評分 92/100，覆蓋全港',
-                    'severity_class': 'warning-high',
-                    'score': 92
-                },
-                {
-                    'time': '2024-12-22 18:30',
-                    'message': '中等燒天條件：預測評分 78/100，建議西區拍攝', 
-                    'severity_class': 'warning-medium',
-                    'score': 78
-                },
-                {
-                    'time': '2024-12-20 19:05',
-                    'message': '局部燒天現象：預測評分 71/100，維港東部較佳',
-                    'severity_class': 'warning-medium', 
-                    'score': 71
-                }
-            ],
-            'insights': [
-                "冬季月份 (12-2月) 燒天機率最高，建議重點關注",
-                "下午 6:30-7:00 是燒天預警高峰時段",
-                "適中濕度範圍內燒天發生機率較高", 
-                "東北風天氣型態較有利燒天形成",
-                "建議在預測評分 >70 時提前 30 分鐘前往拍攝地點"
-            ]
-        })
-
+            'status': 'error',
+            'data_source': 'unavailable',
+            'message': '歷史資料暫時無法載入，請稍後重試。',
+            'statistics': None,
+            'accuracy': None,
+            'monthly_data': [],
+            'high_impact_warnings': [],
+            'insights': {}
+        }), 503
+    finally:
+        if conn is not None:
+            conn.close()
 @app.route("/warning_dashboard")
 def old_warning_dashboard_underscore():
     """警告台頁面重定向（兼容下劃線格式）"""
@@ -4229,120 +4118,14 @@ def get_overview_charts():
     global warning_analyzer
     
     if not warning_analysis_available or not warning_analyzer:
-        # 返回示例數據
         return jsonify({
-            "status": "success",
-            "data_source": "example_data",
-            "charts": {
-                "warning_trends": {
-                    "chart_type": "bar",
-                    "chart_data": {
-                        "labels": ["本週", "上週", "兩週前", "三週前"],
-                        "datasets": [{
-                            "label": "警告數量",
-                            "data": [15, 12, 18, 8],
-                            "backgroundColor": ["#EF4444", "#F59E0B", "#10B981", "#3B82F6"],
-                            "borderColor": ["#DC2626", "#D97706", "#059669", "#2563EB"],
-                            "borderWidth": 2
-                        }]
-                    },
-                    "chart_options": {
-                        "responsive": True,
-                        "plugins": {
-                            "title": {
-                                "display": True,
-                                "text": "週警告趨勢"
-                            }
-                        },
-                        "scales": {
-                            "y": {
-                                "beginAtZero": True,
-                                "title": {
-                                    "display": True,
-                                    "text": "警告數量"
-                                }
-                            }
-                        }
-                    }
-                },
-                "severity_distribution": {
-                    "chart_type": "polarArea",
-                    "chart_data": {
-                        "labels": ["極端", "嚴重", "中等", "輕微"],
-                        "datasets": [{
-                            "label": "嚴重度分布",
-                            "data": [3, 8, 12, 7],
-                            "backgroundColor": [
-                                "rgba(239, 68, 68, 0.7)",
-                                "rgba(245, 158, 11, 0.7)",
-                                "rgba(59, 130, 246, 0.7)",
-                                "rgba(16, 185, 129, 0.7)"
-                            ],
-                            "borderColor": [
-                                "#DC2626",
-                                "#D97706",
-                                "#2563EB",
-                                "#059669"
-                            ],
-                            "borderWidth": 2
-                        }]
-                    },
-                    "chart_options": {
-                        "responsive": True,
-                        "plugins": {
-                            "title": {
-                                "display": True,
-                                "text": "警告嚴重度分布"
-                            },
-                            "legend": {
-                                "position": "bottom"
-                            }
-                        }
-                    }
-                },
-                "hourly_pattern": {
-                    "chart_type": "radar",
-                    "chart_data": {
-                        "labels": ["0-6時", "6-12時", "12-18時", "18-24時"],
-                        "datasets": [{
-                            "label": "各時段警告頻率",
-                            "data": [2, 8, 15, 5],
-                            "backgroundColor": "rgba(139, 92, 246, 0.2)",
-                            "borderColor": "#8B5CF6",
-                            "borderWidth": 2,
-                            "pointBackgroundColor": "#8B5CF6",
-                            "pointBorderColor": "#fff",
-                            "pointHoverBackgroundColor": "#fff",
-                            "pointHoverBorderColor": "#8B5CF6"
-                        }]
-                    },
-                    "chart_options": {
-                        "responsive": True,
-                        "plugins": {
-                            "title": {
-                                "display": True,
-                                "text": "24小時警告模式"
-                            }
-                        },
-                        "scales": {
-                            "r": {
-                                "beginAtZero": True,
-                                "title": {
-                                    "display": True,
-                                    "text": "警告頻率"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "summary": {
-                "total_charts": 3,
-                "data_period": "30天 (示例數據)"
-            },
-            "generated_at": datetime.now().isoformat()
-        })
-    
+            'status': 'error',
+            'data_source': 'unavailable',
+            'message': '警告歷史分析暫時無法使用，請稍後重試。',
+            'charts': {},
+            'chart_data': {'labels': [], 'datasets': []},
+            'insights': {}
+        }), 503
     try:
         days_back = int(request.args.get('days', 30))
         days_back = min(max(days_back, 1), 365)
@@ -4351,8 +4134,9 @@ def get_overview_charts():
         patterns = warning_analyzer.analyze_warning_patterns(days_back)
         
         if patterns.get('total_warnings', 0) == 0:
-            # 如果沒有實際數據，返回上面的示例數據
-            return get_overview_charts()
+            return jsonify({'status': 'success', 'data_source': 'actual_data',
+                            'has_data': False, 'charts': {},
+                            'message': '所選時段未有警告紀錄。'})
         
         # 處理實際數據
         charts_data = {}
@@ -4832,56 +4616,14 @@ def get_warning_category_distribution():
     global warning_analyzer
     
     if not warning_analysis_available or not warning_analyzer:
-        # 返回有意義的示例數據
         return jsonify({
-            "status": "success",
-            "data_source": "demo_data",
-            "chart_data": {
-                "labels": ["雷暴警告", "暴雨警告", "大風警告", "酷熱警告", "寒冷警告"],
-                "datasets": [{
-                    "label": "警告數量",
-                    "data": [8, 6, 5, 3, 2],
-                    "backgroundColor": [
-                        "#F59E0B",  # 橙色 - 雷暴
-                        "#3B82F6",  # 藍色 - 暴雨 
-                        "#EF4444",  # 紅色 - 大風
-                        "#F97316",  # 橘紅 - 酷熱
-                        "#06B6D4"   # 青色 - 寒冷
-                    ],
-                    "borderColor": [
-                        "#D97706",
-                        "#2563EB", 
-                        "#DC2626",
-                        "#EA580C",
-                        "#0891B2"
-                    ],
-                    "borderWidth": 2
-                }]
-            },
-            "chart_options": {
-                "responsive": True,
-                "plugins": {
-                    "title": {
-                        "display": True,
-                        "text": "警告類別分布統計"
-                    },
-                    "legend": {
-                        "position": "bottom",
-                        "labels": {
-                            "padding": 20,
-                            "usePointStyle": True
-                        }
-                    }
-                }
-            },
-            "summary": {
-                "total_categories": 5,
-                "most_common": "雷暴警告",
-                "total_warnings": 24
-            },
-            "message": "使用示例數據展示"
-        })
-    
+            'status': 'error',
+            'data_source': 'unavailable',
+            'message': '警告歷史分析暫時無法使用，請稍後重試。',
+            'charts': {},
+            'chart_data': {'labels': [], 'datasets': []},
+            'insights': {}
+        }), 503
     try:
         days_back = int(request.args.get('days', 30))
         days_back = min(max(days_back, 1), 365)  # 限制在1-365天之間
@@ -4890,17 +4632,10 @@ def get_warning_category_distribution():
         patterns = warning_analyzer.analyze_warning_patterns(days_back)
         category_dist = patterns.get('category_distribution', {})
         
-        # 如果沒有數據，返回示例數據
-        if not category_dist or patterns.get('total_warnings', 0) == 0:
-            category_dist = {
-                "rainfall": 8,
-                "wind_storm": 6,
-                "thunderstorm": 4,
-                "visibility": 3,
-                "air_quality": 2,
-                "temperature": 1
-            }
-        
+        # 空紀錄維持空分布，不建立示例次數。
+        if patterns.get('total_warnings', 0) == 0:
+            category_dist = {}
+
         # 準備圖表數據
         labels = []
         data = []
@@ -4974,7 +4709,8 @@ def get_warning_category_distribution():
                 "percentages": dict(zip(labels, percentages))
             },
             "period": f"{days_back}天",
-            "data_source": "example_data" if patterns.get('total_warnings', 0) == 0 else "actual_data",
+            "data_source": "actual_data",
+            "has_data": total > 0,
             "generated_at": datetime.now().isoformat()
         })
         
@@ -4987,47 +4723,34 @@ def get_warning_category_distribution():
 # 簡化版 API 端點（為 index.html 前端提供）
 @app.route("/api/warnings/timeline-simple", methods=["GET"])
 def get_warning_timeline_simple():
-    """獲取簡化的警告時間軸數據（適用於 index.html）"""
-    global warning_analyzer
-    
+    """只統計資料庫內的每日警告紀錄。"""
+    if not warning_analysis_available or not warning_analyzer:
+        return jsonify({'status': 'error', 'data_source': 'unavailable',
+                        'message': '警告歷史分析暫時無法使用。', 'labels': [], 'data': []}), 503
+    conn = None
     try:
-        days_back = int(request.args.get('days', 7))  # 預設7天
-        days_back = min(max(days_back, 1), 30)  # 限制在1-30天之間
-        
-        # 生成時間軸數據
-        from datetime import datetime, timedelta
-        end_date = datetime.now()
-        labels = []
-        data = []
-        
-        for i in range(days_back):
-            date = end_date - timedelta(days=i)
-            date_str = date.strftime('%m/%d')
-            labels.insert(0, date_str)
-            
-            # 模擬數據 - 基於實際警告數據或示例數據
-            if warning_analysis_available and warning_analyzer:
-                patterns = warning_analyzer.analyze_warning_patterns(days_back)
-                daily_avg = patterns.get('total_warnings', 0) / days_back
-                warning_count = max(0, round(daily_avg * (0.5 + 1.0 * (i % 3) / 3)))
-            else:
-                # 示例數據
-                warning_count = max(0, 3 - abs(i - days_back//2))
-            
-            data.insert(0, warning_count)
-        
-        return jsonify({
-            "labels": labels,
-            "data": data
-        })
-        
-    except Exception as e:
-        # 返回示例數據
-        return jsonify({
-            "labels": ["07/15", "07/16", "07/17", "07/18", "07/19", "07/20", "07/21"],
-            "data": [2, 5, 3, 8, 4, 6, 3]
-        })
-
+        days_back = min(max(int(request.args.get('days', 7)), 1), 30)
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days_back - 1)
+        conn = sqlite3.connect(warning_analyzer.db_path)
+        rows = conn.execute('''
+            SELECT DATE(timestamp), COUNT(*) FROM warning_records
+            WHERE DATE(timestamp) >= ? AND DATE(timestamp) <= ?
+            GROUP BY DATE(timestamp)
+        ''', (start_date.isoformat(), end_date.isoformat())).fetchall()
+        counts = dict(rows)
+        dates = [start_date + timedelta(days=day) for day in range(days_back)]
+        return jsonify({'status': 'success', 'data_source': 'actual_data',
+                        'has_data': sum(counts.values()) > 0,
+                        'labels': [date.isoformat() for date in dates],
+                        'data': [counts.get(date.isoformat(), 0) for date in dates]})
+    except Exception as error:
+        print(f'Warning timeline error: {error}')
+        return jsonify({'status': 'error', 'data_source': 'unavailable',
+                        'message': '警告紀錄暫時無法載入。', 'labels': [], 'data': []}), 503
+    finally:
+        if conn is not None:
+            conn.close()
 @app.route("/api/warnings/seasonal", methods=["GET"])
 def get_seasonal_analysis():
     """獲取季節性警告分析 - 使用真實數據"""
@@ -5113,45 +4836,14 @@ def get_warning_insights():
     global warning_analyzer
     
     if not warning_analysis_available or not warning_analyzer:
-        # 返回有意義的示例洞察
         return jsonify({
-            "status": "success",
-            "data_source": "demo_insights",
-            "insights": {
-                "key_findings": [
-                    "雷暴警告在夏季月份 (6-8月) 發出頻率最高",
-                    "下午2-5點是警告發出的高峰時段",
-                    "大風警告通常與颱風季節相關",
-                    "各類警告的準確性持續改進中"
-                ],
-                "accuracy_analysis": {
-                    "overall_accuracy": 87.3,
-                    "best_performing": "寒冷警告 (95.0%)",
-                    "needs_improvement": "酷熱警告 (78.9%)",
-                    "trend": "improving"
-                },
-                "temporal_patterns": {
-                    "peak_season": "夏季 (6-8月)",
-                    "peak_time": "下午2-5點",
-                    "lowest_activity": "凌晨2-5點"
-                },
-                "recommendations": [
-                    "加強下午時段的監測能力",
-                    "優化酷熱警告的預測模型",
-                    "考慮季節性調整警告閾值",
-                    "提高夜間警告的響應速度"
-                ],
-                "data_quality": {
-                    "completeness": 89,
-                    "consistency": 92,
-                    "timeliness": 88,
-                    "note": "基於示例數據計算"
-                }
-            },
-            "generated_at": datetime.now().isoformat(),
-            "message": "這是示例分析 - 實際部署需要真實歷史數據"
-        })
-    
+            'status': 'error',
+            'data_source': 'unavailable',
+            'message': '警告歷史分析暫時無法使用，請稍後重試。',
+            'charts': {},
+            'chart_data': {'labels': [], 'datasets': []},
+            'insights': {}
+        }), 503
     try:
         insights = warning_analyzer.generate_warning_insights()
         

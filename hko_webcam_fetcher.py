@@ -390,6 +390,8 @@ class HKOWebcamFetcher:
                     
                 # 獲取照片實際更新時間（從HTTP header）
                 capture_time = datetime.now()
+                source_updated_at = None
+                retrieved_at = datetime.now().astimezone()
                 if 'Last-Modified' in response.headers:
                     try:
                         from email.utils import parsedate_to_datetime
@@ -402,6 +404,7 @@ class HKOWebcamFetcher:
                             # 如果沒有時區信息，假設是UTC
                             capture_time = pytz.utc.localize(capture_time)
                         capture_time = capture_time.astimezone(hk_tz)
+                        source_updated_at = capture_time.isoformat()
                     except Exception as e:
                         self.logger.warning(f"Failed to parse Last-Modified header: {e}")
                         capture_time = datetime.now()
@@ -417,6 +420,8 @@ class HKOWebcamFetcher:
                     'longitude': location_info['longitude'],
                     'region': location_info.get('region', '其他'),  # 添加地區信息
                     'capture_time': capture_time,
+                    'source_updated_at': source_updated_at,
+                    'retrieved_at': retrieved_at.isoformat(),
                     'image_size': pil_image.size,
                     'priority': location_info['priority']
                 }
