@@ -2351,6 +2351,7 @@
 
         function notifyHighPotentialPrediction(data) {
             if (!BurnSkyPresentation.describePrediction(data).scorePrimary) return;
+            if (data.data_quality?.allow_high_score_notification === false) return;
             if (!('Notification' in window) || Notification.permission !== 'granted' || data.burnsky_score < 70) return;
             const notificationKey = `${data.prediction_type}-${data.advance_hours}-${currentPredictionTimestamp}`;
             if (localStorage.getItem('lastHighPotentialNotification') === notificationKey) return;
@@ -2779,7 +2780,7 @@
                 
                 // 更新分析摘要 - 修復數據路徑
                 document.getElementById('summary-title').textContent = presentation.scorePrimary ? '💡 條件分析摘要' : '💡 如何使用這次評估';
-                updateAnalysisSummary(presentation.scorePrimary
+                updateAnalysisSummary(presentation.scorePrimary && data.data_quality?.status === 'ready'
                     ? data.analysis_summary || (data.analysis_details && data.analysis_details.analysis_summary)
                     : [presentation.headline, presentation.scope, presentation.nextStep]);
                 
@@ -2796,7 +2797,7 @@
                 // 保存預測分數以供用戶反饋使用
                 currentPredictedScore = data.burnsky_score;
                 currentPredictionTimestamp = data.prediction_timing?.generated_at || null;
-                if (presentation.scorePrimary) {
+                if (presentation.scorePrimary && data.data_quality?.allow_high_score_notification !== false) {
                     try { notifyHighPotentialPrediction(data); } catch (error) { console.warn('通知暫時不可用', error); }
                 }
                 console.log('✅ 預測分數已保存:', {

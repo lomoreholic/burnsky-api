@@ -52,11 +52,22 @@ def assess_prediction_quality(target, observed, forecast, advance_hours=0):
         limitations.append('UV因子缺少可用讀數，不參與計分。')
     if advance_hours > 0:
         limitations.append('未來條件包含模型推算及沿用現有觀測，並非目標時段的完整預報。')
-    return {'status': 'insufficient' if missing else 'limited',
+    # Optional sensors and proxy inputs affect confidence, not whether the
+    # short-term condition estimate can be shown at all.
+    short_term_ready = not missing and 0 <= advance_hours <= 3 and highest_rainfall(target) is not None
+    if missing:
+        summary = '主要資料不足，暫停評分：' + '、'.join(missing) + '。'
+    elif short_term_ready:
+        summary = '主要資料齊全，可提供3小時內短期預測；可信度一般。'
+    else:
+        summary = '可提供初步預測；' + ('超過3小時，可信度較低。' if advance_hours > 3 else '缺少雨量參考，可信度較低。')
+    if not missing:
+        summary += '缺失因子不補分，低分亦可能受資料覆蓋影響；詳細限制見下方。'
+    return {'status': 'insufficient' if missing else 'ready' if short_term_ready else 'limited',
+            'confidence': 'unavailable' if missing else 'moderate' if short_term_ready else 'low',
             'score_usable': not missing, 'allow_high_score_notification': False,
             'missing_required': missing, 'limitations': limitations,
-            'summary': ('主要資料不足，暫停評分：' + '、'.join(missing) + '。' if missing else
-                        '資料有限：缺失因子不補分；保留完整150分上限，不按剩餘因子放大分數。低分亦可能反映資料不足，條件指數只供有限參考。')}
+            'summary': summary}
 
 
 def require_prediction_inputs(target, observed, forecast, advance_hours=0):

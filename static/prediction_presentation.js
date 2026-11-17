@@ -12,6 +12,15 @@
         }).format(date);
     }
 
+    function predictionAdvice(data) {
+        const score = data.burnsky_score;
+        const advice = score >= 65 ? '條件較有利，可安排出發或準備拍攝。'
+            : score >= 45 ? '條件一般，可先準備器材及路線，出發前再更新。'
+            : '目前條件偏低，暫不建議專程出發，可繼續留意更新。';
+        const confidence = data.data_quality?.status === 'ready' ? '可信度一般' : '可信度較低，屬初步參考';
+        return `${advice}${confidence}；請核對天空實況及官方天氣警告，分數不保證出現燒天。`;
+    }
+
     function describePrediction(data, now = new Date()) {
         const timing = data.prediction_timing;
         const start = Date.parse(timing?.window_start);
@@ -31,20 +40,21 @@
         const ended = now.getTime() > end;
         const fresh = now.getTime() - generated <= 15 * 60 * 1000 && generated <= now.getTime() + 60 * 1000;
         const quality = data.data_quality;
-        const qualityReady = quality?.status === 'ready' && quality.score_usable === true
-            && quality.allow_high_score_notification !== false;
-        const scorePrimary = aligned && !ended && fresh && qualityReady;
+        const qualityUsable = ['ready', 'limited'].includes(quality?.status) && quality.score_usable === true
+            && Number.isFinite(data.burnsky_score) && data.burnsky_score >= 0 && data.burnsky_score <= 100;
+        const scorePrimary = aligned && !ended && fresh && qualityUsable;
         const headline = ended ? `所列${eventName}參考時段已結束`
             : !aligned ? `所選評估未對準${eventName}參考時段`
             : !fresh ? '評估資料已過時，請重新載入'
+            : timing.mode === 'forecast' ? `${eventName}預測 · 提前${data.advance_hours}小時${quality?.status === 'limited' ? '（初步參考）' : ''}`
             : `評估已對準${eventName}前後30分鐘`;
         const nextStep = ended ? `請在下一次${eventName}前重新取得評估，並核對新結果的日期與時段。系統未提供下一次${eventName}的有效評估。`
             : !aligned ? `可調整下方評估時間，再核對是否落在所列${eventName}前後30分鐘；亦可接近該時段時重新載入。`
             : !fresh ? '重新載入後再核對計算時間；目前保留的分數只供查閱。'
-            : '可配合天空實況及官方天氣警告，判斷是否準備拍攝；分數不保證出現燒天。';
+            : predictionAdvice(data);
         return {
-            headline: aligned && !ended && fresh && !qualityReady ? '資料有限，暫不提供拍攝建議' : headline,
-            nextStep: !qualityReady ? `${aligned && !ended && fresh ? '請先查看天空實況及官方天氣預報；此指數未能作為出發拍攝依據。' : nextStep} ${quality?.summary || '未取得評分資料完整性說明，請審慎參考。'}` : nextStep,
+            headline: aligned && !ended && fresh && !qualityUsable ? '主要資料不足或狀態未確認，請重新取得預測' : headline,
+            nextStep: !qualityUsable ? `${aligned && !ended && fresh ? '請先查看天空實況及官方天氣預報。' : nextStep} ${quality?.summary || '未取得評分資料完整性說明，請審慎參考。'}` : nextStep,
             scorePrimary,
             evaluation: `評估時間：${formatHongKongDateTime(timing.evaluated_at)}（香港時間） · ${timing.mode === 'forecast' ? `${data.advance_hours}小時後條件推算` : '當前條件評估'}`,
             event: `評估當日${eventName}參考：${formatHongKongDateTime(timing.event_at)}（香港時間）`,
@@ -115,21 +125,23 @@
         const fresh = Number.isFinite(generated) && now.getTime() - generated <= 15 * 60000
             && generated <= now.getTime() + 60000;
         const usable = Number.isFinite(data?.burnsky_score) && data.burnsky_score >= 0 && data.burnsky_score <= 100
-            && data?.data_quality?.score_usable === true;
+            && ['ready', 'limited'].includes(data?.data_quality?.status) && data.data_quality.score_usable === true;
         let status = '暫未有這個時段的適用評估';
-        if (matched && fresh && usable) status = data.data_quality.status === 'ready'
-            ? '已取得這個時段的條件參考' : '已取得時段內條件參考，資料有限';
+        const hasForecast = matched && fresh && usable && !['loading', 'error'].includes(state);
+        if (hasForecast) status = `${name}條件指數 ${Math.round(data.burnsky_score)}/100 · ${data.data_quality.status === 'ready' ? '可信度一般' : '可信度較低（初步參考）'}`;
         else if (matched && !fresh) status = '這個時段的評估已過時，請重新取得';
         if (state === 'loading') status = '正在取得條件參考，尚未確認最新結果';
         if (state === 'error') status = `最新條件參考未能取得${reason ? `：${reason}` : '，請重試'}`;
+        const planningAt = event - 3 * 3600000;
         const checkAt = event - 60 * 60000;
-        const recheck = now.getTime() < checkAt ? `建議在${formatHongKongDateTime(checkAt)}（香港時間）再更新。`
-            : '現在可再更新條件參考。';
+        const recheck = now.getTime() < planningAt ? `可在${formatHongKongDateTime(planningAt)}（香港時間）取得提前3小時預測，安排出發。`
+            : now.getTime() < checkAt ? `已進入提前3小時規劃時段；出發前或${formatHongKongDateTime(checkAt)}（香港時間）再更新。`
+            : '出發前請再更新預測。';
         return {window, advanceHours,
             title: `${inWindow ? '進行中的' : '下一次'}${name}觀賞參考`,
             timeLabel: `${formatHongKongDateTime(window.window_start)} 至 ${formatHongKongDateTime(window.window_end)}（香港時間）`,
             referenceNote: `${name}：${formatHongKongDateTime(window.event_at)}（香港時間） · ${window.method === 'monthly_table' ? '月度時間表近似值' : '天文時間計算'}。前後30分鐘只作觀賞時間參考，不代表會出現燒天。`,
-            status, action: `先選好望向${direction}的位置，並查看天空實況及官方天氣警告。${recheck}${matched && fresh && usable && data.data_quality.status === 'ready' ? '條件指數仍不保證出現燒天。' : '目前未能判斷是否值得出發拍攝。'}`,
+            status, action: `${hasForecast ? predictionAdvice(data) : '取得此時段預測後可查看條件指數及出發參考。'}選好望向${direction}的位置。${recheck}`,
             buttonLabel: matched ? '更新此時段條件參考' : '取得此時段條件參考'};
     }
 

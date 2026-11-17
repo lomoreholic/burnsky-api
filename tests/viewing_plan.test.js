@@ -52,13 +52,19 @@ test('nearest hourly selection stays within the actual solar window and includes
     assert.equal(presentation.describeViewingPlan(schedule(), null, 'idle', at('06:50')).advanceHours, 0);
 });
 
-test('timely but limited data stays limited even at a high score', () => {
-    const now = at('16:40');
+test('a usable three-hour forecast gives planning advice and labels its confidence', () => {
+    const now = at('14:40');
     const selected = presentation.getNextViewingWindow(schedule(), now);
     const plan = presentation.describeViewingPlan(schedule(), predictionFor(selected, now), 'success', now);
-    assert.match(plan.status, /時段內條件參考，資料有限/);
-    assert.match(plan.action, /未能判斷是否值得出發/);
-    assert.doesNotMatch(plan.status + plan.action, /95|條件極佳|立即出發/);
+    assert.equal(plan.advanceHours, 3);
+    assert.match(plan.status, /95.*可信度較低/);
+    assert.match(plan.action, /安排|準備/);
+    assert.doesNotMatch(plan.action, /未能判斷是否值得出發|立即出發/);
+});
+
+test('outside the short-term horizon the plan says when the three-hour forecast starts', () => {
+    const plan = presentation.describeViewingPlan(schedule(), null, 'idle', at('12:00'));
+    assert.match(plan.action, /14:40.*3小時/);
 });
 
 test('wrong event, wrong evaluation time, expired data and unknown quality are not usable assessments', () => {

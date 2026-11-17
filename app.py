@@ -1858,7 +1858,7 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     if unified_result.get('ml_score_source') == 'unavailable':
         data_quality['limitations'].append(unified_result['ml_unavailable_reason'])
     data_quality['limitations'].append('舊雲厚度額外加減分含預設值，暫停使用。')
-    unified_result['analysis'].update(confidence='limited', recommendation=data_quality['summary'],
+    unified_result['analysis'].update(confidence=data_quality['confidence'], recommendation=data_quality['summary'],
                                       summary=data_quality['summary'])
     
     # 從統一結果中提取分數和詳情

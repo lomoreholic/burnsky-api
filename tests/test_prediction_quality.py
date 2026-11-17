@@ -19,14 +19,28 @@ def weather():
 
 
 class PredictionQualityTests(unittest.TestCase):
-    def test_available_core_still_discloses_defaults_and_proxies(self):
-        result = require_prediction_inputs(weather(), weather(), {'forecastDesc': '多雲'})
-        self.assertEqual(result['status'], 'limited')
-        self.assertFalse(result['allow_high_score_notification'])
+    def test_three_hour_forecast_is_usable_without_optional_readings(self):
+        data = weather()
+        del data['uvindex']
+        result = require_prediction_inputs(data, data, {'forecastDesc': '多雲'}, 3)
+        self.assertEqual(result['status'], 'ready')
+        self.assertTrue(result['score_usable'])
+        self.assertEqual(result['confidence'], 'moderate')
         text = ''.join(result['limitations'])
         for label in ('空氣品質', '氣壓', '風速', '間接參考'):
             self.assertIn(label, text)
-        self.assertNotIn('UV因子缺少', text)
+        self.assertIn('UV因子缺少', text)
+
+    def test_missing_rain_or_longer_horizon_reduces_confidence_without_hiding_score(self):
+        for hours, rain in ((3, False), (6, True)):
+            data = weather()
+            if not rain:
+                del data['rainfall']
+            result = require_prediction_inputs(data, data, {'forecastDesc': '多雲'}, hours)
+            self.assertEqual(result['status'], 'limited')
+            self.assertTrue(result['score_usable'])
+            self.assertEqual(result['confidence'], 'low')
+            self.assertFalse(result['allow_high_score_notification'])
 
     def test_original_missing_data_cannot_be_concealed_by_forecast_defaults(self):
         with self.assertRaises(InsufficientPredictionData) as error:

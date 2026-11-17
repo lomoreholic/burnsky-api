@@ -88,9 +88,8 @@ test('only a fresh evaluation aligned with an unexpired solar window gets a prim
     assert.equal(describePrediction(forecast, new Date('2026-11-14T00:25:00+08:00')).scorePrimary, true);
 });
 
-test('limited or unknown input quality suppresses a timely high score and recommendation', async () => {
-    for (const quality of [undefined, {status: 'limited', score_usable: true,
-        summary: '資料有限：氣壓使用預設分。', limitations: ['未取得AQHI監測值。']}]) {
+test('unknown or insufficient quality does not promote a score', async () => {
+    for (const quality of [undefined, {status: 'insufficient', score_usable: false}]) {
         const data = {...alignedPrediction(), data_quality: quality, prediction_level: '條件極佳',
             analysis_summary: ['立即出發拍攝']};
         const h = homepageHarness(new Date('2026-11-14T06:25:00+08:00'));
@@ -98,10 +97,27 @@ test('limited or unknown input quality suppresses a timely high score and recomm
         h.requests[0].resolve(data);
         assert.equal(await request, true);
         assert.equal(h.elements.get('conditionScoreDetails').open, false);
-        assert.match(h.elements.get('assessmentHeadline').textContent, /資料有限/);
+        assert.match(h.elements.get('assessmentHeadline').textContent, /資料不足|未確認/);
         assert.doesNotMatch(h.summaries[0].join(''), /立即出發/);
         assert.deepEqual(h.notifications, []);
     }
+});
+
+test('three-hour forecast shows a usable score and planning advice despite optional gaps', async () => {
+    const now = new Date('2026-11-14T03:35:00+08:00');
+    const data = {...alignedPrediction({generated_at: now.toISOString(),
+        evaluated_at: '2026-11-14T06:35:00+08:00', mode: 'forecast'}),
+        advance_hours: 3, prediction_level: '條件良好', burnsky_score: 68,
+        data_quality: {status: 'limited', score_usable: true, allow_high_score_notification: false}};
+    const h = homepageHarness(now);
+    const pending = h.context.loadPrediction();
+    h.requests[0].resolve(data);
+    assert.equal(await pending, true);
+    assert.equal(h.elements.get('conditionScoreDetails').open, true);
+    assert.match(h.elements.get('assessmentHeadline').textContent, /提前3小時/);
+    assert.match(h.elements.get('assessmentNextStep').textContent, /安排|準備/);
+    assert.match(h.summaries[0].join(''), /安排|準備/);
+    assert.deepEqual(h.notifications, []);
 });
 
 test('missing-data failure explains the reason while preserving the previous result', async () => {
