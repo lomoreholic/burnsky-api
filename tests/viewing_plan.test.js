@@ -67,6 +67,33 @@ test('outside the short-term horizon the plan says when the three-hour forecast 
     assert.match(plan.action, /14:40.*3小時/);
 });
 
+test('missing factors crossing an advice threshold do not become a bad-weather verdict', () => {
+    const now = at('14:40');
+    const selected = presentation.getNextViewingWindow(schedule(), now);
+    const data = predictionFor(selected, now);
+    data.burnsky_score = 36;
+    data.score_sensitivity = {kind:'missing_factor_scenarios', lower:36, upper:54,
+        weighted_coverage_percent:82, missing_factors:['pressure', 'uv', 'air_quality']};
+    const plan = presentation.describeViewingPlan(schedule(), data, 'success', now);
+    assert.match(plan.action, /未足以單憑低分/);
+    assert.doesNotMatch(plan.action, /不建議專程/);
+    assert.match(presentation.describeScoreCoverage(data), /36.0–54.0/);
+    assert.match(presentation.describeScoreCoverage(data), /不是機率、可信區間/);
+    data.score_sensitivity.upper = 40;
+    assert.match(presentation.describeViewingPlan(schedule(), data, 'success', now).action, /目前條件偏低/);
+    delete data.score_sensitivity;
+    data.data_quality.input_coverage = {missing_factors:['pressure']};
+    assert.match(presentation.describeViewingPlan(schedule(), data, 'success', now).action, /未足以單憑低分/);
+    assert.match(presentation.describeScoreCoverage(data), /未提供/);
+});
+
+test('invalid sensitivity is never displayed as a numeric range', () => {
+    for (const range of [{}, {kind:'missing_factor_scenarios', lower:20, upper:110,
+        weighted_coverage_percent:80, missing_factors:[]}]) {
+        assert.match(presentation.describeScoreCoverage({burnsky_score:20, score_sensitivity:range}), /未提供/);
+    }
+});
+
 test('wrong event, wrong evaluation time, expired data and unknown quality are not usable assessments', () => {
     const now = at('16:40');
     const selected = presentation.getNextViewingWindow(schedule(), now);
@@ -108,7 +135,8 @@ function controllerHarness(now = at('18:11')) {
     const context = {Date: Clock, BurnSkyPresentation: presentation, AbortController,
         console: {warn() {}}, setTimeout() {}, clearTimeout() {},
         document: {getElementById(id) {
-            if (!elements.has(id)) elements.set(id, {textContent:'', value: '', disabled:false,
+            if (!elements.has(id)) elements.set(id, {textContent:'', value: '', disabled:false, style: {},
+                attributes: {}, setAttribute(key, value) {this.attributes[key] = value;},
                 options: ['0','1','2','3','6','12'].map(value => ({value})), appendChild(option) {this.options.push(option);}});
             return elements.get(id);
         }, createElement() {return {}; }},
@@ -147,6 +175,56 @@ test('solar failure exposes retry and does not issue a guessed viewing forecast'
     assert.match(h.elements.get('viewingPlanTitle').textContent, /未能確認/);
     assert.equal(h.elements.get('viewingPlanButton').disabled, false);
     assert.deepEqual(h.calls, []);
+});
+
+test('matching plan folds duplicate advice but restores it for other times, stale data and failures', async () => {
+    const now = at('14:40');
+    const h = controllerHarness(now);
+    await h.context.initAutoPredictionType();
+    const selected = presentation.getNextViewingWindow(schedule(), now);
+    const data = predictionFor(selected, now);
+    data.advance_hours = 3;
+    data.sun_times = {};
+    Object.assign(data.prediction_timing, {window_start: selected.window_start,
+        window_end: selected.window_end, mode: 'forecast'});
+    h.context.assessmentData = data;
+    vm.runInContext("lastSuccessfulPrediction = {data: assessmentData}; viewingAssessmentState = 'success'; updateViewingPlan();", h.context);
+    assert.equal(h.elements.get('assessmentNextStep').hidden, true);
+    assert.equal(h.elements.get('eventReference').hidden, true);
+    assert.equal(h.elements.get('conditionScoreDetails').open, false);
+    assert.equal(h.elements.get('conditionScoreToggle').hidden, false);
+    assert.equal(h.elements.get('sunCountdownContainer').style.display, 'none');
+    assert.match(h.elements.get('assessmentHeadline').textContent, /計分依據/);
+    assert.equal(h.elements.get('viewingPlanScore').hidden, false);
+    assert.equal(h.elements.get('viewingPlanScoreValue').textContent, '95');
+    assert.equal(h.elements.get('viewingPlanScore').attributes['aria-valuenow'], '95');
+    data.burnsky_score = 0;
+    h.context.updateViewingPlan();
+    assert.equal(h.elements.get('viewingPlanScore').hidden, false);
+    assert.equal(h.elements.get('viewingPlanScoreValue').textContent, '0');
+    assert.equal(h.elements.get('viewingPlanScoreArc').attributes['stroke-dasharray'], '0 100');
+
+    data.prediction_timing.evaluated_at = now.toISOString();
+    h.context.updateViewingPlan();
+    assert.equal(h.elements.get('assessmentNextStep').hidden, false);
+    assert.match(h.elements.get('assessmentNextStep').textContent, /調整/);
+    assert.equal(h.elements.get('viewingPlanScore').hidden, true);
+    assert.equal(h.elements.get('sunCountdownContainer').style.display, 'block');
+
+    data.prediction_timing.evaluated_at = selected.event_at;
+    data.prediction_timing.generated_at = at('14:00').toISOString();
+    h.context.updateViewingPlan();
+    assert.equal(h.elements.get('assessmentNextStep').hidden, false);
+    assert.match(h.elements.get('assessmentHeadline').textContent, /過時/);
+    assert.equal(h.elements.get('viewingPlanScore').hidden, true);
+
+    data.prediction_timing.generated_at = now.toISOString();
+    vm.runInContext("viewingAssessmentState = 'error'; updateViewingPlan();", h.context);
+    assert.equal(h.elements.get('assessmentNextStep').hidden, false);
+    assert.match(h.elements.get('viewingPlanStatus').textContent, /未能取得/);
+    assert.equal(h.elements.get('viewingPlanScore').hidden, true);
+    vm.runInContext("viewingAssessmentState = 'success'; updateViewingPlan();", h.context);
+    assert.equal(h.elements.get('assessmentNextStep').hidden, true);
 });
 
 test('the action card precedes score details and the detailed assessment is initially collapsed', () => {

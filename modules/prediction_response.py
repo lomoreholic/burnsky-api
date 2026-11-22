@@ -6,6 +6,37 @@ from .prediction_presentation import HK_TIMEZONE, SCORE_DEFINITION, build_predic
 from .weather_presentation import build_weather_presentation
 
 
+def missing_factor_sensitivity(unified_result, score, warning_penalty):
+    """Arithmetic scenarios only; hold known factors and other adjustments fixed."""
+    from .weather_presentation import number
+    coverage = unified_result.get('input_coverage', {})
+    missing_max = number(coverage.get('missing_max_score'))
+    total_max = number(coverage.get('total_max_score'))
+    base = number(unified_result.get('final_score'))
+    normalized = number(unified_result.get('traditional_normalized'))
+    adjustment = number(unified_result.get('adjustments', {}).get('numeric_total'))
+    weights = unified_result.get('weights_used', {})
+    # Defined only for the current unblended fixed-denominator scorer.
+    if (None in (missing_max, total_max, base, normalized, adjustment) or total_max <= 0
+            or not 0 <= missing_max <= total_max
+            or weights.get('traditional') != 1 or weights.get('ml') != 0):
+        return None
+    # Apply seasonal clipping before warning clipping, as in the actual scoring path.
+    upper = min(100, max(0, normalized + missing_max / total_max * 100 + adjustment))
+    # A range cannot explain an unexpected adjustment in a future scoring path.
+    from math import isclose
+    if not isclose(score, max(0, base - warning_penalty), abs_tol=1e-9):
+        return None
+    return {
+        'kind': 'missing_factor_scenarios',
+        'lower': score,
+        'upper': max(score, max(0, upper - warning_penalty)),
+        'weighted_coverage_percent': coverage.get('weighted_percent'),
+        'missing_factors': coverage.get('missing_factors', []),
+        'definition': '缺失因子由零至滿分的算術情境；其餘輸入、季節調整及警告扣分保持不變。不是機率、可信區間或預測誤差範圍，亦不代表預期會升至上限。',
+    }
+
+
 class PredictionResponseBuilder:
     """Assemble presentation fields separately from prediction calculation."""
 
@@ -19,24 +50,30 @@ class PredictionResponseBuilder:
               color_prediction, target_weather, observed_weather, forecast_data, warning_data,
               warning_impact, warning_risk_score, warning_risk_warnings, active_warnings,
               warning_analysis):
+        from .cloud_forecast import utc_time
         timing, sun_times = build_prediction_timing(
-            self._now(HK_TIMEZONE), prediction_type, advance_hours, self._get_sun_times
+            self._now(HK_TIMEZONE), prediction_type, advance_hours, self._get_sun_times,
+            evaluated_at=utc_time(target_weather.get('forecast_target_at'))
         )
         cloud_analysis = unified_result.get('cloud_thickness_analysis', {})
         total_warning_impact = min(warning_impact + warning_risk_score, 10.0)
+        sensitivity = missing_factor_sensitivity(unified_result, score, total_warning_impact)
         details = self._analysis_details(
             score, prediction_type, advance_hours, unified_result, intensity_prediction,
             target_weather, cloud_analysis, warning_impact, warning_risk_score,
             warning_risk_warnings, active_warnings, warning_analysis, total_warning_impact
         )
+        details['time_factor'].update(unified_result.get('time_factor', {}))
         details['time_factor'].update({
             'current_time': timing['generated_at'][11:16],
             'evaluated_at': timing['evaluated_at'],
             'target_time': sun_times[timing['event_type']],
             'target_date': timing['evaluated_at'][:10],
         })
+        details['score_breakdown']['score_sensitivity'] = sensitivity
         result = {
             'burnsky_score': score,
+            'score_sensitivity': sensitivity,
             'data_quality': unified_result.get('data_quality'),
             'score_type': 'condition_index',
             'score_definition': SCORE_DEFINITION,
@@ -71,7 +108,7 @@ class PredictionResponseBuilder:
                 'total_warning_impact': total_warning_impact,
                 'warning_adjusted': total_warning_impact > 0
             },
-            'scoring_method': 'unified_v1.3_no_default_scores'
+            'scoring_method': 'unified_v1.12_cloud_time_validation'
         }
         return self._convert_types(result)
 
@@ -94,6 +131,8 @@ class PredictionResponseBuilder:
                 'warning_impact': warning_impact,
                 'warning_risk_impact': warning_risk_score,
                 'total_warning_impact': total_warning_impact,
+                'photo_correction': 0,
+                'photo_correction_status': 'disabled_unvalidated',
                 'input_coverage': unified_result.get('input_coverage', {}),
                 'ml_unavailable_reason': unified_result.get('ml_unavailable_reason'),
                 'weight_explanation': f"實際權重: AI模型 {unified_result['weights_used'].get('ml', 0.5) * 100:.0f}%, 傳統算法 {unified_result['weights_used'].get('traditional', 0.5) * 100:.0f}%"
@@ -132,13 +171,62 @@ class PredictionResponseBuilder:
                                   if score is not None else '資料不足或未能識別，不參與計分；沒有補預設分。')}
         if name == 'time':
             factor.update({'target_type': prediction_type, 'advance_hours': advance_hours})
+        elif name == 'cloud':
+            from .cloud_forecast import valid_cloud_forecast
+            cloud = weather.get('cloud_forecast')
+            if valid_cloud_forecast(cloud, weather.get('forecast_target_at')):
+                factor.update({'source_kind': 'hourly_forecast', 'cloud_forecast': cloud,
+                               'description': '使用目標時段低、中、高層雲量預報；中高雲提供染色條件，低雲遮擋會扣分。此規則未經實拍校準。'})
+                from .cloud_forecast import score_cloud_layers
+                from .sunward_clouds import sunward_multiplier
+                direction = weather.get('sunward_cloud_forecast')
+                multiplier = sunward_multiplier(direction, cloud.get('valid_at'))
+                factor.update({'sunward_cloud_forecast': direction,
+                               'base_cloud_score': score_cloud_layers(cloud),
+                               'sunward_multiplier': multiplier, 'sunward_adjustment_applied': multiplier is not None})
+                factor['description'] += ('已參考太陽方向50及100公里低雲覆蓋作風險扣分，並非透光率實測。' if multiplier is not None
+                                          else '此評估未套用方向扣分，沒有將缺失取樣當作晴空。')
+            else:
+                factor.update({'source_kind': 'text_forecast',
+                               'description': '逐小時分層雲量未能使用，改以天文台文字預報評分。' if score is not None
+                                              else '缺少可識別雲量資料，不補預設分。'})
         elif name == 'temperature' and 'temperature' in weather:
             factor['current_temp'] = weather['temperature']
         elif name == 'humidity' and 'humidity' in weather:
             factor['current_humidity'] = weather['humidity']
-        elif name == 'wind' and isinstance(weather.get('wind'), dict) and 'speed' in weather['wind']:
-            factor['wind_speed'] = weather['wind']['speed']
+        elif name == 'wind':
+            from .prediction_quality import weather_value
+            factor['wind_speed'] = weather_value(weather, 'wind_speed')
         elif name == 'air_quality':
             factor.update({'source_kind': 'unavailable' if score is None else 'provided', 'aqhi': weather.get('air_quality', {}).get('aqhi') if score is not None else None, 'pm25': None,
                            'note': '此回應未提供空氣品質監測值；因子分數並非AQHI。'})
+        if name in ('temperature', 'humidity', 'wind', 'visibility'):
+            from .hourly_weather import model_reading
+            key = {'wind': 'wind_speed', 'visibility': 'rainfall'}.get(name, name)
+            reading = model_reading(weather, key)
+            if reading is not None:
+                model = weather['hourly_weather_forecast']
+                factor.update(source_kind='hourly_forecast', source='MET Norway',
+                              updated_at=model.get('updated_at'), valid_at=model.get('valid_at'), forecast_reading=reading)
+                factor['description'] = ('使用涵蓋目標時間的一小時預報雨量作降雨遮擋參考；無雨不代表能見度良好。' if name == 'visibility'
+                                         else '使用目標時段區域模式預報計分，並非天文台站實測；計分規則尚未校準。')
+            elif name in ('temperature', 'humidity') and score is not None and advance_hours > 0 and weather.get('forecast_estimation'):
+                factor.update(source_kind='estimated', source='BurnSky 條件推算',
+                              valid_at=weather.get('forecast_target_at'),
+                              updated_at=weather['forecast_estimation'].get('observation_updated_at'),
+                              description='逐小時資料未能使用，按觀測、鐘點及可用九天預報作後備推算；規則尚未校準，並非目標時段實測。')
+            elif name == 'visibility':
+                factor.update(source_kind='observed_proxy' if score is not None else 'unavailable',
+                              description='按各地區最高觀測雨量作降雨遮擋參考，並非能見度實測或目標時段預報。' if score is not None else '雨量資料缺失，不參與計分。')
+            if name == 'visibility':
+                from .visibility_observations import reference_visibility, visibility_score_cap
+                visibility = reference_visibility(weather) if advance_hours == 0 else None
+                applied = visibility is not None and score is not None
+                factor.update(visibility_observation=visibility,
+                              visibility_cap=visibility_score_cap(visibility['value']) if applied else None,
+                              visibility_cap_considered=applied)
+                if applied:
+                    factor['description'] = '各地區最高雨量作遮擋參考，並以中環十分鐘平均能見度限制因子上限，只減不加。只代表此測站，門檻未經校準。'
+                elif advance_hours > 0:
+                    factor['description'] += '現有能見度觀測不當作未來預報，未用作此因子扣分。'
         return factor

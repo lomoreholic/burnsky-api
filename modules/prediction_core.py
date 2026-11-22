@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from .cache import get_cached_data, cache
 from .database import save_prediction_to_history
 from .utils import convert_numpy_types, get_prediction_level
-from .photo_analyzer import apply_burnsky_photo_corrections
 from .config import warning_analysis_available, warning_analyzer
 
 def predict_burnsky_core(prediction_type, advance_hours):
@@ -72,14 +71,6 @@ def predict_burnsky_core(prediction_type, advance_hours):
         print(f"🚨 警告影響詳情: -{warning_impact:.1f}分即時警告 + {warning_risk_score:.1f}分風險評估 = -{total_warning_impact:.1f}分總影響")
         print(f"🚨 調整後分數: {adjusted_score:.1f} (原分數: {score:.1f})")
         score = adjusted_score
-
-    # 🌅 應用基於實際照片案例的校正
-    photo_correction = apply_burnsky_photo_corrections(score, future_weather_data, prediction_type)
-
-    if photo_correction != 0:
-        corrected_score = score + photo_correction
-        print(f"📸 照片案例學習校正: {score:.1f} → {corrected_score:.1f}")
-        score = corrected_score
 
     # 🆕 記錄預測和警告數據到歷史分析系統
     if warning_analysis_available and warning_analyzer:

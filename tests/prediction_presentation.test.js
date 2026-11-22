@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { describePrediction, getCountdown, formatHongKongDateTime } = require('../static/prediction_presentation.js');
+const { describePrediction, getCountdown, formatHongKongDateTime, describeScoreCoverage } = require('../static/prediction_presentation.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -116,7 +116,7 @@ test('three-hour forecast shows a usable score and planning advice despite optio
     assert.equal(h.elements.get('conditionScoreDetails').open, true);
     assert.match(h.elements.get('assessmentHeadline').textContent, /提前3小時/);
     assert.match(h.elements.get('assessmentNextStep').textContent, /安排|準備/);
-    assert.match(h.summaries[0].join(''), /安排|準備/);
+    assert.equal(h.summaries[0].length, 0); // Advice is already in assessmentNextStep / viewing plan.
     assert.deepEqual(h.notifications, []);
 });
 
@@ -181,7 +181,7 @@ function homepageHarness(now) {
         } },
         APIUtils: { fetchAPI: () => new Promise((resolve, reject) => requests.push({ resolve, reject })),
             showToast: (...args) => errors.push(args) },
-        BurnSkyPresentation: { describePrediction: data => describePrediction(data, now), formatHongKongDateTime },
+        BurnSkyPresentation: { describePrediction: data => describePrediction(data, now), formatHongKongDateTime, describeScoreCoverage },
         updateBurnskyProgress: score => scores.push(score),
         updateAnalysisFactors() {}, updateCurrentWarnings() {}, updateWeatherData() {},
         updateViewingPlan() {},
@@ -233,7 +233,7 @@ test('a late response cannot overwrite the latest selected evaluation', async ()
     await oldRequest;
     assert.deepEqual(h.scores, [65]);
     assert.equal(h.context.currentPredictedScore, 65);
-    assert.equal(h.elements.get('content').style.display, 'block');
+    assert.equal(h.elements.get('content').style.display, 'grid');
     assert.equal(h.errors.length, 0);
 });
 
@@ -245,14 +245,14 @@ test('a late failure cannot hide a newer successful evaluation', async () => {
     await newRequest;
     h.requests[0].reject(new Error('stale request failed'));
     await oldRequest;
-    assert.equal(h.elements.get('content').style.display, 'block');
+    assert.equal(h.elements.get('content').style.display, 'grid');
     assert.equal(h.errors.length, 0);
 });
 
 test('first load remains readable and failure offers a retry without inventing a score', async () => {
     const h = homepageHarness();
     const request = h.context.loadPrediction();
-    assert.equal(h.elements.get('content').style.display, 'block');
+    assert.equal(h.elements.get('content').style.display, 'grid');
     assert.match(h.elements.get('predictionStatusText').textContent, /20秒/);
     h.requests[0].reject(new Error('offline'));
     assert.equal(await request, false);
@@ -275,7 +275,7 @@ test('failed mode change preserves the previous result and identifies its origin
     h.elements.get('predictionType').value = 'sunset';
     h.elements.get('advanceHours').value = '6';
     const refresh = h.context.loadPrediction();
-    assert.equal(h.elements.get('content').style.display, 'block');
+    assert.equal(h.elements.get('content').style.display, 'grid');
     assert.match(h.elements.get('predictionStatusText').textContent, /保留上次日出模式/);
     h.requests[1].reject(new Error('timeout'));
     await refresh;

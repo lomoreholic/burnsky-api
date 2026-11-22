@@ -33,14 +33,14 @@ def build_viewing_windows(now, get_sun_times):
     return windows
 
 
-def build_prediction_timing(generated_at, prediction_type, advance_hours, get_sun_times):
+def build_prediction_timing(generated_at, prediction_type, advance_hours, get_sun_times, *, evaluated_at=None):
     """Keep the evaluated instant separate from the solar event on that date.
 
     Solar events are references only: selecting sunrise at night does not turn a
     current-conditions score into a forecast for the following morning.
     """
     generated_at = generated_at.astimezone(HK_TIMEZONE)
-    evaluated_at = generated_at + timedelta(hours=advance_hours)
+    evaluated_at = evaluated_at.astimezone(HK_TIMEZONE) if evaluated_at is not None else generated_at + timedelta(hours=advance_hours)
     sun_times = get_sun_times(evaluated_at.date())
     # The existing scorer also treats modes other than sunrise as sunset.
     event_type = 'sunrise' if prediction_type == 'sunrise' else 'sunset'

@@ -773,7 +773,7 @@
 
         .weather-section {
             background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);
-            color: white;
+            color: #1f2937;
             border-radius: 20px;
             padding: 30px;
             margin-top: 30px;
@@ -818,6 +818,7 @@
 
         .weather-card {
             background: rgba(255,255,255,0.95);
+            color: #334155;
             border-radius: 16px;
             padding: 20px;
             text-align: center;
@@ -1498,18 +1499,35 @@
                 background: linear-gradient(135deg, #c0392b 0%, #8e44ad 50%, #2c3e50 100%) !important;
             }
         }
+        #verificationSummary details { margin: 12px 0 20px; }
+        #verificationSummary summary { cursor: pointer; color: #345; }
+        #verificationSummary table { border-collapse: collapse; margin: 12px 0; }
+        #verificationSummary caption { text-align: left; padding-bottom: 8px; color: #444; }
+        #verificationSummary th, #verificationSummary td {
+            padding: 8px; border-bottom: 1px solid #ddd; text-align: left; white-space: nowrap;
+        }
     </style>
     {% include 'nav_styles.html' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
 </head>
-<body>
+<body class="home-page">
     {% include 'nav_fragment.html' %}
     
     <div class="container">
         <header class="header">
-            <h1>🔥 燒天預測系統</h1>
-            <p>基於香港天文台數據的智能燒天預測</p>
-            <div id="currentTime" style="font-size: 1rem; color: #666; margin-top: 12px; font-weight: 500;"></div>
+            <div>
+                <p class="home-eyebrow"><span class="brand-sun" aria-hidden="true"></span> BURNSKY <span>／ HONG KONG</span></p>
+                <h1>把握下一場燒天</h1>
+                <p class="home-subtitle">香港日出・日落條件與拍攝參考</p>
+            </div>
+            <div class="home-clock"><span class="home-clock-label">此刻・香港</span><div id="currentTime"></div></div>
         </header>
+        <nav class="home-jump-nav" aria-label="首頁內容">
+            <a href="#viewingPlan">觀賞時段</a>
+            <a href="#skyCameras">天空實況</a>
+            <a href="#locationSection">拍攝地點</a>
+            <a href="#weatherSection">天氣數據</a>
+        </nav>
         
         <!-- 麵包屑結構化數據 -->
         <script type="application/ld+json">
@@ -1535,18 +1553,41 @@
         
         <!-- 主要應用程式內容 -->
         <main class="main-card" role="main">
-            <section id="viewingPlan" aria-labelledby="viewingPlanTitle" style="padding: 20px; margin-bottom: 18px; border-radius: 16px; background: #fff5e9; color: #342a24; line-height: 1.7;">
-                <p style="font-size: 0.85rem; color: #79513c;">幾時睇 · 下一步做咩</p>
-                <h2 id="viewingPlanTitle" style="font-size: 1.4rem; margin: 6px 0;">正在查找下一次觀賞時段</h2>
-                <p id="viewingPlanTime" style="font-size: 1.05rem; font-weight: 600;">正在取得香港日出／日落時間…</p>
-                <p id="viewingPlanStatus" role="status" aria-live="polite" style="margin-top: 12px; font-weight: 600;">尚未確認觀賞條件</p>
-                <p id="viewingPlanAction" style="margin: 8px 0 14px;">可先查看天空實況，或選好拍攝地點。</p>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                    <button id="viewingPlanButton" class="refresh-btn" type="button" onclick="assessViewingWindow()">取得觀賞時段條件參考</button>
-                    <a href="/webcam-analysis" style="color: #1254a1; text-decoration: underline;">查看天空實況</a>
-                    <a href="/best-locations" style="color: #1254a1; text-decoration: underline;">揀拍攝地點</a>
+            <section id="viewingPlan" class="viewing-plan" aria-labelledby="viewingPlanTitle">
+                <div class="plan-copy">
+                <p class="home-eyebrow">下一次追光計劃</p>
+                <h2 id="viewingPlanTitle">正在查找下一次觀賞時段</h2>
+                <p id="viewingPlanTime">正在取得香港日出／日落時間…</p>
+                <div class="plan-condition" role="status" aria-live="polite" aria-atomic="true">
+                    <div id="viewingPlanScore" class="plan-score" role="meter" aria-label="日落條件指數" aria-valuemin="0" aria-valuemax="100" hidden>
+                        <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                            <circle class="plan-score-track" cx="60" cy="60" r="51" />
+                            <circle id="viewingPlanScoreArc" class="plan-score-arc" cx="60" cy="60" r="51" pathLength="100" stroke-dasharray="0 100" />
+                        </svg>
+                        <div class="plan-score-number" aria-hidden="true"><strong id="viewingPlanScoreValue">—</strong><span>／100</span></div>
+                    </div>
+                    <div class="plan-condition-copy">
+                        <p id="viewingPlanScoreLabel" class="plan-score-label" hidden>日落條件指數</p>
+                        <p id="viewingPlanStatus">尚未確認觀賞條件</p>
+                        <p id="viewingPlanScoreNote" class="plan-score-note" hidden>條件參考，並非燒天機率</p>
+                    </div>
                 </div>
-                <p id="viewingPlanReference" style="margin-top: 12px; font-size: 0.8rem; color: #65574e;">觀賞時間參考不代表會出現燒天；出發前請核對天氣警告。</p>
+                <div class="plan-actions">
+                    <button id="viewingPlanButton" class="refresh-btn" type="button" onclick="assessViewingWindow()">取得觀賞時段條件參考</button>
+                    <a href="/webcam-analysis">查看天空實況 <span aria-hidden="true">↗</span></a>
+                    <a href="/best-locations">揀拍攝地點 <span aria-hidden="true">↗</span></a>
+                </div>
+                <details class="plan-guidance">
+                    <summary>出發建議與使用限制</summary>
+                    <p id="viewingPlanAction">可先查看天空實況，或選好拍攝地點。</p>
+                </details>
+                </div>
+                <div class="sky-scene" aria-hidden="true">
+                    <span class="scene-orbit"></span><span class="scene-sun"></span>
+                    <span class="scene-ridge scene-ridge-back"></span><span class="scene-ridge scene-ridge-front"></span>
+                    <span class="scene-caption">追光之前，先看天空。</span>
+                </div>
+                <p id="viewingPlanReference">觀賞時間參考不代表會出現燒天；出發前請核對天氣警告。</p>
             </section>
             <div id="loading" role="status" aria-live="polite" style="padding: 14px; margin-bottom: 16px; border-radius: 10px; background: #eef4ff; color: #234;">
                 <p id="predictionStatusText">正在取得條件評估；你可以先查看天空實況及拍攝地點。</p>
@@ -1556,7 +1597,7 @@
 
             <div id="content" style="text-align: center;">
                 <details id="assessmentDetails" style="text-align: left; margin: 12px 0;">
-                    <summary style="cursor: pointer; padding: 12px; font-weight: 600; color: #345;">查看條件指數、資料限制及其他評估時段</summary>
+                    <summary style="cursor: pointer; padding: 12px; font-weight: 600; color: #345;">查看計分依據、資料限制及其他評估時段</summary>
                     <div id="predictionTiming" role="region" aria-label="評估時段" aria-live="polite" style="margin: 12px auto; padding: 14px; max-width: 600px; border-radius: 10px; background: #eef4ff; color: #234; line-height: 1.8; text-align: left;">
                         <h2 id="assessmentHeadline" style="font-size: 1.15rem; margin-bottom: 8px;">尚未取得可用評估</h2>
                         <p id="evaluationTime" style="font-weight: 600;">評估時間：尚未取得</p>
@@ -1564,6 +1605,7 @@
                         <p id="predictionScope" style="font-size: 0.85rem;"></p>
                         <p id="assessmentNextStep" style="margin-top: 8px;"></p>
                         <p id="dataQualitySummary" style="margin-top: 12px; font-weight: 600;"></p>
+                        <p id="scoreCoverageSummary" style="margin-top: 8px; color: #263445; line-height: 1.7;"></p>
                         <details id="dataQualityDetails" style="margin-top: 8px;">
                             <summary>查看評分資料限制</summary>
                             <p id="dataQualityLimitations" style="margin-top: 8px; line-height: 1.7; white-space: pre-line;"></p>
@@ -1643,7 +1685,7 @@
                     </div>
 
                 <!-- 智能分析摘要區域 -->
-                <section class="summary-section" aria-labelledby="summary-title">
+                <section id="analysisSummarySection" class="summary-section" aria-labelledby="summary-title" hidden>
                     <h2 class="summary-title" id="summary-title">💡 智能分析摘要</h2>
                     <div id="analysisSummary" role="region" aria-live="polite">
                         <p style="color: #666;">取得評估後會顯示條件摘要。出發前請同時查看天空實況及天氣警告。</p>
@@ -1725,7 +1767,7 @@
                     
                 </details>
                 <!-- 📷 即時攝影機預覽區域 -->
-                <section class="webcam-preview-section" aria-labelledby="webcam-preview-title" style="margin-top: 20px;">
+                <section class="webcam-preview-section" id="skyCameras" aria-labelledby="webcam-preview-title" style="margin-top: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <h2 id="webcam-preview-title" style="color: white; margin: 0; font-size: 1.1rem; font-weight: 600;">📷 即時天空實況</h2>
                         <a href="/webcam-analysis" style="color: rgba(255,255,255,0.9); font-size: 0.8rem; text-decoration: none;">查看全部 →</a>
@@ -1739,7 +1781,7 @@
                     </div>
                 </section>
 
-                <section class="main-card" aria-labelledby="location-recommendations-title" style="margin-top: 20px;">
+                <section class="main-card" id="locationSection" aria-labelledby="location-recommendations-title" style="margin-top: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px;">
                         <h2 id="location-recommendations-title" style="color: #333; margin: 0; font-size: 1.25rem;">推薦出發地點</h2>
                         <a href="/best-locations" style="color: #0066cc; font-size: 0.85rem;">全部地點</a>
@@ -1750,8 +1792,15 @@
                     <p id="locationDataFreshness" style="margin: 12px 0 0; color: #666; font-size: 0.8rem;"></p>
                 </section>
 
+                <section class="weather-section" id="weatherSection" aria-labelledby="weather-title">
+                    <div class="section-heading"><div><p class="home-eyebrow">WEATHER OVERVIEW</p><h2 class="weather-title" id="weather-title">天氣數據</h2></div><span class="section-caption">逐項來源・清楚呈現</span></div>
+                    <details class="source-notes"><summary>資料來源與使用說明</summary><p id="weatherSourceSummary">取得資料後會逐項列明來源、更新時間及是否估算。</p></details>
+                    <div class="weather-data" id="weatherData" role="region" aria-label="氣象讀數與來源" aria-live="polite"></div>
+                </section>
+
                 <section class="main-card" id="comparisonSection" aria-labelledby="comparison-title" style="margin-top:20px;">
                     <h2 id="comparison-title" style="font-size:1.25rem;">預測與實況對照</h2>
+                    <details class="secondary-details"><summary>保留評估，查看天空影像</summary>
                     <p>保留原本評估，再於目標時段查看相同方向的天空影像。</p>
                     <div style="display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;">
                         <button type="button" class="refresh-btn" id="comparisonRefresh">載入／更新對照</button>
@@ -1763,16 +1812,21 @@
                     <div id="comparisonObservations" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:12px;"></div>
                     <p style="font-size:.85rem; color:#666;">來源更新時間並非已核實的拍攝時間。條件指數與影像像素指標用途不同，這裏不計分數差異或準確率。</p>
                     <a href="/webcam-analysis">查看其他攝影機</a>
+                    </details>
                 </section>
                 <!-- 天氣數據區域 -->
-                <section class="weather-section" aria-labelledby="weather-title" style="margin-top: 20px;">
-                    <h2 class="weather-title" id="weather-title">🌦️ 天氣數據</h2>
-                    <p id="weatherSourceSummary" style="font-size: 0.9rem; line-height: 1.7; margin-bottom: 14px;">取得資料後會逐項列明來源、更新時間及是否估算。</p>
-                    
-                    <div class="weather-data" id="weatherData" role="region" aria-live="polite">
-                        <!-- 天氣數據將動態載入 -->
-                        <!-- 天氣警告卡片將在這裡動態添加 -->
-                    </div>
+                <section class="main-card" id="verificationSection" aria-labelledby="verificationTitle" style="margin-top:20px; color:#333;">
+                    <h2 id="verificationTitle" style="font-size:1.25rem;">提前 3 小時預測驗證</h2>
+                    <details class="secondary-details"><summary>查看留底紀錄與實況回報</summary>
+                    <p>系統會在日出／日落前約 3 小時自動保留香港區域預測（容許前後 5 分鐘）。服務須當時運作；錯過的預測不會事後補造。</p>
+                    <p>強燒天：朝日出／日落方向見到明顯、成片的橙紅或粉紅雲彩。只有微弱色彩、沒有出現或視線受阻，請分別選擇「微弱／沒有」或「無法判斷」。</p>
+                    <p>實況會公開顯示；地點只填公共地方名稱，毋須填地址或個人資料。每次留底只收一份自報，提交前請核對。</p>
+                    <button type="button" class="refresh-btn" id="verificationRefresh">更新驗證紀錄</button>
+                    <p id="verificationStatus" role="status" aria-live="polite">正在讀取留底紀錄…</p>
+                    <div id="verificationSummary"></div>
+                    <div id="verificationRecords"></div>
+                    <p style="font-size:.85rem; color:#555;">條件指數 ≥70 暫作高分門檻，未經校準。錯報指高分但自報微弱／沒有；漏報指低分但自報明顯燒天。統計涵蓋最近 200 次留底，下面只列最近 12 次紀錄。未回報及無法判斷不計入實況分母。地點及回報意願會影響樣本，不能當作全港準確率或發生機率。</p>
+                    </details>
                 </section>
 
                 <!-- 分析因子區域 -->
@@ -2024,7 +2078,7 @@
             </div>
             <h3 style="color: #333; font-size: 1.15rem; margin: 0 0 8px;">資料來源與使用限制</h3>
             <p style="color: #555; line-height: 1.8; margin: 0 0 12px;">
-                預測使用香港天文台公開天氣資料，並在可用時參考即時天空影像及空氣品質資訊。資料會定期更新，但局部雲層、山勢遮擋、海面霧氣及瞬時天氣都可能令現場畫面與預測不同。分數代表拍攝前的條件參考，不是保證；出發前請查看官方天氣警告並以現場安全為先。
+                預測使用香港天文台公開天氣資料及MET Norway分層雲量預報，並在可用時參考即時天空影像及空氣品質資訊。資料會定期更新，但局部雲層、山勢遮擋、海面霧氣及瞬時天氣都可能令現場畫面與預測不同。分數代表拍攝前的條件參考，不是保證；出發前請查看官方天氣警告並以現場安全為先。
             </p>
             <p style="margin: 0; color: #555; line-height: 1.8;">
                 想進一步準備行程，可閱讀 <a href="/photography-guide" style="color: #0066cc;">燒天攝影指南</a>、比較 <a href="/best-locations" style="color: #0066cc;">香港拍攝地點</a>，或在 <a href="/faq" style="color: #0066cc;">常見問題</a> 了解分數的使用方式。
@@ -2058,6 +2112,7 @@
 
     <script src="{{ url_for('static', filename='prediction_presentation.js') }}"></script>
     <script defer src="{{ url_for('static', filename='prediction_comparison.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='forecast_verification.js') }}"></script>
     <script>
         // 香港時區處理函數
         // 強制刷新函數 - 清除所有緩存
@@ -2592,9 +2647,35 @@
                 viewingAssessmentState, new Date(), viewingAssessmentReason);
             document.getElementById('viewingPlanTitle').textContent = plan.title;
             document.getElementById('viewingPlanTime').textContent = plan.timeLabel;
-            document.getElementById('viewingPlanStatus').textContent = plan.status;
+            document.getElementById('viewingPlanStatus').textContent = plan.hasForecast ? plan.confidence : plan.status;
+            const scoreMeter = document.getElementById('viewingPlanScore');
+            scoreMeter.hidden = !plan.hasForecast;
+            document.getElementById('viewingPlanScoreLabel').hidden = !plan.hasForecast;
+            document.getElementById('viewingPlanScoreNote').hidden = !plan.hasForecast;
+            document.getElementById('viewingPlanScoreLabel').textContent = plan.scoreLabel || '';
+            document.getElementById('viewingPlanScoreValue').textContent = plan.hasForecast ? String(plan.score) : '—';
+            document.getElementById('viewingPlanScoreArc').setAttribute('stroke-dasharray', `${plan.score ?? 0} 100`);
+            scoreMeter.setAttribute('aria-valuenow', String(plan.score ?? 0));
+            scoreMeter.setAttribute('aria-label', plan.scoreLabel || '條件指數');
             document.getElementById('viewingPlanAction').textContent = plan.action;
             document.getElementById('viewingPlanReference').textContent = plan.referenceNote;
+            if (lastSuccessfulPrediction) {
+                const data = lastSuccessfulPrediction.data;
+                const assessment = BurnSkyPresentation.describePrediction(data, new Date());
+                // Fold repeated content only when the plan uses this fresh assessment.
+                const sharedAssessment = plan.hasForecast && assessment.scorePrimary;
+                document.getElementById('assessmentHeadline').textContent = sharedAssessment
+                    ? '評估設定與計分依據' : assessment.headline;
+                for (const id of ['eventReference', 'predictionScope', 'assessmentNextStep']) {
+                    document.getElementById(id).hidden = sharedAssessment;
+                }
+                document.getElementById('assessmentNextStep').textContent = assessment.nextStep;
+                document.getElementById('conditionScoreDetails').open = assessment.scorePrimary && !sharedAssessment;
+                document.getElementById('conditionScoreToggle').hidden = assessment.scorePrimary && !sharedAssessment;
+                document.getElementById('conditionScoreToggle').textContent = sharedAssessment
+                    ? '查看條件指數刻度與等級' : '查看所列時間的條件指數（非日出／日落預測）';
+                document.getElementById('sunCountdownContainer').style.display = data.sun_times && !sharedAssessment ? 'block' : 'none';
+            }
             const button = document.getElementById('viewingPlanButton');
             button.textContent = sunTimesLoading ? '正在取得觀賞時間…'
                 : viewingAssessmentState === 'loading' ? '正在取得條件參考…' : plan.buttonLabel;
@@ -2709,7 +2790,7 @@
             const advanceHours = advanceHoursElement ? advanceHoursElement.value : '0';
             
             const selection = `${predictionType === 'sunrise' ? '日出' : '日落'}模式・${advanceHours === '0' ? '當前條件' : advanceHours + '小時後'}`;
-            content.style.display = 'block';
+            content.style.display = 'grid';
             setPredictionStatus('loading', selection);
             
             try {
@@ -2759,6 +2840,7 @@
                 document.getElementById('assessmentHeadline').textContent = presentation.headline;
                 document.getElementById('assessmentNextStep').textContent = presentation.nextStep;
                 document.getElementById('dataQualitySummary').textContent = data.data_quality?.summary || '未取得評分資料完整性說明。';
+                document.getElementById('scoreCoverageSummary').textContent = BurnSkyPresentation.describeScoreCoverage(data);
                 document.getElementById('dataQualityLimitations').textContent = (data.data_quality?.limitations || []).join('\n');
                 document.getElementById('conditionScoreDetails').open = presentation.scorePrimary;
                 document.getElementById('conditionScoreToggle').hidden = presentation.scorePrimary;
@@ -2782,7 +2864,7 @@
                 document.getElementById('summary-title').textContent = presentation.scorePrimary ? '💡 條件分析摘要' : '💡 如何使用這次評估';
                 updateAnalysisSummary(presentation.scorePrimary && data.data_quality?.status === 'ready'
                     ? data.analysis_summary || (data.analysis_details && data.analysis_details.analysis_summary)
-                    : [presentation.headline, presentation.scope, presentation.nextStep]);
+                    : []);
                 
                 // 使用伺服器的計算時間，快取讀取不會被誤標為剛剛更新。
                 document.getElementById('lastUpdated').textContent = presentation.generated
@@ -2809,7 +2891,6 @@
                 lastSuccessfulPrediction = { data, type: predictionType, hours: advanceHours };
                 if (typeof window !== 'undefined' && window.BurnSkyComparison) window.BurnSkyComparison.setPrediction(data);
                 setPredictionStatus('success', selection);
-                document.getElementById('sunCountdownContainer').style.display = data.sun_times ? 'block' : 'none';
                 
                 // 攝影機實況會在用戶接近該區塊時才載入，避免阻塞首屏。
                 scheduleWebcamPreview();
@@ -2900,7 +2981,7 @@
                     explanation: '影響大氣層顏色（13.3%權重）：理想55-70%（20分）、良好50-75%（16分）、可接受45-80%（12分）、邊緣40-85%（7分）、極端<40%或>85%（3分）'
                 },
                 'visibility_factor': { 
-                    name: '能見度因子', 
+                    name: '降雨／能見度遮擋參考',
                     icon: '👁️', 
                     maxScore: 20,
                     explanation: '影響拍攝清晰度（13.3%權重）：無降雨（20分）、極輕微<2mm（15分）、輕微<5mm（10分）、中度<10mm（6分）、大雨<20mm（3分）、暴雨≥20mm（1分）'
@@ -2909,7 +2990,7 @@
                     name: '雲層分析因子', 
                     icon: '☁️', 
                     maxScore: 35,
-                    explanation: '最關鍵因子（23.3%權重）！已修正邏輯：部分有陽光（35分）、短暫有陽光（32分）、大致多雲（28分）、多雲（25分）、大致天晴（18分）、密雲/陰天（12分）、天晴/晴朗（3分）❗️無雲=無燒天'
+                    explanation: '佔總分23.3%。優先使用目標時段分層雲量；中高雲覆蓋適中較有利，低雲遮擋降低分數。晨昏時額外參考太陽方向50及100公里低雲，兩點齊全才套用方向扣分。尚未包含雲厚或地形遮擋；未經實拍校準。'
                 },
                 'uv_factor': { 
                     name: 'UV指數因子', 
@@ -3537,7 +3618,7 @@
                 ? (data.key === 'weather_icon' ? getWeatherIconDescription(data.value) : String(data.value) + (data.unit || '')) : '--';
             const origin = document.createElement('p');
             origin.style.cssText = 'font-size: 0.8rem; line-height: 1.6; margin-top: 8px; overflow-wrap: anywhere;';
-            const kinds = { observed: '官方觀測', estimated: '模型估算', forecast: '官方每日預報', unavailable: '暫缺資料' };
+            const kinds = { observed: '官方觀測', estimated: '模型估算', forecast: '官方每日預報', hourly_forecast: '逐小時模式預報', calculated: '天文計算', unavailable: '暫缺資料' };
             const kind = available && kinds[data.source_kind] ? data.source_kind : 'unavailable';
             origin.textContent = [kinds[kind], data.source, data.station].filter(Boolean).join(' · ');
             const timestamp = document.createElement('p');
@@ -3549,6 +3630,8 @@
             }
             timestamp.textContent = (kind === 'estimated' ? '基礎觀測更新：' : '來源更新：') + format(data.updated_at) + '（香港時間）'
                 + (valid ? ' · 適用：' + (/^\d{4}-\d{2}-\d{2}$/.test(valid) ? valid : format(valid) + '（香港時間）') : '');
+            if (kind === 'calculated') timestamp.textContent = '計算適用：' + format(valid) + '（香港時間）';
+            if (data.period_start && data.period_end) timestamp.textContent += ' · 累積區間：' + format(data.period_start) + ' 至 ' + format(data.period_end) + '（香港時間）';
             const note = document.createElement('p');
             note.style.cssText = 'font-size: 0.8rem; line-height: 1.6; margin-top: 6px;';
             note.textContent = data.note || '';
@@ -3565,6 +3648,17 @@
                 return;
             }
             source.textContent = presentation.summary;
+            if (presentation.cloud_attribution) {
+                const credit = document.createElement('span');
+                credit.textContent = ' Data from MET Norway；經時段插值及BurnSky規則計分。';
+                const license = document.createElement('a');
+                license.href = 'https://creativecommons.org/licenses/by/4.0/';
+                license.textContent = 'CC BY 4.0';
+                const provider = document.createElement('a');
+                provider.href = 'https://api.met.no/weatherapi/locationforecast/2.0/documentation';
+                provider.textContent = ' · 資料來源';
+                source.append(credit, license, provider);
+            }
             for (const card of presentation.cards) appendWeatherCard(card);
         }
 
@@ -3587,6 +3681,8 @@
         function updateAnalysisSummary(summary) {
             const container = document.getElementById('analysisSummary');
             container.innerHTML = '';
+            document.getElementById('analysisSummarySection').hidden = !Array.isArray(summary) || !summary.length;
+            if (!Array.isArray(summary) || !summary.length) return;
             
             if (summary && Array.isArray(summary)) {
                 // 主要結論 - 用更大的樣式突出顯示

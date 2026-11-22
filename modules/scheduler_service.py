@@ -10,7 +10,7 @@ import schedule
 class HourlyPredictionScheduler:
     """Run persisted predictions without coupling scheduler code to Flask globals."""
 
-    def __init__(self, predict, save_prediction, clear_cache, enabled=True, sleep=time.sleep):
+    def __init__(self, predict, save_prediction, clear_cache, enabled=True, sleep=time.sleep, capture_due=None):
         self._predict = predict
         self._save_prediction = save_prediction
         self._clear_cache = clear_cache
@@ -18,6 +18,7 @@ class HourlyPredictionScheduler:
         self._sleep = sleep
         self._started = False
         self._lock = threading.Lock()
+        self._capture_due = capture_due
 
     def save_current_predictions(self):
         """Refresh cached inputs and persist the supported prediction horizons."""
@@ -67,8 +68,12 @@ class HourlyPredictionScheduler:
         print('⏰ 每小時預測保存排程已啟動')
         return True
 
-    @staticmethod
-    def _run():
+    def _run(self):
         while True:
+            if self._capture_due:
+                try:
+                    self._capture_due()
+                except Exception as error:
+                    print(f'三小時預測留底失敗，下次重試: {error}')
             schedule.run_pending()
             time.sleep(60)

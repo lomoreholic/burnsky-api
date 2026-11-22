@@ -206,44 +206,9 @@ def analyze_photo_case_patterns():
     }
 
 def apply_burnsky_photo_corrections(base_score, weather_data, prediction_type):
-    """應用基於實際照片案例的校正"""
-    try:
-        if not BURNSKY_PHOTO_CASES:
-            return 0  # 沒有案例數據，不進行校正
+    """Compatibility helper: photo case similarity has not been validated."""
+    return 0
 
-        patterns = analyze_photo_case_patterns()
-        correction = 0
-
-        # 基於成功案例的天氣條件進行校正
-        successful_cases = patterns.get('successful_cases', [])
-        if successful_cases:
-            # 計算當前條件與成功案例的相似度
-            current_conditions = extract_weather_conditions(weather_data)
-
-            total_similarity = 0
-            for case in successful_cases[:10]:  # 只使用最近10個成功案例
-                case_conditions = case.get('weather_conditions', {})
-                similarity = calculate_condition_similarity(current_conditions, case_conditions)
-                total_similarity += similarity
-
-            avg_similarity = total_similarity / len(successful_cases[:10])
-
-            # 根據相似度應用校正
-            if avg_similarity > 0.7:
-                correction = 3  # 高相似度，增加3分
-                print(f"📸 照片案例學習校正: +{correction}分 (相似度: {avg_similarity:.2f})")
-            elif avg_similarity > 0.5:
-                correction = 2  # 中等相似度，增加2分
-                print(f"📸 照片案例學習校正: +{correction}分 (相似度: {avg_similarity:.2f})")
-            elif avg_similarity > 0.3:
-                correction = 1  # 低相似度，增加1分
-                print(f"📸 照片案例學習校正: +{correction}分 (相似度: {avg_similarity:.2f})")
-
-        return correction
-
-    except Exception as e:
-        print(f"⚠️ 照片案例校正失敗: {e}")
-        return 0
 
 def extract_weather_conditions(weather_data):
     """從天氣數據中提取關鍵條件"""

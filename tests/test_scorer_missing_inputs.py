@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import Mock
 
 from modules.prediction_quality import highest_rainfall, station_value
-from modules.prediction_response import PredictionResponseBuilder
+from modules.prediction_response import PredictionResponseBuilder, missing_factor_sensitivity
 from modules.weather_presentation import number
 
 
@@ -52,6 +52,37 @@ class MissingScoreTests(unittest.TestCase):
             self.assertAlmostEqual(partial['traditional_normalized'], partial['traditional_score'] / 150 * 100)
         self.assertEqual(full['input_coverage']['weighted_percent'], 100)
 
+    def test_sensitivity_does_not_conceal_an_unexplained_score_adjustment(self):
+        result = self.calculate(readings())
+        self.assertIsNone(missing_factor_sensitivity(result, result['final_score'] + 3, 0))
+
+    def test_sensitivity_preserves_actual_score_and_only_varies_missing_factors(self):
+        full = self.calculate(readings())
+        bounds = missing_factor_sensitivity(full, full['final_score'], 0)
+        self.assertEqual(bounds['lower'], bounds['upper'])
+        data = readings()
+        del data['air_quality']
+        partial = self.calculate(data)
+        bounds = missing_factor_sensitivity(partial, partial['final_score'] - 10, 10)
+        self.assertEqual(bounds['lower'], partial['final_score'] - 10)
+        self.assertAlmostEqual(bounds['upper'] - bounds['lower'], 10)
+        self.assertEqual(bounds['missing_factors'], ['air_quality'])
+        self.assertEqual(partial['input_coverage']['missing_max_score'], 15)
+
+    def test_sensitivity_applies_clipping_season_and_warning_in_actual_order(self):
+        for normalized, seasonal, missing, penalty, expected in (
+                (1, -2, 15, 5, 4), (95, 3, 15, 10, 90), (1, -2, 0, 5, 0)):
+            base = max(0, min(100, normalized + seasonal))
+            result = dict(final_score=base, traditional_normalized=normalized,
+                          weights_used={'traditional': 1, 'ml': 0},
+                          adjustments={'numeric_total': seasonal},
+                          input_coverage={'missing_max_score': missing, 'total_max_score': 150})
+            final = max(0, base - penalty)
+            bounds = missing_factor_sensitivity(result, final, penalty)
+            self.assertEqual(bounds['lower'], final)
+            self.assertEqual(bounds['upper'], expected)
+        self.assertIsNone(missing_factor_sensitivity({}, 30, 0))
+
     def test_absent_and_invalid_readings_are_unavailable(self):
         for method in ('temperature', 'humidity', 'visibility', 'pressure', 'uv', 'wind', 'air_quality'):
             self.assertIsNone(getattr(self.scorer, '_calculate_' + method + '_factor')({}))
@@ -66,6 +97,32 @@ class MissingScoreTests(unittest.TestCase):
         self.assertEqual(self.scorer._calculate_visibility_factor(readings()), 20)
         self.assertEqual(self.scorer._calculate_wind_factor({'wind': {'speed': 0}}), 5)
 
+    def test_hourly_clouds_replace_daily_text_and_missing_model_falls_back(self):
+        from test_cloud_forecast import NOW
+        target = NOW.isoformat()
+        data = readings()
+        data['forecast_target_at'] = target
+        data['cloud_forecast'] = dict(total=60, low=0, medium=40, high=60,
+                                      valid_at=target, method='hourly_model', sample_times=[target])
+        self.assertEqual(self.calculate(data)['factor_scores']['cloud'], 35)
+        data['cloud_forecast']['low'] = 90
+        self.assertLess(self.calculate(data)['factor_scores']['cloud'], 10)
+        data['cloud_forecast']['high'] = None
+        self.assertEqual(self.calculate(data)['factor_scores']['cloud'], 25)
+
+    def test_sunward_adjustment_uses_aligned_samples_and_preserves_missing_data_fallback(self):
+        from test_sunward_clouds import service, TARGET, NOW
+        provider, _ = service(100)
+        data = readings()
+        data['forecast_target_at'] = TARGET.isoformat()
+        data['cloud_forecast'] = dict(total=60, low=0, medium=40, high=60, valid_at=TARGET.isoformat(),
+                                      method='hourly_model', sample_times=[TARGET.isoformat()])
+        self.assertEqual(self.calculate(data)['factor_scores']['cloud'], 35)
+        data['sunward_cloud_forecast'] = provider.assess(TARGET, NOW)
+        self.assertEqual(self.calculate(data)['factor_scores']['cloud'], 14)
+        data['sunward_cloud_forecast']['status'] = 'partial'
+        self.assertEqual(self.calculate(data)['factor_scores']['cloud'], 35)
+
     def test_ml_never_blends_default_50_or_runs_synthetic_model(self):
         result = self.calculate(readings())
         self.assertIsNone(result['ml_score'])
@@ -73,6 +130,18 @@ class MissingScoreTests(unittest.TestCase):
         self.assertEqual(result['final_score'], result['traditional_normalized'])
         self.scorer.advanced_predictor.predict_ml.assert_not_called()
         self.scorer.advanced_predictor.analyze_cloud_thickness_and_color_visibility.assert_not_called()
+
+    def test_hourly_weather_replaces_legacy_temperature_humidity_rain_and_wind(self):
+        from test_hourly_weather import inputs, payload
+        model = payload()
+        for entry in model['properties']['timeseries']:
+            entry['data']['instant']['details']['air_temperature'] = 23
+        bundle, _ = inputs(model)
+        result = self.calculate(bundle.target_weather)
+        self.assertEqual(result['factor_scores']['temperature'], 7)  # 23 C, not current 30 C =>15.
+        self.assertEqual(result['factor_scores']['humidity'], 16)  # 74%, not current 60% =>20.
+        self.assertEqual(result['factor_scores']['visibility'], 6)  # 6mm forecast, not observed zero=>20.
+        self.assertEqual(result['factor_scores']['wind'], 2)  # 25.2km/h, not 7m/s interpreted as km/h=>15.
 
     def test_response_keeps_missing_score_null(self):
         builder = PredictionResponseBuilder(None, None, None)

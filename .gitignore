@@ -50,6 +50,7 @@ Thumbs.db
 
 # 本地測試檔案
 test_*.py
+!tests/test_*.py
 *_test.py
 !tests/test_prediction_presentation.py
 !tests/test_dashboard_data.py

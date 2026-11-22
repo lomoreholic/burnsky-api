@@ -10,19 +10,22 @@ class FutureWarningRiskService:
         self._forecast_extractor = forecast_extractor
         self._now = now
 
-    def assess(self, weather_data, forecast_data, ninday_data, advance_hours):
+    def assess(self, weather_data, forecast_data, ninday_data, advance_hours, *, target_weather=None):
         advance_hours = int(advance_hours)
         if advance_hours <= 0:
             return 0, []
 
         warnings = []
-        try:
-            future_weather = self._forecast_extractor.extract_future_weather_data(
-                weather_data, forecast_data, ninday_data, advance_hours
-            )
-        except Exception as error:
-            print(f'🔮 警告: 無法提取未來天氣數據: {error}')
-            future_weather = {}
+        if target_weather is not None:
+            future_weather = target_weather
+        else:
+            try:
+                future_weather = self._forecast_extractor.extract_future_weather_data(
+                    weather_data, forecast_data, ninday_data, advance_hours
+                )
+            except Exception as error:
+                print(f'🔮 警告: 無法提取未來天氣數據: {error}')
+                future_weather = {}
 
         rainfall_risk = self._rainfall_risk(ninday_data, advance_hours, warnings)
         wind_risk = self._wind_risk(future_weather, warnings)
@@ -53,9 +56,9 @@ class FutureWarningRiskService:
 
     @staticmethod
     def _wind_risk(future_weather, warnings):
-        try:
-            speed = float(future_weather.get('wind', {}).get('speed', 0))
-        except (AttributeError, TypeError, ValueError):
+        from .prediction_quality import weather_value
+        speed = weather_value(future_weather, 'wind_speed')
+        if speed is None:
             return 0
         if speed >= 88:
             warnings.append('預測強風 - 可能發出烈風警告')
@@ -67,9 +70,9 @@ class FutureWarningRiskService:
 
     @staticmethod
     def _visibility_risk(future_weather, warnings):
-        try:
-            humidity = float(future_weather.get('humidity', {}).get('value', 50))
-        except (AttributeError, TypeError, ValueError):
+        from .prediction_quality import weather_value
+        humidity = weather_value(future_weather, 'humidity')
+        if humidity is None:
             return 0
         if humidity >= 95:
             warnings.append('極高濕度 - 可能出現霧患')

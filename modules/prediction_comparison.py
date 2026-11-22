@@ -33,7 +33,9 @@ class AssessmentStore:
         # Store exactly the assessment shown to the user, without recomputing it later.
         snapshot = {key: prediction.get(key) for key in (
             'burnsky_score', 'prediction_type', 'advance_hours', 'prediction_timing',
-            'data_quality', 'scoring_method', 'weather_updated_at')}
+            'data_quality', 'scoring_method', 'weather_updated_at', 'weather_data',
+            'original_weather_data', 'forecast_data', 'analysis_details', 'unified_analysis',
+            'warning_data', 'score_sensitivity')}
         payload = json.dumps(snapshot, ensure_ascii=False, sort_keys=True)
         identifier = hashlib.sha256(payload.encode()).hexdigest()
         with closing(sqlite3.connect(self.path)) as conn:

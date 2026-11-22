@@ -28,9 +28,13 @@ from modules.feedback import calculate_real_accuracy, feedback_bp
 from modules.history import history_bp
 from modules.prediction_routes import create_prediction_blueprint
 from modules.prediction_comparison import AssessmentStore, build_comparison
+from modules.forecast_verification import ForecastVerification, create_verification_blueprint
 from modules.prediction_quality import require_prediction_inputs
 from modules.scheduler_service import HourlyPredictionScheduler
 from modules.weather_inputs import WeatherInputService
+from modules.cloud_forecast import CloudForecastClient
+from modules.visibility_observations import VisibilityClient
+from modules.sunward_clouds import SunwardCloudService
 from modules.warning_risk import FutureWarningRiskService
 from modules.warning_assessment import CurrentWarningAssessmentService
 from modules.warning_rules import calculate_warning_impact_advanced
@@ -1224,81 +1228,9 @@ def is_similar_to_successful_cases(current_conditions):
     return is_similar, average_similarity
 
 def apply_burnsky_photo_corrections(score, weather_data, prediction_type):
-    """基於實際燒天照片案例進行校正 - 重點在品質而非盲目推高分數"""
-    
-    correction = 0
-    quality_factors = []
-    
-    if prediction_type == 'sunset':
-        current_hour = datetime.now().hour
-        current_minute = datetime.now().minute
-        current_time_decimal = current_hour + current_minute / 60.0
-        
-        # 7月最佳燒天時間：18:50 (19:30日落前40分鐘)
-        optimal_time = 18 + 50/60.0  # 18.833
-        
-        # 時間窗口校正（但不盲目推高）
-        time_diff = abs(current_time_decimal - optimal_time)
-        
-        # 雲層品質分析（重點）
-        cloud_quality_score = analyze_cloud_quality_for_burnsky(weather_data)
-        quality_factors.append(f"雲層品質: {cloud_quality_score:.1f}/10")
-        
-        # 大氣條件分析（重點）
-        atmospheric_quality = analyze_atmospheric_conditions(weather_data)
-        quality_factors.append(f"大氣條件: {atmospheric_quality:.1f}/10")
-        
-        # 基於品質的校正，而不是盲目加分
-        if cloud_quality_score >= 7 and atmospheric_quality >= 6:
-            if time_diff <= 0.33:  # 20分鐘內 + 高品質
-                correction += 20
-                quality_factors.append("� 最佳時間+優秀條件: +20分")
-            elif time_diff <= 0.67:  # 40分鐘內 + 高品質
-                correction += 12
-                quality_factors.append("✨ 良好時間+優秀條件: +12分")
-        elif cloud_quality_score >= 5 or atmospheric_quality >= 5:
-            if time_diff <= 0.33:
-                correction += 8
-                quality_factors.append("🌤️ 最佳時間+普通條件: +8分")
-            elif time_diff <= 0.67:
-                correction += 5
-                quality_factors.append("⏰ 良好時間+普通條件: +5分")
-        
-        # 顏色條件分析（新增）
-        color_potential = analyze_color_potential(weather_data)
-        quality_factors.append(f"顏色潛力: {color_potential:.1f}/10")
-        
-        if color_potential >= 7:
-            correction += 8
-            quality_factors.append("🌈 高顏色潛力: +8分")
-        elif color_potential >= 5:
-            correction += 3
-            quality_factors.append("🎨 中等顏色潛力: +3分")
-        
-        # 🚫 暫時禁用歷史案例校正 - 等待真實照片數據收集
-        # 原因: 目前的歷史案例都是硬編碼虛假數據，缺乏真實的品質指標
-        # 未來計劃: 建立真實的照片上傳和評分系統後重新啟用
-        
-        # 註解掉的歷史案例匹配邏輯:
-        # current_conditions = {...}
-        # is_similar, similarity_score, match_reason = is_similar_to_quality_cases(current_conditions)
-        # pattern_correction = ...
-        
-        quality_factors.append("� 歷史案例校正已禁用 (等待真實數據)")
-        
-        # 品質閾值控制 - 防止低品質情況被過度推高
-        if cloud_quality_score < 4 and atmospheric_quality < 4:
-            correction = min(correction, 5)  # 低品質情況最多加5分
-            quality_factors.append("⚠️ 低品質限制: 校正上限5分")
-        elif cloud_quality_score < 6 and atmospheric_quality < 6:
-            correction = min(correction, 15)  # 中等品質最多加15分
-            quality_factors.append("📊 中等品質限制: 校正上限15分")
-        
-        print(f"📸 品質導向校正: +{correction}分")
-        for factor in quality_factors:
-            print(f"   - {factor}")
-    
-    return correction
+    """Compatibility helper: unvalidated photo bonuses are disabled."""
+    return 0
+
 
 def analyze_stable_photo_patterns():
     """分析穩定的照片模式（用於校正而非即時更新）"""
@@ -1799,7 +1731,10 @@ weather_input_service = WeatherInputService(
     fetch_ninday=fetch_ninday_forecast,
     fetch_wind=get_current_wind_data,
     fetch_warnings=fetch_warning_data,
-    forecast_extractor=forecast_extractor
+    forecast_extractor=forecast_extractor,
+    fetch_cloud_forecast=CloudForecastClient().fetch,
+    sunward_service=SunwardCloudService(),
+    fetch_visibility=VisibilityClient().fetch
 )
 warning_risk_service = FutureWarningRiskService(forecast_extractor)
 warning_assessment_service = CurrentWarningAssessmentService(
@@ -1858,6 +1793,7 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     if unified_result.get('ml_score_source') == 'unavailable':
         data_quality['limitations'].append(unified_result['ml_unavailable_reason'])
     data_quality['limitations'].append('舊雲厚度額外加減分含預設值，暫停使用。')
+    data_quality['limitations'].append('未驗證的照片案例、固定鐘點及預設濕度額外加分已停用；總分只按統一計分及警告扣分計算。')
     unified_result['analysis'].update(confidence=data_quality['confidence'], recommendation=data_quality['summary'],
                                       summary=data_quality['summary'])
     
@@ -1872,7 +1808,8 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     warning_risk_warnings = []
     if advance_hours > 0:
         warning_risk_score, warning_risk_warnings = warning_risk_service.assess(
-            weather_data, forecast_data, ninday_data, advance_hours
+            weather_data, forecast_data, ninday_data, advance_hours,
+            target_weather=future_weather_data
         )
     
     # 最終分數計算：傳統警告影響 + 未來風險評估，但限制在合理範圍內
@@ -1883,14 +1820,6 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
         print(f"🚨 警告影響詳情: -{warning_impact:.1f}分即時警告 + {warning_risk_score:.1f}分風險評估 = -{total_warning_impact:.1f}分總影響")
         print(f"🚨 調整後分數: {adjusted_score:.1f} (原分數: {score:.1f})")
         score = adjusted_score
-    
-    # 🌅 應用基於實際照片案例的校正
-    photo_correction = apply_burnsky_photo_corrections(score, future_weather_data, prediction_type)
-    
-    if photo_correction != 0:
-        corrected_score = score + photo_correction
-        print(f"📸 照片案例學習校正: {score:.1f} → {corrected_score:.1f}")
-        score = corrected_score
     
     # 🆕 記錄預測和警告數據到歷史分析系統
     if warning_analysis_available and warning_analyzer:
@@ -1958,6 +1887,8 @@ def predict_burnsky_core(prediction_type='sunset', advance_hours=0):
     return result  # 返回結果字典而不是 jsonify
 
 app.register_blueprint(create_prediction_blueprint(predict_burnsky_core, limiter, flask_cache))
+forecast_verification = ForecastVerification(assessment_store, predict_burnsky_core, get_seasonal_sun_times)
+app.register_blueprint(create_verification_blueprint(forecast_verification))
 
 @app.route("/api")
 @flask_cache.cached(timeout=3600)  # 1小時快取，API資訊很少變化
@@ -5267,7 +5198,8 @@ scheduler = HourlyPredictionScheduler(
     predict=predict_burnsky_core,
     save_prediction=save_prediction_to_history,
     clear_cache=clear_scheduler_caches,
-    enabled=HOURLY_SAVE_ENABLED
+    enabled=HOURLY_SAVE_ENABLED,
+    capture_due=forecast_verification.capture_due
 )
 scheduler.start()
 

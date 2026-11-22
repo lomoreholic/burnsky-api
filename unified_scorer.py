@@ -77,11 +77,12 @@ class UnifiedBurnskyScorer:
             dict: 完整的計分結果
         """
         
+        from datetime import timezone
         result = {
             'prediction_info': {
                 'type': prediction_type,
                 'advance_hours': advance_hours,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             },
             'factor_scores': {},
             'traditional_score': 0,
@@ -92,9 +93,16 @@ class UnifiedBurnskyScorer:
         }
         
         try:
+            evaluated_at = self._resolve_evaluated_at(weather_data, advance_hours)
+            result['prediction_info']['evaluated_at'] = evaluated_at.isoformat()
+            time_result = self.advanced_predictor.calculate_advanced_time_factor(
+                prediction_type=prediction_type, advance_hours=advance_hours, evaluated_at=evaluated_at
+            )
+            result['time_factor'] = time_result
             # 1. 計算各個因子分數
             factor_scores = self._calculate_all_factors(
-                weather_data, forecast_data, ninday_data, prediction_type, advance_hours
+                weather_data, forecast_data, ninday_data, prediction_type, advance_hours,
+                time_result=time_result
             )
             result['factor_scores'] = factor_scores
             if factor_scores['temperature'] is None or factor_scores['humidity'] is None:
@@ -108,6 +116,7 @@ class UnifiedBurnskyScorer:
                 'available_factors': list(available),
                 'missing_factors': [key for key, value in factor_scores.items() if value is None],
                 'available_max_score': available_max,
+                'missing_max_score': self.MAX_TRADITIONAL_SCORE - available_max,
                 'total_max_score': self.MAX_TRADITIONAL_SCORE,
                 'weighted_percent': round(available_max / self.MAX_TRADITIONAL_SCORE * 100, 1),
                 'normalization': 'fixed_total_no_missing_points',
@@ -152,15 +161,29 @@ class UnifiedBurnskyScorer:
             result['final_score'] = None
             return result
     
-    def _calculate_all_factors(self, weather_data, forecast_data, ninday_data, prediction_type, advance_hours):
+    def _resolve_evaluated_at(self, weather_data, advance_hours):
+        """Use the instant selected before provider requests; retain legacy direct calls."""
+        from datetime import timedelta, timezone
+        from modules.cloud_forecast import utc_time
+        if isinstance(weather_data, dict) and 'forecast_target_at' in weather_data:
+            evaluated_at = utc_time(weather_data['forecast_target_at'])
+            if evaluated_at is None:
+                raise ValueError('forecast_target_at must be a timezone-aware ISO datetime')
+            return evaluated_at
+        return datetime.now(timezone.utc) + timedelta(hours=advance_hours)
+
+    def _calculate_all_factors(self, weather_data, forecast_data, ninday_data, prediction_type, advance_hours,
+                               *, time_result=None):
         """計算所有因子分數"""
         
         factors = {}
         
         # 1. 時間因子
-        time_result = self.advanced_predictor.calculate_advanced_time_factor(
-            prediction_type=prediction_type, advance_hours=advance_hours
-        )
+        if time_result is None:
+            time_result = self.advanced_predictor.calculate_advanced_time_factor(
+                prediction_type=prediction_type, advance_hours=advance_hours,
+                evaluated_at=self._resolve_evaluated_at(weather_data, advance_hours)
+            )
         factors['time'] = time_result['score']
         
         # 2. 溫度因子
@@ -170,13 +193,13 @@ class UnifiedBurnskyScorer:
         factors['humidity'] = self._calculate_humidity_factor(weather_data)
         
         # 4. 能見度因子
-        factors['visibility'] = self._calculate_visibility_factor(weather_data)
+        factors['visibility'] = self._calculate_visibility_factor(weather_data, advance_hours)
         
         # 5. 氣壓因子
         factors['pressure'] = self._calculate_pressure_factor(weather_data)
         
         # 6. 雲層因子
-        factors['cloud'] = self._calculate_cloud_factor(forecast_data)
+        factors['cloud'] = self._calculate_cloud_factor(forecast_data, weather_data)
         
         # 7. UV指數因子
         factors['uv'] = self._calculate_uv_factor(weather_data)
@@ -196,7 +219,8 @@ class UnifiedBurnskyScorer:
         
         try:
             # 獲取香港天文台溫度
-            hko_temp = station_value(weather_data, 'temperature')
+            from modules.prediction_quality import weather_value
+            hko_temp = weather_value(weather_data, 'temperature')
             if hko_temp is None or not -50 <= hko_temp <= 60:
                 return None
             
@@ -222,7 +246,8 @@ class UnifiedBurnskyScorer:
         
         try:
             # 獲取香港天文台濕度
-            hko_humidity = station_value(weather_data, 'humidity')
+            from modules.prediction_quality import weather_value
+            hko_humidity = weather_value(weather_data, 'humidity')
             if hko_humidity is None or not 0 <= hko_humidity <= 100:
                 return None
             
@@ -243,8 +268,8 @@ class UnifiedBurnskyScorer:
         except:
             return None
     
-    def _calculate_visibility_factor(self, weather_data):
-        """計算能見度因子 (0-20分) - 提高重要性"""
+    def _calculate_visibility_factor(self, weather_data, advance_hours=0):
+        """Rain proxy (0–20), capped by reference-station visibility in current mode."""
         try:
             score = None
             
@@ -255,7 +280,7 @@ class UnifiedBurnskyScorer:
                     return score
                 
                 if total_rainfall == 0:
-                    score = 20  # 無降雨，能見度佳（滿分）
+                    score = 20  # 無雨只代表降雨遮擋部分滿分。
                 elif total_rainfall < 2:
                     score = 15  # 極輕微降雨
                 elif total_rainfall < 5:
@@ -267,6 +292,11 @@ class UnifiedBurnskyScorer:
                 else:
                     score = 1   # 暴雨，能見度極差
             
+            if score is not None and advance_hours == 0:
+                from modules.visibility_observations import reference_visibility, visibility_score_cap
+                reading = reference_visibility(weather_data)
+                if reading is not None:
+                    score = min(score, visibility_score_cap(reading['value']))
             return score
             
         except:
@@ -302,8 +332,17 @@ class UnifiedBurnskyScorer:
         except:
             return None
     
-    def _calculate_cloud_factor(self, forecast_data):
+    def _calculate_cloud_factor(self, forecast_data, weather_data=None):
         """計算雲層因子 (0-35分) - 最重要因子（已修正邏輯）"""
+        from modules.cloud_forecast import score_cloud_layers, valid_cloud_forecast
+        weather = weather_data or {}
+        cloud = weather.get('cloud_forecast')
+        layered_score = score_cloud_layers(cloud) if valid_cloud_forecast(cloud, weather.get('forecast_target_at')) else None
+        if layered_score is not None:
+            from modules.sunward_clouds import sunward_multiplier
+            multiplier = sunward_multiplier(weather.get('sunward_cloud_forecast'),
+                                            weather.get('forecast_target_at'))
+            return round(layered_score * multiplier, 2) if multiplier is not None else layered_score
         if not forecast_data or 'forecastDesc' not in forecast_data:
             return None
         
@@ -363,12 +402,12 @@ class UnifiedBurnskyScorer:
     
     def _calculate_wind_factor(self, weather_data):
         """計算風速因子 (0-15分)"""
-        if not weather_data or 'wind' not in weather_data:
+        if not weather_data:
             return None
         
         try:
-            wind_data = weather_data['wind']
-            wind_speed = number(wind_data.get('speed'))
+            from modules.prediction_quality import weather_value
+            wind_speed = weather_value(weather_data, 'wind_speed')
             # 每日預報風級範圍不是實測風速，不取中點冒充讀數。
             if wind_speed is None or not 0 <= wind_speed <= 300:
                 return None
@@ -441,7 +480,9 @@ class UnifiedBurnskyScorer:
 
         # 2. 季節調整
         if use_seasonal:
-            month = datetime.now().month
+            from zoneinfo import ZoneInfo
+            month = datetime.fromisoformat(result['prediction_info']['evaluated_at']).astimezone(
+                ZoneInfo('Asia/Hong_Kong')).month
             if month in [6, 7, 8]:  # 夏季
                 adjustment = self.SCORING_CONFIG['adjustment_factors']['seasonal_summer']
                 total_adjustment += adjustment
@@ -454,6 +495,7 @@ class UnifiedBurnskyScorer:
         # 應用總調整分數
         adjusted_score = score + total_adjustment
         adjustments['total_adjustment'] = f'總調整: {total_adjustment:+.0f}分'
+        adjustments['numeric_total'] = total_adjustment
         
         result['adjustments'] = adjustments
         return adjusted_score
@@ -481,7 +523,7 @@ class UnifiedBurnskyScorer:
             'time': '時間因子',
             'temperature': '溫度因子', 
             'humidity': '濕度因子',
-            'visibility': '能見度因子',
+            'visibility': '降雨遮擋參考',
             'cloud': '雲層因子',
             'uv': 'UV指數因子',
             'wind': '風速因子',

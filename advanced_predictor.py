@@ -190,12 +190,18 @@ class AdvancedBurnskyPredictor:
         """計算進階時間因子 - 保持向後兼容性"""
         return self.calculate_advanced_time_factor('sunset', 0)
     
-    def calculate_advanced_time_factor(self, prediction_type='sunset', advance_hours=2):
+    def calculate_advanced_time_factor(self, prediction_type='sunset', advance_hours=2, *, evaluated_at=None):
         """進階時間因子計算 - 基於實際日落時間"""
         # 強制使用香港時區
         hk_tz = pytz.timezone('Asia/Hong_Kong')
-        current_time = datetime.now(hk_tz).replace(tzinfo=None)
-        prediction_time = current_time + timedelta(hours=advance_hours)
+        generated_at = datetime.now(hk_tz)
+        if evaluated_at is None:
+            evaluated_at = generated_at + timedelta(hours=advance_hours)
+        elif not isinstance(evaluated_at, datetime) or evaluated_at.utcoffset() is None:
+            raise ValueError('evaluated_at must be a timezone-aware datetime')
+        evaluated_at = evaluated_at.astimezone(hk_tz)
+        current_time = generated_at.replace(tzinfo=None)
+        prediction_time = evaluated_at.replace(tzinfo=None)
         
         # 獲取預測時間當天的日出或日落時間
         prediction_date = prediction_time.date()
@@ -289,6 +295,9 @@ class AdvancedBurnskyPredictor:
             'target_type': time_label,
             'current_time': current_time.strftime('%H:%M'),
             'prediction_time': prediction_time.strftime('%H:%M'),
+            'evaluated_at': evaluated_at.isoformat(),
+            'generated_at': generated_at.isoformat(),
+            'event_at': hk_tz.localize(target_time).isoformat(),
             'time_diff_minutes': int(time_diff_minutes),
             'advance_hours': advance_hours
         }
@@ -798,12 +807,8 @@ class AdvancedBurnskyPredictor:
         color_intensity = 'low'
         
         # 基於濕度判斷色彩飽和度
-        humidity = 70  # 預設值
-        if weather_data and 'humidity' in weather_data:
-            for h in weather_data['humidity']['data']:
-                if h['place'] == '香港天文台':
-                    humidity = h['value']
-                    break
+        from modules.prediction_quality import weather_value
+        humidity = weather_value(weather_data or {}, 'humidity')
         
         # 基於雲層分析顏色
         cloud_analysis = self.analyze_cloud_types(
@@ -813,7 +818,7 @@ class AdvancedBurnskyPredictor:
         # 基於分數和條件預測顏色
         if burnsky_score >= 70:
             color_intensity = 'high'
-            if humidity < 65:  # 低濕度 = 更鮮豔
+            if humidity is not None and humidity < 65:  # 低濕度 = 更鮮豔
                 primary_colors = ['深紅', '橙紅', '金橙']
                 secondary_colors = ['紫紅', '粉紅', '琥珀']
             else:

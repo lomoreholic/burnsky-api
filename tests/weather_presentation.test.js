@@ -7,6 +7,55 @@ const { formatHongKongDateTime } = require('../static/prediction_presentation.js
 const html = fs.readFileSync(path.join(__dirname, '../templates/index.html'), 'utf8');
 const script = html.slice(html.indexOf('        function appendWeatherCard('), html.indexOf('        function updateAnalysisSummary('));
 
+test('hourly cloud forecast is distinct from observations and daily forecasts', () => {
+    const h = harness();
+    h.context.updateWeatherData({}, {summary: '分層雲量', cloud_attribution: {source: 'MET Norway'},
+        cards: [{key: 'cloud_low', label: '低層雲量預報', value: 0, unit: '%',
+            source_kind: 'hourly_forecast', source: 'MET Norway', valid_at: '2026-11-18T17:00:00+08:00'}]});
+    assert.match(h.elements.weatherData.textContent, /逐小時模式預報/);
+    assert.match(h.elements.weatherData.textContent, /0%/);
+    assert.doesNotMatch(h.elements.weatherData.textContent, /官方觀測|官方每日預報/);
+    assert.match(h.elements.weatherSourceSummary.textContent, /MET Norway/);
+    assert.match(h.elements.weatherSourceSummary.textContent, /CC BY 4.0/);
+});
+
+test('solar geometry is calculated and a missing sunward sample never renders zero', () => {
+    const h = harness();
+    h.context.updateWeatherData({}, {summary: '取樣未齊，沒有當作光路暢通', cards: [
+        {key: 'solar_azimuth_deg', label: '太陽方位角', value: 250, unit: '°', source_kind: 'calculated',
+            source: 'Astral 天文計算', valid_at: '2026-11-18T17:30:00+08:00'},
+        {key: 'sunward_low_100', label: '太陽方向約100公里低雲', value: null, unit: '%', source_kind: 'unavailable'}]});
+    assert.match(h.elements.weatherData.textContent, /天文計算/);
+    assert.match(h.elements.weatherData.textContent, /計算適用：.*17:30/);
+    assert.doesNotMatch(h.elements.weatherData.textContent, /官方觀測|官方每日預報/);
+    assert.equal(h.elements.weatherData.children[1].children[1].textContent, '--');
+});
+
+test('hourly rainfall displays its full accumulation interval without becoming an observation', () => {
+    const h = harness();
+    h.context.updateWeatherData({}, {summary:'逐小時雨量', cards:[{key:'rainfall', label:'一小時預報雨量', value:0,
+        unit:'mm', source_kind:'hourly_forecast', source:'MET Norway', updated_at:'2026-11-18T21:00:00+08:00',
+        valid_at:'2026-11-19T06:30:00+08:00', period_start:'2026-11-19T06:00:00+08:00',
+        period_end:'2026-11-19T07:00:00+08:00', note:'並非能見度預報。'}]});
+    const text=h.elements.weatherData.textContent;
+    assert.match(text,/0mm/); assert.match(text,/累積區間：.*06:00.*07:00/);
+    assert.match(text,/逐小時模式預報/); assert.doesNotMatch(text,/官方觀測/);
+});
+
+test('visibility keeps its station and observed time instead of a future valid time', () => {
+    const h = harness();
+    h.context.updateWeatherData({}, {cards:[{key:'visibility_Central', label:'十分鐘平均能見度',
+        value:0, unit:'km', station:'中環', source:'香港天文台', source_kind:'observed',
+        updated_at:'2026-11-19T17:10:00+08:00', valid_at:null,
+        note:'現有觀測，並非目標時段能見度預報；未用作未來分數扣分。'}]});
+    const text = h.elements.weatherData.textContent;
+    assert.match(text, /0km/);
+    assert.match(text, /中環/);
+    assert.match(text, /17:10/);
+    assert.match(text, /未用作未來分數扣分/);
+    assert.doesNotMatch(text, /逐小時模式預報|適用：/);
+});
+
 function node() {
     return {children: [], style: {}, _text: '',
         set textContent(value) {this._text = String(value); this.children = [];},

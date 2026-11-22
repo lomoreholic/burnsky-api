@@ -12,9 +12,38 @@
         }).format(date);
     }
 
+    function scoreSensitivity(data) {
+        const range = data?.score_sensitivity;
+        if (range?.kind !== 'missing_factor_scenarios'
+            || ![range.lower, range.upper, range.weighted_coverage_percent].every(Number.isFinite)
+            || range.lower !== data.burnsky_score || range.lower < 0 || range.upper > 100
+            || range.upper < range.lower || range.weighted_coverage_percent < 0
+            || range.weighted_coverage_percent > 100 || !Array.isArray(range.missing_factors)) return null;
+        return range;
+    }
+
+    function describeScoreCoverage(data) {
+        const range = scoreSensitivity(data);
+        if (!range) return '未提供缺失因子影響範圍，請查看資料限制。';
+        const names = {time:'時間', temperature:'溫度', humidity:'濕度', visibility:'降雨／能見度遮擋參考',
+            cloud:'雲量', pressure:'氣壓', uv:'紫外線', wind:'風速', air_quality:'空氣質素'};
+        const coverage = `因子權重覆蓋 ${range.weighted_coverage_percent}%。`;
+        if (!range.missing_factors.length) return `${coverage}沒有缺失計分因子；預報本身仍有誤差。`;
+        return `${coverage}缺失：${range.missing_factors.map(key => names[key] || key).join('、')}。`
+            + `缺失因子由零至滿分的算術情境：${range.lower.toFixed(1)}–${range.upper.toFixed(1)}／100。`
+            + '其餘條件及調整保持不變；不是機率、可信區間或預測誤差範圍，亦不代表預期會升至上限。';
+    }
+
     function predictionAdvice(data) {
         const score = data.burnsky_score;
-        const advice = score >= 65 ? '條件較有利，可安排出發或準備拍攝。'
+        const range = scoreSensitivity(data);
+        const missing = data.data_quality?.input_coverage?.missing_factors
+            || data.unified_analysis?.input_coverage?.missing_factors || [];
+        const ambiguous = range ? range.missing_factors.length > 0
+            && ((score < 45 && range.upper >= 45) || (score < 65 && range.upper >= 65))
+            : missing.length > 0;
+        const advice = ambiguous ? '現有分數受缺失資料影響，未足以單憑低分決定是否出發；可先準備路線，再核對天空實況及更新。'
+            : score >= 65 ? '條件較有利，可安排出發或準備拍攝。'
             : score >= 45 ? '條件一般，可先準備器材及路線，出發前再更新。'
             : '目前條件偏低，暫不建議專程出發，可繼續留意更新。';
         const confidence = data.data_quality?.status === 'ready' ? '可信度一般' : '可信度較低，屬初步參考';
@@ -104,7 +133,7 @@
 
     function describeViewingPlan(schedule, data, state = 'idle', now = new Date(), reason = '') {
         const window = getNextViewingWindow(schedule, now);
-        if (!window) return {window: null, title: '下一次觀賞時段未能確認',
+        if (!window) return {window: null, hasForecast: false, title: '下一次觀賞時段未能確認',
             timeLabel: '暫未取得可用的日出／日落時間', referenceNote: '取得時間資料後才會顯示觀賞參考時段。',
             status: '暫未能評估下一次觀賞條件', action: '可重試時間資料，或先查看天空實況及官方天氣預報。',
             buttonLabel: '重試觀賞時間', advanceHours: null};
@@ -137,7 +166,10 @@
         const recheck = now.getTime() < planningAt ? `可在${formatHongKongDateTime(planningAt)}（香港時間）取得提前3小時預測，安排出發。`
             : now.getTime() < checkAt ? `已進入提前3小時規劃時段；出發前或${formatHongKongDateTime(checkAt)}（香港時間）再更新。`
             : '出發前請再更新預測。';
-        return {window, advanceHours,
+        return {window, advanceHours, hasForecast,
+            score: hasForecast ? Math.round(data.burnsky_score) : null,
+            scoreLabel: `${name}條件指數`,
+            confidence: hasForecast ? (data.data_quality.status === 'ready' ? '可信度一般' : '可信度較低（初步參考）') : '',
             title: `${inWindow ? '進行中的' : '下一次'}${name}觀賞參考`,
             timeLabel: `${formatHongKongDateTime(window.window_start)} 至 ${formatHongKongDateTime(window.window_end)}（香港時間）`,
             referenceNote: `${name}：${formatHongKongDateTime(window.event_at)}（香港時間） · ${window.method === 'monthly_table' ? '月度時間表近似值' : '天文時間計算'}。前後30分鐘只作觀賞時間參考，不代表會出現燒天。`,
@@ -145,7 +177,7 @@
             buttonLabel: matched ? '更新此時段條件參考' : '取得此時段條件參考'};
     }
 
-    const api = { formatHongKongDateTime, describePrediction, getCountdown, getNextViewingWindow, describeViewingPlan };
+    const api = { formatHongKongDateTime, describePrediction, getCountdown, getNextViewingWindow, describeViewingPlan, describeScoreCoverage };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.BurnSkyPresentation = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
