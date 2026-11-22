@@ -25,6 +25,8 @@
         function eventSummary(parent, label, stats) {
             add(parent, 'h4', label);
             add(parent, 'p', summary(label, stats));
+            add(parent, 'p', `高分預測中自報明顯燒天：${fraction(stats.hits, stats.predicted_positive)}（只計可判斷自報）；` +
+                `分類不符：${fraction(stats.false_alarms + stats.misses, stats.labeled)}。`);
             add(parent, 'p', `高分但微弱／沒有：${fraction(stats.false_alarms, stats.predicted_positive)}（已回報高分預測）；` +
                 `明顯燒天但預測低分：${fraction(stats.misses, stats.observed_positive)}（自報明顯燒天）。`);
             const scroll = add(parent, 'div', ''); scroll.style.overflowX = 'auto';

@@ -87,6 +87,8 @@ test('version details show separate event denominators and score-band counts saf
     const content=text(h.nodes.verificationSummary), elements=all(h.nodes.verificationSummary);
     assert.match(content, /<script>v1<\/script>/);
     assert.match(content, /高分但微弱／沒有：1\/2/);
+    assert.match(content, /高分預測中自報明顯燒天：1\/2/);
+    assert.match(content, /分類不符：1\/2/);
     assert.match(content, /明顯燒天但預測低分：0\/1/);
     assert.match(content, /時段已完待回報 1 次/);
     assert.match(content, /日出分數區間/);

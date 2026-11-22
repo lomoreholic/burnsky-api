@@ -1,9 +1,9 @@
 """Prediction-history reporting endpoints."""
 
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, render_template, request
 
 from .config import PREDICTION_HISTORY_DB
 from .feedback import calculate_real_accuracy
@@ -17,10 +17,10 @@ def generate_burnsky_insights(overall, by_type, best_hours):
     if overall[0] > 0:
         high_score_rate = overall[4] / overall[0] * 100
         insights.append(f"過去期間共進行 {overall[0]} 次預測，高分（≥70分）預測比例為 {high_score_rate:.1f}%")
-        if overall[1]:
-            insights.append(f"平均燒天評分為 {overall[1]:.1f} 分")
+        if overall[1] is not None:
+            insights.append(f"平均預測評分為 {overall[1]:.1f} 分")
         if overall[2] and overall[2] >= 80:
-            insights.append(f"最高評分達到 {overall[2]:.0f} 分，出現極佳燒天條件")
+            insights.append(f"最高預測評分達到 {overall[2]:.0f} 分；並非已核實的燒天結果")
 
     if 'sunrise' in by_type and 'sunset' in by_type:
         sunrise_rate = by_type['sunrise']['high_score_prediction_rate']
@@ -29,13 +29,20 @@ def generate_burnsky_insights(overall, by_type, best_hours):
             ('日出', sunrise_rate, sunset_rate)
             if sunrise_rate > sunset_rate else ('日落', sunset_rate, sunrise_rate)
         )
-        insights.append(f"{higher_type}的高分預測比例（{higher_rate}%）高於另一時段（{lower_rate}%）")
+        if sunrise_rate == sunset_rate:
+            insights.append(f"日出與日落的高分預測比例相同（{sunrise_rate}%）；並非實際燒天比較")
+        else:
+            insights.append(f"{higher_type}的高分預測比例（{higher_rate}%）高於另一時段（{lower_rate}%）；並非實際燒天比較")
 
     if best_hours:
         best = best_hours[0]
-        time_label = '凌晨' if best['hour'] < 6 else '早晨' if best['hour'] < 12 else '下午' if best['hour'] < 18 else '晚間'
-        insights.append(f"{time_label}時段（{best['hour']}:00）的燒天評分最高，平均 {best['avg_score']} 分")
+        insights.append(f"按預測產生時間（香港時間）分組，{best['hour']}:00 組的平均預測分數最高（{best['avg_score']} 分）；並非最佳拍攝時間")
     return insights
+
+
+@history_bp.route('/prediction-history', methods=['GET'])
+def prediction_history_page():
+    return render_template('prediction_history.html')
 
 
 @history_bp.route('/api/burnsky/history', methods=['GET'])
@@ -43,7 +50,8 @@ def get_burnsky_history():
     """Return score distribution and separately reported verified accuracy."""
     try:
         days_back = min(max(int(request.args.get('days', 30)), 1), 365)
-        end_date = datetime.now()
+        # SQLite CURRENT_TIMESTAMP stores UTC; use the same basis for filtering.
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days_back)
         start_date_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
         end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
@@ -77,9 +85,9 @@ def get_burnsky_history():
         }
 
         cursor.execute('''
-            SELECT DATE(timestamp), AVG(score), MAX(score), COUNT(CASE WHEN score >= 70 THEN 1 END)
+            SELECT DATE(timestamp, '+8 hours'), AVG(score), MAX(score), COUNT(CASE WHEN score >= 70 THEN 1 END)
             FROM prediction_history WHERE timestamp >= ? AND timestamp <= ?
-            GROUP BY DATE(timestamp) ORDER BY DATE(timestamp) DESC LIMIT 30
+            GROUP BY DATE(timestamp, '+8 hours') ORDER BY DATE(timestamp, '+8 hours') DESC LIMIT 30
         ''', (start_date_str, end_date_str))
         daily_trends = [
             {'date': date, 'avg_score': round(avg_score, 1) if avg_score else 0,
@@ -88,7 +96,7 @@ def get_burnsky_history():
         ]
 
         cursor.execute('''
-            SELECT CAST(strftime('%H', timestamp) AS INTEGER), COUNT(*), AVG(score),
+            SELECT CAST(strftime('%H', timestamp, '+8 hours') AS INTEGER), COUNT(*), AVG(score),
                 COUNT(CASE WHEN score >= 70 THEN 1 END)
             FROM prediction_history WHERE timestamp >= ? AND timestamp <= ?
             GROUP BY 1 ORDER BY 3 DESC
@@ -113,8 +121,9 @@ def get_burnsky_history():
         return jsonify({
             'status': 'success',
             'data_source': 'prediction_history',
-            'time_range': {'days': days_back, 'start_date': start_date.strftime('%Y-%m-%d'),
-                           'end_date': end_date.strftime('%Y-%m-%d')},
+            'time_basis': 'prediction_generated_at_hong_kong',
+            'time_range': {'days': days_back, 'start_date': (start_date + timedelta(hours=8)).strftime('%Y-%m-%d'),
+                           'end_date': (end_date + timedelta(hours=8)).strftime('%Y-%m-%d')},
             'summary': summary,
             'verified_accuracy': calculate_real_accuracy(days_back),
             'by_type': by_type,

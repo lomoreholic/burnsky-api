@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>預測紀錄與評分誤差 | BurnSky</title>
+    <meta name="description" content="查看 BurnSky 過往預測分數分布、用戶自報評分誤差及資料限制。">
+    <style>* { box-sizing: border-box; } body { margin: 0; } .history-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:16px 0; } .history-controls select { padding:9px; color:#253e46; border:1px solid #e4e6df; border-radius:8px; background:white; } .history-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; margin:18px 0; } .history-metric { padding:16px; background:#f5f7f2; border-radius:10px; } .history-metric strong { display:block; font-size:25px; color:#253e46; } .history-metric span { font-size:12px; } .history-table-wrap { overflow-x:auto; } .history-table { width:100%; border-collapse:collapse; font-size:13px; } .history-table th,.history-table td { text-align:left; padding:10px; border-bottom:1px solid #e4e6df; white-space:nowrap; } .history-table caption { text-align:left; color:#617075; padding:8px 0; } .history-distribution { display:grid; grid-template-columns:minmax(85px,1fr) 3fr auto; align-items:center; gap:12px; margin:12px 0; font-size:13px; } .history-distribution progress { width:100%; accent-color:#a64427; } .history-result details { margin:18px 0; } .history-result summary { cursor:pointer; color:#a64427; } #historyStatus { font-size:13px; color:#617075; } .history-empty { padding:18px; background:#fffaf3; border-radius:10px; }</style>
+    {% include 'nav_styles.html' %}
+</head>
+<body class="site-page article-page">
+    {% include 'nav_fragment.html' %}
+    <div class="container">
+        <header class="site-page-header">
+            <p class="site-eyebrow">BURNSKY ／ HONG KONG</p>
+            <h1>預測紀錄與評分誤差</h1>
+            <p>了解系統曾經評過幾多分，以及用戶自報結果同預測的差異。</p>
+        </header>
+        <main class="card">
+            <p>分數分布只反映系統的歷史評估，並非實際燒天出現率。紀錄包含不同預測提前時間及版本，不適合直接用平均分決定拍攝時段。</p>
+            <a href="/#verificationSection">查看提前 3 小時預測與實況驗證 ↗</a>
+            <div class="history-controls">
+                <label for="historyDays">統計期間</label>
+                <select id="historyDays"><option value="7">最近 7 天</option><option value="30" selected>最近 30 天</option><option value="90">最近 90 天</option></select>
+                <button id="historyRefresh" class="btn" type="button">更新紀錄</button>
+            </div>
+            <p id="historyStatus" role="status">正在讀取紀錄。</p>
+            <div id="historyResult" class="history-result"></div>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='history_presentation.js') }}"></script>
+    {% include 'footer_fragment.html' %}
+</body>
+</html>
