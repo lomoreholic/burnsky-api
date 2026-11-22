@@ -2715,7 +2715,7 @@
                 updateWeatherData(data.weather_data, data.weather_presentation);
                 
                 // 更新空氣品質數據
-                updateAirQualityData(data.analysis_details?.air_quality_factor);
+                updateAirQualityData(data.analysis_details?.air_quality_factor, data.weather_presentation);
                 
                 // 更新分析摘要 - 修復數據路徑
                 document.getElementById('summary-title').textContent = presentation.scorePrimary ? '💡 條件分析摘要' : '💡 如何使用這次評估';
@@ -2865,7 +2865,9 @@
             for (const card of presentation.cards) appendWeatherCard(card);
         }
 
-        function updateAirQualityData(airQualityData) {
+        function updateAirQualityData(airQualityData, presentation) {
+            // The backend now owns the dated observation cards; do not append a second AQHI.
+            if (Array.isArray(presentation?.cards) && presentation.cards.some(card => card.key === 'aqhi')) return;
             // A model factor score is not an AQHI or PM2.5 measurement.
             const data = airQualityData || {};
             const kind = data.source_kind;

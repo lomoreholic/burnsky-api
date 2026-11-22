@@ -198,9 +198,23 @@ class PredictionResponseBuilder:
             from .prediction_quality import weather_value
             factor['wind_speed'] = weather_value(weather, 'wind_speed')
         elif name == 'air_quality':
-            factor.update({'source_kind': 'unavailable' if score is None else 'provided', 'aqhi': weather.get('air_quality', {}).get('aqhi') if score is not None else None, 'pm25': None,
-                           'note': '此回應未提供空氣品質監測值；因子分數並非AQHI。'})
-        if name in ('temperature', 'humidity', 'wind', 'visibility'):
+            air = weather.get('air_quality_reference' if advance_hours > 0 else 'air_quality') or {}
+            factor.update(source_kind='observation_reference' if advance_hours > 0 and air else ('observed' if air else 'unavailable'),
+                          source=air.get('source'), source_url=air.get('source_url'), station=air.get('station'),
+                          observed_at=air.get('observed_at'), aqhi=air.get('aqhi'),
+                          pm25=air.get('components', {}).get('pm25'))
+            if air:
+                factor['description'] = (f"環保署{air.get('station', '')} AQHI {air.get('aqhi_display', air.get('aqhi'))}；"
+                                         f"監測時間 {air.get('observed_at')}。健康風險指數不等於天空透明度。"
+                                         + ('只作最新實況參考，並非目標時段預報，不參與此時段計分。' if advance_hours > 0
+                                            else '按現有AQHI規則評分，尚未經實拍校準。'))
+        elif name == 'pressure' and advance_hours == 0:
+            reading = weather.get('pressure_observation') or {}
+            if reading and score is not None:
+                factor.update(source_kind='observed', source=reading.get('source'), source_url=reading.get('source_url'),
+                              station=reading.get('station'), observed_at=reading.get('observed_at'), pressure=reading.get('value'))
+                factor['description'] = f"天文台測站海平面氣壓 {reading['value']} hPa；監測時間 {reading['observed_at']}。規則尚未經實拍校準。"
+        if name in ('temperature', 'humidity', 'wind', 'visibility', 'pressure'):
             from .hourly_weather import model_reading
             key = {'wind': 'wind_speed', 'visibility': 'rainfall'}.get(name, name)
             reading = model_reading(weather, key)
@@ -210,6 +224,8 @@ class PredictionResponseBuilder:
                               updated_at=model.get('updated_at'), valid_at=model.get('valid_at'), forecast_reading=reading)
                 factor['description'] = ('使用涵蓋目標時間的一小時預報雨量作降雨遮擋參考；無雨不代表能見度良好。' if name == 'visibility'
                                          else '使用目標時段區域模式預報計分，並非天文台站實測；計分規則尚未校準。')
+                if name == 'pressure':
+                    factor['description'] = f"MET Norway目標時段海平面氣壓預報 {reading['value']} hPa；並非現場觀測，評分門檻尚未經實拍校準。"
             elif name in ('temperature', 'humidity') and score is not None and advance_hours > 0 and weather.get('forecast_estimation'):
                 factor.update(source_kind='estimated', source='BurnSky 條件推算',
                               valid_at=weather.get('forecast_target_at'),

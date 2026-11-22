@@ -8,6 +8,7 @@ from .weather_presentation import number
 
 # Native units are checked before converting speed to the scorer's km/h.
 FIELDS = {
+    'pressure': ('air_pressure_at_sea_level', 'hPa', 850, 1100, 'hPa', 1),
     'temperature': ('air_temperature', 'celsius', -50, 60, '°C', 1),
     'humidity': ('relative_humidity', '%', 0, 100, '%', 1),
     'wind_speed': ('wind_speed', 'm/s', 0, 300 / 3.6, 'km/h', 3.6),

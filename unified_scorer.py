@@ -309,7 +309,20 @@ class UnifiedBurnskyScorer:
         
         try:
             # 檢查簡化數據格式
-            if number(weather_data.get('pressure')) is not None and 850 <= weather_data['pressure'] <= 1100:
+            from modules.hourly_weather import model_reading
+            if weather_data.get('hourly_weather_forecast'):
+                reading = model_reading(weather_data, 'pressure')
+                if reading is None:
+                    return None
+                pressure_value = reading['value']
+            elif weather_data.get('pressure_observation'):
+                from modules.environmental_observations import fresh_observation
+                from datetime import timezone
+                reading = fresh_observation(weather_data['pressure_observation'], datetime.now(timezone.utc), 30)
+                if reading is None:
+                    return None
+                pressure_value = reading['value']
+            elif number(weather_data.get('pressure')) is not None and 850 <= weather_data['pressure'] <= 1100:
                 pressure_value = float(weather_data['pressure'])
             else:
                 # 檢查複雜數據格式
@@ -434,6 +447,13 @@ class UnifiedBurnskyScorer:
         try:
             # 使用空氣品質獲取器
             air_quality_data = weather_data.get('air_quality', {})
+            if not isinstance(air_quality_data, dict):
+                return None
+            if air_quality_data.get('source_kind') == 'observed':
+                from modules.environmental_observations import fresh_observation
+                from datetime import timezone
+                if fresh_observation(air_quality_data, datetime.now(timezone.utc), 120) is None:
+                    return None
             aqhi = number(air_quality_data.get('aqhi'))
             if aqhi is None or not 1 <= aqhi <= 11:
                 return None

@@ -49,6 +49,19 @@ def build_weather_presentation(target, observed, advance_hours, timing):
              valid_at=timing['evaluated_at'] if future else None,
              note='逐小時資料未能使用；按觀測及可用預報推算，並非天文台逐小時預報。' if future else '')
 
+    if not model_card('pressure', 'pressure', '海平面氣壓'):
+        pressure = observed.get('pressure_observation') or {}
+        card('pressure', '現時海平面氣壓', number(pressure.get('value')), 'hPa',
+             station=pressure.get('station'), updated_at=pressure.get('observed_at'),
+             note='現時觀測作參考，並非目標時段預報，未用作未來計分。' if future else '天文台測站觀測。')
+    air = observed.get('air_quality') or {}
+    card('aqhi', '現時空氣質素健康指數', air.get('aqhi_display', number(air.get('aqhi'))),
+         source='環境保護署', station=air.get('station'), updated_at=air.get('observed_at'),
+         note='健康風險指數，並非天空透明度。' + ('現時監測只作參考，不參與未來計分。' if future else ''))
+    card('pm25', '現時PM2.5', number(air.get('components', {}).get('pm25')), 'µg/m³',
+         source='環境保護署', station=air.get('station'), updated_at=air.get('observed_at'),
+         note='一般監測站污染物實測，不額外加減分。' + ('並非目標時段預報。' if future else ''))
+
     # The forecast extractor leaves nested UV readings unchanged; display the
     # original observation rather than claiming that it is an hourly forecast.
     uv = observed.get('uvindex')

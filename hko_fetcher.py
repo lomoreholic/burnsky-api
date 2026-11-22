@@ -1,6 +1,9 @@
 import requests
 from datetime import datetime, timedelta, timezone
 import re
+from modules.http_session import weather_session
+
+_weather_session = weather_session()
 
 # 香港天文台 API URL
 WEATHER_API_URL = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc"
@@ -64,7 +67,7 @@ def fetch_weather_data():
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = _weather_session.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as err:
@@ -88,7 +91,7 @@ def fetch_forecast_data():
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = _weather_session.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as err:
@@ -112,7 +115,7 @@ def fetch_ninday_forecast():
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = _weather_session.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as err:
@@ -136,7 +139,7 @@ def fetch_warning_data():
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = _weather_session.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as err:

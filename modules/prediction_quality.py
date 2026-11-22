@@ -60,7 +60,8 @@ def assess_prediction_quality(target, observed, forecast, advance_hours=0):
         missing.append('天氣預報文字（雲層分析輸入）')
     limitations = [('雲量使用MET Norway香港參考點逐小時分層預報；未量度雲厚或真正光線穿透，規則尚待實拍驗證。'
                     if cloud_available else '雲層因子按天氣預報文字推斷，並非雲量或雲高實測。'),
-                   '空氣品質沒有可用AQHI監測值時不參與計分。',
+                   ('空氣品質只提供最新環保署監測作參考，沒有目標時段逐小時AQHI，不參與未來計分。'
+                    if advance_hours > 0 else '空氣品質使用中西區一般監測站AQHI；屬健康風險指數，並非透明度或燒天機率。缺失或逾兩小時不參與計分。'),
                    '演算法尚待實拍驗證；參考類別按預測時距及資料狀態劃分，並非經驗證的準確率。']
     if not cloud_available:
         limitations.append('逐小時分層雲量暫缺、過期或未覆蓋目標時間，已改用天文台文字預報。')
@@ -75,6 +76,9 @@ def assess_prediction_quality(target, observed, forecast, advance_hours=0):
             limitations.append('太陽方向取樣未齊，保留原本雲層評分；缺失不代表光路暢通。')
     if number(target.get('pressure')) is None:
         limitations.append('氣壓讀數缺失，不參與計分。')
+    else:
+        limitations.append('氣壓使用MET Norway目標時段海平面氣壓預報，並非現場觀測。' if advance_hours > 0
+                           else '氣壓使用天文台測站海平面氣壓；逾30分鐘不使用。氣壓評分門檻尚未經實拍校準。')
     if weather_value(target, 'wind_speed') is None:
         limitations.append('風速因子未取得計分所需的風速讀數，不參與計分；每日預報風級範圍不當作實測風速。')
     if model_reading(target, 'rainfall') is not None:

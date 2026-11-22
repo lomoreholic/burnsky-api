@@ -83,6 +83,16 @@ test('a factor score without measurements cannot turn into AQHI4 and PM2.5 25', 
     assert.doesNotMatch(text, /AQHI 4|PM2.5|25|空氣品質一般|良好燒天/);
 });
 
+test('official observation cards are not duplicated by the legacy factor fallback', () => {
+    const h = harness();
+    const presentation = {cards:[{key:'aqhi', label:'現時AQHI', value:4, source_kind:'observed',
+        source:'環境保護署', updated_at:'2026-11-23T00:00:00+08:00'}]};
+    h.context.updateWeatherData({}, presentation);
+    h.context.updateAirQualityData({score:null, source_kind:'observation_reference', aqhi:4}, presentation);
+    assert.equal(h.elements.weatherData.children.length, 1);
+    assert.doesNotMatch(h.elements.weatherData.textContent, /暫缺資料/);
+});
+
 test('estimates remain visibly estimated and missing PM2.5 stays missing', () => {
     const h = harness();
     h.context.updateAirQualityData({source_kind: 'estimated', aqhi: 4, pm25: null, source: '天氣估算'});

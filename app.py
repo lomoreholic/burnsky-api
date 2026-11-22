@@ -34,6 +34,7 @@ from modules.scheduler_service import HourlyPredictionScheduler
 from modules.weather_inputs import WeatherInputService
 from modules.cloud_forecast import CloudForecastClient
 from modules.visibility_observations import VisibilityClient
+from modules.environmental_observations import ObservationClient, PRESSURE_URL, AIR_URL, parse_pressure, parse_air
 from modules.sunward_clouds import SunwardCloudService
 from modules.warning_risk import FutureWarningRiskService
 from modules.warning_assessment import CurrentWarningAssessmentService
@@ -1734,7 +1735,9 @@ weather_input_service = WeatherInputService(
     forecast_extractor=forecast_extractor,
     fetch_cloud_forecast=CloudForecastClient().fetch,
     sunward_service=SunwardCloudService(),
-    fetch_visibility=VisibilityClient().fetch
+    fetch_visibility=VisibilityClient().fetch,
+    fetch_pressure=ObservationClient(PRESSURE_URL, parse_pressure).fetch,
+    fetch_air_quality=ObservationClient(AIR_URL, parse_air).fetch
 )
 warning_risk_service = FutureWarningRiskService(forecast_extractor)
 warning_assessment_service = CurrentWarningAssessmentService(

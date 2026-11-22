@@ -8,6 +8,7 @@ from threading import Lock
 import requests
 
 from .weather_presentation import number
+from .http_session import weather_session
 
 
 SOURCE_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=22.30&lon=114.17'
@@ -133,7 +134,7 @@ class CloudForecastClient:
             raise ValueError('Invalid forecast coordinates')
         self.source_url = forecast_url(latitude, longitude)
         self._timeout = timeout
-        self._session = session or requests.Session()
+        self._session = session or weather_session()
         self._now = now or (lambda: datetime.now(timezone.utc))
         self._payload = None
         self._next_fetch = datetime.min.replace(tzinfo=timezone.utc)

@@ -45,13 +45,13 @@
                 },
                 'pressure_factor': {
                     name: '氣壓因子', icon: '📈', maxScore: 10,
-                    explanation: '只使用可用氣壓讀數；缺失時不參與計分。'
+                    explanation: '現時使用天文台海平面氣壓；未來使用MET Norway目標時段預報，缺失不補分。現有氣壓門檻尚未經實拍校準'
                 },
                 'air_quality_factor': {
                     name: '空氣品質因子',
                     icon: '🌫️',
                     maxScore: 15,
-                    explanation: '影響色彩清晰度（10%權重）：優良AQHI≤3（15分）、良好≤6（12分）、一般≤7（8分）、不佳≤10（5分）、極差>10（2分）。空氣越清澈，燒天色彩越鮮豔'
+                    explanation: '只按現時環保署AQHI監測作規則評分：≤3為15分、≤6為12分、≤7為8分、≤10為5分、10+為2分。AQHI屬健康風險指數，並非天空透明度；最新監測不當成未來預報'
                 }
             };
 
@@ -65,7 +65,7 @@
             const value = details[key] || {};
             const max = Number.isFinite(value.max_score) && value.max_score > 0 ? value.max_score : config.maxScore;
             const score = Number.isFinite(value.score) && value.score >= 0 && value.score <= max ? value.score : null;
-            return {key, ...config, max, score, description: value.description || '未取得可用計分資料。'};
+            return {key, ...config, max, score, referenceOnly: value.source_kind === 'observation_reference', description: value.description || '未取得可用計分資料。'};
         });
         const available = entries.filter(entry => entry.score !== null);
         return {
@@ -100,7 +100,11 @@
             rows.push(`<li class="factor-impact positive"><strong>✅ 較有利 · ${escape(entry.name)}</strong><p>${note}</p></li>`);
         }
         if (data.missing.length) {
-            rows.push(`<li class="factor-impact missing"><strong>ℹ️ 未參與計分</strong><p>${escape(data.missing.map(entry => entry.name.replace('因子', '')).join('、'))}缺少可用計分資料；沒有補預設分。低分亦可能受缺失資料影響。</p></li>`);
+            const unavailable = data.missing.filter(entry => !entry.referenceOnly);
+            const references = data.missing.filter(entry => entry.referenceOnly);
+            const note = unavailable.length ? `<p>${escape(unavailable.map(entry => entry.name.replace('因子', '')).join('、'))}缺少可用計分資料；沒有補預設分。低分亦可能受缺失資料影響。</p>` : '';
+            const referenceNote = references.length ? `<p>${escape(references.map(entry => entry.name.replace('因子', '')).join('、'))}已取得最新監測；因缺少目標時段預報，只作實況參考，不參與未來計分。</p>` : '';
+            rows.push(`<li class="factor-impact missing"><strong>ℹ️ 未參與計分</strong>${note}${referenceNote}</li>`);
         }
         if (!data.positive.length && !data.negative.length && data.missing.length < data.entries.length) {
             rows.unshift('<li class="factor-impact"><p>現有可用因子未有明顯偏高或偏低的規則評分；請查看計分詳情。</p></li>');

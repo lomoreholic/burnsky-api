@@ -11,6 +11,7 @@ import requests
 from .cloud_forecast import utc_time
 from .prediction_presentation import HK_TIMEZONE
 from .weather_presentation import number
+from .http_session import weather_session
 
 
 SOURCE_URL = 'https://data.weather.gov.hk/weatherAPI/opendata/opendata.php?dataType=LTMV&lang=en&rformat=csv'
@@ -91,7 +92,7 @@ def visibility_score_cap(km):
 
 class VisibilityClient:
     def __init__(self, session=None, now=None):
-        self._session = session or requests.Session()
+        self._session = session or weather_session()
         self._now = now or (lambda: datetime.now(timezone.utc))
         self._next_fetch = datetime.min.replace(tzinfo=timezone.utc)
         self._payload = None

@@ -24,13 +24,13 @@ def payload():
     for i in range(5):
         series.append({'time': (NOW.replace(minute=0) + timedelta(hours=i)).astimezone(timezone.utc).isoformat(),
                        'data': {'instant': {'details': dict(air_temperature=20+i*2, relative_humidity=60+i*4,
-                            wind_speed=i*2, ultraviolet_index_clear_sky=99,
+                            wind_speed=i*2, air_pressure_at_sea_level=1010+i*2, ultraviolet_index_clear_sky=99,
                             **{field: 50 for field in CLOUD_FIELDS.values()})},
                             'next_1_hours': {'details': {'precipitation_amount': i*2}},
                             'next_6_hours': {'details': {'precipitation_amount': 60}}}})
     return {'properties': {'meta': {'updated_at': (NOW-timedelta(hours=2)).isoformat(),
                 'units': {'air_temperature': 'celsius', 'relative_humidity': '%',
-                          'wind_speed': 'm/s', 'precipitation_amount': 'mm',
+                          'wind_speed': 'm/s', 'precipitation_amount': 'mm', 'air_pressure_at_sea_level': 'hPa',
                           **{field: '%' for field in CLOUD_FIELDS.values()}}}, 'timeseries': series}}
 
 
@@ -95,7 +95,7 @@ class HourlySelectionTests(unittest.TestCase):
             data = payload(); data['properties']['meta']['units'][key] = 'wrong'
             selected = select_hourly_weather(data, TARGET, NOW)
             self.assertEqual(len(selected['missing_fields']), 1)
-            self.assertEqual(len(selected['fields']), 3)
+            self.assertEqual(len(selected['fields']), 4)
         data = payload(); del data['properties']['meta']['units']
         self.assertIsNone(select_hourly_weather(data, TARGET, NOW))
 

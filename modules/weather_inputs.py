@@ -22,7 +22,8 @@ class WeatherInputService:
     """Fetch cached data sources and prepare a prediction-time weather snapshot."""
 
     def __init__(self, get_cached_data, fetch_weather, fetch_forecast, fetch_ninday, fetch_wind, fetch_warnings, forecast_extractor,
-                 fetch_cloud_forecast=None, now=None, sunward_service=None, fetch_visibility=None):
+                 fetch_cloud_forecast=None, now=None, sunward_service=None, fetch_visibility=None,
+                 fetch_pressure=None, fetch_air_quality=None):
         self._get_cached_data = get_cached_data
         self._fetch_weather = fetch_weather
         self._fetch_forecast = fetch_forecast
@@ -34,6 +35,8 @@ class WeatherInputService:
         self._now = now or (lambda: datetime.now(timezone.utc))
         self._sunward_service = sunward_service
         self._fetch_visibility = fetch_visibility
+        self._fetch_pressure = fetch_pressure
+        self._fetch_air_quality = fetch_air_quality
 
     def prepare(self, advance_hours=0):
         """Return current inputs plus the weather snapshot for the requested horizon."""
@@ -56,6 +59,19 @@ class WeatherInputService:
 
         observed_weather['wind'] = deepcopy(wind_data)
         observed_weather['warnings'] = deepcopy(warning_data)
+        from .environmental_observations import fresh_observation
+        if self._fetch_pressure:
+            observed_weather.pop('pressure', None)
+            observed_weather.pop('pressure_observation', None)
+            pressure = fresh_observation(self._fetch_pressure(), now, 30)
+            if pressure:
+                observed_weather['pressure_observation'] = pressure
+                observed_weather['pressure'] = pressure['value']
+        if self._fetch_air_quality:
+            observed_weather.pop('air_quality', None)
+            air = fresh_observation(self._fetch_air_quality(), now, 120)
+            if air:
+                observed_weather['air_quality'] = air
         if advance_hours > 0:
             target_weather = self._forecast_extractor.extract_future_weather_data(
                 deepcopy(observed_weather), forecast_data, ninday_data, advance_hours,
@@ -63,6 +79,13 @@ class WeatherInputService:
             )
             target_weather['wind'] = deepcopy(wind_data)
             target_weather['warnings'] = deepcopy(warning_data)
+            # Existing observations cannot fill a target-time forecast slot.
+            target_weather.pop('pressure', None)
+            target_weather.pop('pressure_observation', None)
+            target_weather.pop('air_quality', None)
+            air = observed_weather.get('air_quality')
+            if air:
+                target_weather['air_quality_reference'] = deepcopy(air)
         else:
             target_weather = deepcopy(observed_weather)
 
@@ -81,6 +104,9 @@ class WeatherInputService:
                 hourly = None
             if hourly:
                 target_weather['hourly_weather_forecast'] = hourly
+                pressure = hourly['fields'].get('pressure')
+                if pressure:
+                    target_weather['pressure'] = pressure['value']
                 for key in ('temperature', 'humidity'):
                     reading = hourly['fields'].get(key)
                     if reading:

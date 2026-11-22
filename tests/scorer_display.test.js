@@ -62,3 +62,12 @@ test('invalid input clears old explanations and medium scores do not invent a st
     assert.match(presentation.present({humidity_factor: {score: 12, max_score: 20}}).summary, /未有明顯偏高或偏低/);
     assert.equal(presentation.model({humidity_factor: {score: 21, max_score: 20}}).entries.find(entry => entry.key === 'humidity_factor').score, null);
 });
+
+test('latest AQHI observation is distinguished from a missing target forecast', () => {
+    const result = presentation.present({air_quality_factor: {score: null,
+        source_kind: 'observation_reference', description: 'AQHI 4，最新監測只作參考'}});
+    assert.match(result.summary, /空氣品質已取得最新監測/);
+    assert.match(result.summary, /缺少目標時段預報/);
+    assert.doesNotMatch(result.summary, /空氣品質缺少可用計分資料/);
+    assert.match(result.details, /AQHI 4/);
+});
