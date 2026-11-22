@@ -87,13 +87,16 @@
     </style>
     {% include 'nav_styles.html' %}
 </head>
-<body>
+<body class="site-page article-page">
     {% include 'nav_fragment.html' %}
 
     <div class="container">
+        <header class="site-page-header">
+        <p class="site-eyebrow">BURNSKY ／ HONG KONG</p>
         <h1>ℹ️ 關於 BurnSky</h1>
         <p class="subtitle">香港燒天（火燒雲）預測與拍攝資訊工具</p>
-
+        </header>
+        <main class="article-content">
         <h2>我們做什麼</h2>
         <p>BurnSky 旨在把「燒天」相關的大氣條件，用更容易理解的方式呈現，讓用家可以更快判斷今日/明日是否值得外出拍攝，並提供地點與拍攝建議作參考。</p>
         <ul>
@@ -128,6 +131,7 @@
         <p><strong>GitHub：</strong> <a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">提交 Issue / 建議</a></p>
 
         <p class="meta"><strong>更新日期：</strong> {{ SITE_LAST_UPDATED }}</p>
+        </main>
     </div>
 
     {% include 'footer_fragment.html' %}

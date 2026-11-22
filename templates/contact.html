@@ -107,14 +107,16 @@
     </style>
     {% include 'nav_styles.html' %}
 </head>
-<body>
+<body class="site-page article-page">
     {% include 'nav_fragment.html' %}
 
     <div class="container">
-        <div class="card">
+        <header class="site-page-header">
+            <p class="site-eyebrow">BURNSKY ／ HONG KONG</p>
             <h1>✉️ 聯絡我們</h1>
             <p class="subtitle">問題回報、功能建議、資料更正與合作洽談</p>
-
+        </header>
+        <main class="card">
             <h2>快速連結</h2>
             <div class="pill-row">
                 {% if CONTACT_EMAIL %}
@@ -141,7 +143,7 @@
 
             <h2>私隱與資料</h2>
             <p>若你的回報涉及個人資料或照片，請先參閱 <a href="/privacy" style="color:#667eea; text-decoration:none; font-weight:600;">私隱政策</a>，並只提供你願意分享的資訊。</p>
-        </div>
+        </main>
     </div>
 
     {% include 'footer_fragment.html' %}

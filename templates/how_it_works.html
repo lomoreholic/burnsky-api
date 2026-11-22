@@ -106,14 +106,16 @@
     </style>
     {% include 'nav_styles.html' %}
 </head>
-<body>
+<body class="site-page article-page">
     {% include 'nav_fragment.html' %}
 
     <div class="container">
-        <div class="card">
+        <header class="site-page-header">
+            <p class="site-eyebrow">BURNSKY ／ HONG KONG</p>
             <h1>🧠 BurnSky 如何運作</h1>
             <p class="subtitle">把「燒天」拍攝決策需要的資訊，整理成可讀、可比較、可追蹤的指標</p>
-
+        </header>
+        <main class="card">
             <h2>1) 這個網站提供什麼價值</h2>
             <p>燒天（火燒雲）是一個短時效、對雲量/雲型、能見度、濕度、風向風速等條件都很敏感的現象。BurnSky 的目標不是取代官方預報，而是把影響拍攝的條件整合成「分數 + 解釋」，幫你更快做決策：</p>
             <ul>
@@ -171,7 +173,7 @@
                 <li><a href="/weather-terms" style="color:#667eea; text-decoration:none; font-weight:600;">天氣術語詞彙表</a></li>
                 <li><a href="/faq" style="color:#667eea; text-decoration:none; font-weight:600;">常見問題（FAQ）</a></li>
             </ul>
-        </div>
+        </main>
     </div>
 
     {% include 'footer_fragment.html' %}

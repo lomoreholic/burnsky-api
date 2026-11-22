@@ -137,11 +137,16 @@
     </style>
     {% include 'nav_styles.html' %}
 </head>
-<body>
+<body class="site-page article-page">
     {% include 'nav_fragment.html' %}
 
     <div class="container">
+        <header class="site-page-header">
+        <p class="site-eyebrow">BURNSKY ／ HONG KONG</p>
         <h1>🔒 私隱政策</h1>
+        <p>了解我們如何收集、使用及保護你的資料</p>
+        </header>
+        <main class="article-content">
         
         <h2>1. 資料收集</h2>
         <p>BurnSky 燒天預測系統致力於保護您的個人私隱。我們僅收集為提供服務所必需的最少資料：</p>
@@ -197,6 +202,7 @@
         {% endif %}
         <p><strong>GitHub：</strong> <a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">提交 Issue / 建議</a></p>
         <p><strong>更新日期：</strong> {{ SITE_LAST_UPDATED }}</p>
+        </main>
     </div>
 
     {% include 'footer_fragment.html' %}

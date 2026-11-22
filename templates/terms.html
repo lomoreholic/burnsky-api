@@ -175,12 +175,16 @@
     </style>
     {% include 'nav_styles.html' %}
 </head>
-<body>
+<body class="site-page article-page">
     {% include 'nav_fragment.html' %}
 
     <div class="container">
-        <div class="content-card">
+        <header class="site-page-header">
+            <p class="site-eyebrow">BURNSKY ／ HONG KONG</p>
             <h1>📄 使用條款</h1>
+            <p>使用 BurnSky 前，了解服務範圍與使用責任</p>
+        </header>
+        <main class="content-card">
             
             <div class="highlight">
                 <p><strong>最後更新：</strong>{{ SITE_LAST_UPDATED }}</p>
@@ -277,7 +281,7 @@
                     🌅 享受大自然的美景，但請以安全和實際觀察為先！
                 </p>
             </div>
-        </div>
+        </main>
     </div>
 
     {% include 'footer_fragment.html' %}
