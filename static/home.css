@@ -70,10 +70,10 @@
 .home-page #assessmentDetails > summary { padding: 16px 20px !important; font-size: 13px; }
 .home-page #assessmentDetails[open] { padding: 0 20px 20px; }
 .home-page #assessmentDetails[open] > summary { padding-left: 0 !important; }
-.home-page #content > #skyCameras { grid-column: span 8; background: #263f47; border-color: #263f47; }
+.home-page #content > #skyCameras { grid-column: span 8; background: #263f47; border-color: #263f47; display: flex; flex-direction: column; }
 .home-page #locationSection { grid-column: span 4; }
 .home-page #skyCameras h2 { font-size: 17px !important; font-weight: 600 !important; }
-.home-page .webcam-preview-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-height: 390px; overflow-y: auto; overflow-x: hidden; padding-right: 5px; scrollbar-color: #69818b #263f47; }
+.home-page .webcam-preview-container { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 12px; flex: 1 1 0; height: 0; min-height: 280px; max-height: none; overflow-y: auto; overflow-x: hidden; padding-right: 5px; scrollbar-color: #69818b #263f47; }
 .home-page .webcam-preview-card { width: auto; min-width: 0; background: #ffffff0f; border: 1px solid #ffffff14; border-radius: 10px; }
 .home-page .webcam-preview-img { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; }
 .home-page .webcam-preview-info { padding: 10px 12px; }
@@ -146,7 +146,7 @@
     .home-page #content { gap: 16px; }
     .home-page #content > :is(.main-card, .weather-section, .webcam-preview-section) { padding: 18px; border-radius: 14px; }
     .home-page #content > #skyCameras, .home-page #locationSection, .home-page #comparisonSection, .home-page #verificationSection { grid-column: 1 / -1; }
-    .home-page .webcam-preview-container { display: flex; max-height: none; overflow-x: auto; overflow-y: hidden; padding: 0 0 8px; }
+    .home-page .webcam-preview-container { display: flex; flex: none; height: auto; min-height: 0; max-height: none; overflow-x: auto; overflow-y: hidden; padding: 0 0 8px; }
     .home-page .webcam-preview-card { width: 210px; }
     .home-page .weather-data { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .home-page .weather-card { padding: 12px; }

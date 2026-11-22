@@ -26,10 +26,13 @@ class PredictionQualityTests(unittest.TestCase):
         self.assertEqual(result['status'], 'ready')
         self.assertTrue(result['score_usable'])
         self.assertEqual(result['confidence'], 'moderate')
+        self.assertIn('短期條件參考', result['summary'])
+        self.assertNotIn('可信度', result['summary'])
         text = ''.join(result['limitations'])
         for label in ('空氣品質', '氣壓', '風速', '間接參考'):
             self.assertIn(label, text)
         self.assertIn('UV因子缺少', text)
+        self.assertIn('演算法尚待實拍驗證', text)
 
     def test_missing_rain_or_longer_horizon_reduces_confidence_without_hiding_score(self):
         for hours, rain in ((3, False), (6, True)):
@@ -41,6 +44,8 @@ class PredictionQualityTests(unittest.TestCase):
             self.assertTrue(result['score_usable'])
             self.assertEqual(result['confidence'], 'low')
             self.assertFalse(result['allow_high_score_notification'])
+            self.assertNotIn('可信度', result['summary'])
+            self.assertIn('超過3小時' if hours > 3 else '部分氣象資料未齊', result['summary'])
 
     def test_original_missing_data_cannot_be_concealed_by_forecast_defaults(self):
         with self.assertRaises(InsufficientPredictionData) as error:

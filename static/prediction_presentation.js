@@ -34,6 +34,19 @@
             + '其餘條件及調整保持不變；不是機率、可信區間或預測誤差範圍，亦不代表預期會升至上限。';
     }
 
+    function referenceStatus(data) {
+        const hours = data.advance_hours;
+        const label = Number.isFinite(hours) && hours >= 0
+            ? hours === 0 ? '當前條件參考'
+                : `${hours > 3 ? '初步參考' : '短期條件參考'} · 提前${hours}小時`
+            : '初步條件參考';
+        const missing = data.data_quality?.input_coverage?.missing_factors
+            || data.unified_analysis?.input_coverage?.missing_factors
+            || data.score_sensitivity?.missing_factors || [];
+        const incomplete = missing.length > 0 || (data.data_quality?.status === 'limited' && hours <= 3);
+        return label + (incomplete ? ' · 部分氣象資料未齊' : '');
+    }
+
     function predictionAdvice(data) {
         const score = data.burnsky_score;
         const range = scoreSensitivity(data);
@@ -46,8 +59,7 @@
             : score >= 65 ? '條件較有利，可安排出發或準備拍攝。'
             : score >= 45 ? '條件一般，可先準備器材及路線，出發前再更新。'
             : '目前條件偏低，暫不建議專程出發，可繼續留意更新。';
-        const confidence = data.data_quality?.status === 'ready' ? '可信度一般' : '可信度較低，屬初步參考';
-        return `${advice}${confidence}；請核對天空實況及官方天氣警告，分數不保證出現燒天。`;
+        return `${advice}${referenceStatus(data)}；請核對天空實況及官方天氣警告，分數不保證出現燒天。`;
     }
 
     function describePrediction(data, now = new Date()) {
@@ -157,7 +169,7 @@
             && ['ready', 'limited'].includes(data?.data_quality?.status) && data.data_quality.score_usable === true;
         let status = '暫未有這個時段的適用評估';
         const hasForecast = matched && fresh && usable && !['loading', 'error'].includes(state);
-        if (hasForecast) status = `${name}條件指數 ${Math.round(data.burnsky_score)}/100 · ${data.data_quality.status === 'ready' ? '可信度一般' : '可信度較低（初步參考）'}`;
+        if (hasForecast) status = `${name}條件指數 ${Math.round(data.burnsky_score)}/100 · ${referenceStatus(data)}`;
         else if (matched && !fresh) status = '這個時段的評估已過時，請重新取得';
         if (state === 'loading') status = '正在取得條件參考，尚未確認最新結果';
         if (state === 'error') status = `最新條件參考未能取得${reason ? `：${reason}` : '，請重試'}`;
@@ -169,7 +181,7 @@
         return {window, advanceHours, hasForecast,
             score: hasForecast ? Math.round(data.burnsky_score) : null,
             scoreLabel: `${name}條件指數`,
-            confidence: hasForecast ? (data.data_quality.status === 'ready' ? '可信度一般' : '可信度較低（初步參考）') : '',
+            confidence: hasForecast ? referenceStatus(data) : '',
             title: `${inWindow ? '進行中的' : '下一次'}${name}觀賞參考`,
             timeLabel: `${formatHongKongDateTime(window.window_start)} 至 ${formatHongKongDateTime(window.window_end)}（香港時間）`,
             referenceNote: `${name}：${formatHongKongDateTime(window.event_at)}（香港時間） · ${window.method === 'monthly_table' ? '月度時間表近似值' : '天文時間計算'}。前後30分鐘只作觀賞時間參考，不代表會出現燒天。`,

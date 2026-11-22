@@ -60,7 +60,8 @@ def assess_prediction_quality(target, observed, forecast, advance_hours=0):
         missing.append('天氣預報文字（雲層分析輸入）')
     limitations = [('雲量使用MET Norway香港參考點逐小時分層預報；未量度雲厚或真正光線穿透，規則尚待實拍驗證。'
                     if cloud_available else '雲層因子按天氣預報文字推斷，並非雲量或雲高實測。'),
-                   '空氣品質沒有可用AQHI監測值時不參與計分。']
+                   '空氣品質沒有可用AQHI監測值時不參與計分。',
+                   '演算法尚待實拍驗證；參考類別按預測時距及資料狀態劃分，並非經驗證的準確率。']
     if not cloud_available:
         limitations.append('逐小時分層雲量暫缺、過期或未覆蓋目標時間，已改用天文台文字預報。')
     direction = target.get('sunward_cloud_forecast')
@@ -110,9 +111,10 @@ def assess_prediction_quality(target, observed, forecast, advance_hours=0):
     if missing:
         summary = '主要資料不足，暫停評分：' + '、'.join(missing) + '。'
     elif short_term_ready:
-        summary = '主要資料齊全，可提供3小時內短期預測；可信度一般。'
+        summary = '主要資料齊全，可提供3小時內短期條件參考。'
     else:
-        summary = '可提供初步預測；' + ('超過3小時，可信度較低。' if advance_hours > 3 else '缺少雨量參考，可信度較低。')
+        summary = ('初步參考；預測時距超過3小時。' if advance_hours > 3
+                   else '短期條件參考；部分氣象資料未齊，缺少雨量參考。')
     if not missing:
         summary += '缺失因子不補分，低分亦可能受資料覆蓋影響；詳細限制見下方。'
     return {'status': 'insufficient' if missing else 'ready' if short_term_ready else 'limited',

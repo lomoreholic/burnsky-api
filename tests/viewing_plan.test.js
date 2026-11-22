@@ -52,12 +52,17 @@ test('nearest hourly selection stays within the actual solar window and includes
     assert.equal(presentation.describeViewingPlan(schedule(), null, 'idle', at('06:50')).advanceHours, 0);
 });
 
-test('a usable three-hour forecast gives planning advice and labels its confidence', () => {
+test('a usable three-hour forecast labels its horizon without claiming measured confidence', () => {
     const now = at('14:40');
     const selected = presentation.getNextViewingWindow(schedule(), now);
-    const plan = presentation.describeViewingPlan(schedule(), predictionFor(selected, now), 'success', now);
+    const data = predictionFor(selected, now);
+    data.advance_hours = 3;
+    const plan = presentation.describeViewingPlan(schedule(), data, 'success', now);
     assert.equal(plan.advanceHours, 3);
-    assert.match(plan.status, /95.*可信度較低/);
+    assert.match(plan.status, /95.*短期條件參考.*提前3小時/);
+    assert.doesNotMatch(plan.status + plan.action, /可信度/);
+    data.advance_hours = 5;
+    assert.match(presentation.describeViewingPlan(schedule(), data, 'success', now).confidence, /初步參考.*提前5小時/);
     assert.match(plan.action, /安排|準備/);
     assert.doesNotMatch(plan.action, /未能判斷是否值得出發|立即出發/);
 });
@@ -76,6 +81,7 @@ test('missing factors crossing an advice threshold do not become a bad-weather v
         weighted_coverage_percent:82, missing_factors:['pressure', 'uv', 'air_quality']};
     const plan = presentation.describeViewingPlan(schedule(), data, 'success', now);
     assert.match(plan.action, /未足以單憑低分/);
+    assert.match(plan.confidence, /部分氣象資料未齊/);
     assert.doesNotMatch(plan.action, /不建議專程/);
     assert.match(presentation.describeScoreCoverage(data), /36.0–54.0/);
     assert.match(presentation.describeScoreCoverage(data), /不是機率、可信區間/);
