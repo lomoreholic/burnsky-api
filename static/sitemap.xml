@@ -4,10 +4,10 @@
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
 
-    <!-- 內容頁面 (2026-11-03) -->
+    <!-- 可索引內容頁；lastmod 只隨實際內容修改而更新 -->
     <url>
         <loc>https://burnsky-api.onrender.com/</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
@@ -21,7 +21,7 @@
 
     <url>
         <loc>https://burnsky-api.onrender.com/best-locations</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
@@ -35,35 +35,35 @@
 
     <url>
         <loc>https://burnsky-api.onrender.com/photography-guide</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
 
     <url>
         <loc>https://burnsky-api.onrender.com/faq</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
 
     <url>
         <loc>https://burnsky-api.onrender.com/weather-terms</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>
     </url>
 
     <url>
         <loc>https://burnsky-api.onrender.com/how-it-works</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
 
     <url>
         <loc>https://burnsky-api.onrender.com/contact</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.4</priority>
     </url>
@@ -76,15 +76,8 @@
     </url>
 
     <url>
-        <loc>https://burnsky-api.onrender.com/status</loc>
-        <lastmod>2026-11-03</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.4</priority>
-    </url>
-
-    <url>
         <loc>https://burnsky-api.onrender.com/about</loc>
-        <lastmod>2026-11-03</lastmod>
+        <lastmod>2026-11-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.4</priority>
     </url>
@@ -104,10 +97,6 @@
     </url>
 
     <url>
-        <loc>https://burnsky-api.onrender.com/robots.txt</loc>
-        <lastmod>2026-11-03</lastmod>
-        <changefreq>yearly</changefreq>
-        <priority>0.1</priority>
+        <loc>https://burnsky-api.onrender.com/prediction-history</loc>
     </url>
-
 </urlset>

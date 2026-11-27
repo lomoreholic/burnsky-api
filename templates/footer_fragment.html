@@ -20,7 +20,7 @@
     </nav>
 
     <div style="color: rgba(255, 255, 255, 0.75); font-size: 0.95rem; line-height: 1.55;">
-      <div>資料來源：香港天文台公開資料（僅供參考；請配合現場觀察與官方預報）</div>
+      <div>資料來源：香港天文台公開資料、MET Norway 分層雲量預報（CC BY 4.0）。<a href="/how-it-works" style="color:inherit; text-decoration:underline;">來源與限制</a>；請配合現場觀察與官方預報。</div>
       <div>
         {% if CONTACT_EMAIL %}
           聯絡電郵：<a href="mailto:{{ CONTACT_EMAIL }}" style="color: rgba(255, 255, 255, 0.9); text-decoration: underline; text-underline-offset: 2px;">{{ CONTACT_EMAIL }}</a> ·
@@ -30,7 +30,7 @@
     </div>
 
     <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">
-      © {{ CURRENT_YEAR }} BurnSky · 最後更新：{{ SITE_LAST_UPDATED }}
+      © {{ CURRENT_YEAR }} BurnSky
     </div>
   </div>
 </footer>

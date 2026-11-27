@@ -9,8 +9,7 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
     
     <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9322481395670022"
-         crossorigin="anonymous"></script>
+    {% include 'adsense_fragment.html' %}
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
@@ -232,6 +231,22 @@
         </header>
 
         <!-- 基礎器材準備 -->
+        <section class="glass-card" aria-labelledby="field-workflow">
+            <h2 id="field-workflow">從 BurnSky 分數到現場拍攝：一次日落的準備流程</h2>
+            <p>以下以「目標日落前約一小時」作行程示範，並非實拍紀錄或成功預測案例。分數只是篩選條件的起點；現場光線、方向和安全才決定是否繼續拍攝。</p>
+            <ol style="padding-left:24px; line-height:1.9;">
+                <li><strong>先確認評估時刻：</strong>首頁的當前條件不一定適用於下一次日落。選擇目標時段，檢查觀測與預報時間；若顯示資料不足，改用官方預報及實況，不把空白理解為零機率。</li>
+                <li><strong>分開看頭頂與西面：</strong>薄雲可提供色彩層次，但地平線的厚雲可能截斷陽光。查看與拍攝方向相近的攝影機及其時間，避免拿另一區或較舊的影像當作現場。</li>
+                <li><strong>保留可退回的地點：</strong>比較<a href="/best-locations">市區海濱與山路的取捨</a>，預留交通、步行與回程時間。雷暴、強風、浪湧或場地封閉時，取消行程；高分不能抵銷安全風險。</li>
+                <li><strong>現場先保住高光：</strong>對明亮雲邊測試曝光，查看直方圖或過曝提示。紅橙色區域失去細節時降低曝光；前景太暗可接受剪影，或在場景靜止時包圍曝光。</li>
+                <li><strong>記錄結果：</strong>保存拍攝香港時間、地點、方向、原始照片與當時評估。透過<a href="/prediction-history">預測紀錄</a>了解留底及回報方式；後製照片的飽和度不能直接證明現場燒天強度。</li>
+            </ol>
+            <h3>手機與相機遇到同一問題時，如何調整？</h3>
+            <p><strong>天空過白：</strong>手機可點選亮雲並降低曝光，支援時鎖定曝光；相機可降低曝光補償或縮短快門，再檢查高光。不要只靠螢幕亮度判斷成片。</p>
+            <p><strong>雲層拖影或手震：</strong>縮短快門；必要時提高 ISO，優先保留紋理。三腳架能穩定相機，但不能凍結移動的雲。日落後亮度快速下降，固定快門範圍不會一直適用。</p>
+            <p><strong>天空出現不均勻暗帶：</strong>廣角鏡使用偏光鏡時可先轉動或移除濾鏡比較；它不是所有日落場景的必需品。RAW 可增加白平衡調整空間，但無法完整救回已嚴重過曝的高光。</p>
+            <p>資料時間、雲量模型及驗證樣本的限制，詳見<a href="/how-it-works">BurnSky 運作原理</a>。本指南提供拍攝方法，不承諾特定分數、器材或參數能拍到燒天。</p>
+        </section>
         <div class="glass-card">
             <h2 style="margin-bottom: 25px; color: #FFD700;">📱 基礎器材準備</h2>
             <div class="equipment-grid">
@@ -281,8 +296,8 @@
                 <div class="tips-section">
                     <h3>🎛️ 曝光參數</h3>
                     <ul class="tips-list">
-                        <li><strong>光圈：</strong>f/8-f/11（獲得最佳畫質）</li>
-                        <li><strong>快門：</strong>1/60s-1/250s（避免過曝）</li>
+                        <li><strong>光圈：</strong>f/8-f/11 可作起點，依鏡頭、景深及光線調整</li>
+                        <li><strong>快門：</strong>依亮度與雲層移動調整，以高光細節及清晰度為準</li>
                         <li><strong>ISO：</strong>100-400（保持低噪點）</li>
                         <li><strong>白平衡：</strong>日光模式或手動調整</li>
                     </ul>
@@ -314,17 +329,7 @@
                 </div>
             </div>
 
-            <!-- Google AdSense 廣告 -->
-            <div class="ad-container">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-9322481395670022"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
-                <script>
-                     (adsbygoogle = window.adsbygoogle || []).push({});
-                </script>
-            </div>
+
         </div>
 
         <!-- 拍攝時機掌握 -->

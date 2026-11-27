@@ -41,6 +41,7 @@ from modules.warning_assessment import CurrentWarningAssessmentService
 from modules.warning_rules import calculate_warning_impact_advanced
 from modules.prediction_response import PredictionResponseBuilder
 from modules.prediction_presentation import HK_TIMEZONE, build_viewing_windows, get_condition_level
+from modules.publishing import configure_publishing
 
 # ========== 模塊化組件導入 ==========
 # 優先使用模塊化組件，如果不可用則使用內嵌函數
@@ -490,6 +491,7 @@ except ImportError as e:
 
 app = Flask(__name__)
 Compress(app)
+configure_publishing(app)
 
 # 配置 Flask 應用
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(24).hex())

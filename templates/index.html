@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO 基本標籤 -->
-    <title>燒天預測系統 | 香港日落火燒雲預測 | BurnSky AI 人工智能天氣分析</title>
+    <title>BurnSky 香港燒天條件與日出日落拍攝參考</title>
     <meta name="description" content="香港燒天預測工具，結合氣象數據與模型分析，提供日出日落火燒雲條件、詳細因子、拍攝建議及地點參考。預測結果配合實際觀察與官方天氣資訊使用。">
     <meta name="keywords" content="燒天預測,火燒雲,日落,香港天氣,攝影,天空,雲層分析,AI預測,人工智能,天氣預報,BurnSky,維港日落,太平山燒天,香港燒天時間,火燒雲預測app,實時天氣預測,攝影天氣,日落攝影,香港攝影地點,天氣分析,燒天機率">
     <meta name="author" content="BurnSky Team">
@@ -20,7 +20,7 @@
     <meta name="ICBM" content="22.3193, 114.1694">
     
     <!-- Open Graph 社交媒體標籤 -->
-    <meta property="og:title" content="燒天預測系統 | 香港日落火燒雲AI預測">
+    <meta property="og:title" content="BurnSky 香港燒天條件與拍攝參考">
     <meta property="og:description" content="結合氣象數據與模型分析的香港燒天預測工具，提供即時條件判讀、拍攝建議和地點參考。">
     <meta property="og:image" content="https://burnsky-api.onrender.com/static/burnsky-og-image.jpg">
     <meta property="og:url" content="https://burnsky-api.onrender.com">
@@ -30,18 +30,17 @@
     
     <!-- Twitter Card 標籤 -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="燒天預測系統 | 香港日落火燒雲AI預測">
+    <meta name="twitter:title" content="BurnSky 香港燒天條件與拍攝參考">
     <meta name="twitter:description" content="香港燒天預測工具，結合氣象數據與模型分析，提供日出日落的條件判讀與拍攝建議。">
     <meta name="twitter:image" content="https://burnsky-api.onrender.com/static/burnsky-og-image.jpg">
     <meta name="twitter:site" content="@BurnSkyHK">
     
     <!-- 網站驗證標籤 -->
     <meta name="google-site-verification" content="8nMW3lXIw2vxGw9fqBBcJV27fZQBPLjKnKVZyVVFzJs">
-    <meta name="google-adsense-account" content="ca-pub-9322481395670022">
+
     
     <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9322481395670022"
-         crossorigin="anonymous"></script>
+    {% include 'adsense_fragment.html' %}
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
@@ -80,76 +79,6 @@
             "@type": "UseAction",
             "target": "https://burnsky-api.onrender.com"
         }
-    }
-    </script>
-    
-    <!-- FAQ 結構化數據 -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": "什麼是燒天？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "燒天是指日出或日落時天空呈現橙紅色火燒般色彩的天氣現象，通常發生在特定的大氣條件下，是攝影愛好者最喜愛的自然景觀之一。"
-                }
-            },
-            {
-                "@type": "Question", 
-                "name": "燒天預測的準確率如何？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "系統會把已收集的用戶實拍回饋與當時預測作比對；在驗證樣本達到足夠數量前，不會宣稱固定準確率。每次預測會考慮雲層、濕度、風速、空氣品質和接近日出或日落的時間等因素，結果應配合現場觀察及官方天氣資訊使用。"
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "最佳的燒天拍攝地點在哪裡？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "香港最佳燒天拍攝地點包括維多利亞港、太平山頂、石澳、獅子山等。不同地點適合不同時間，系統會根據當日條件推薦最佳拍攝位置。"
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "如何知道今天會不會有燒天？",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "使用燒天預測系統可查看燒天條件指數（0–100）、條件等級及評估日期時間。指數反映所列時刻的條件有利程度，並非燒天發生機率；日出日落時間另列作參考。"
-                }
-            }
-        ]
-    }
-    </script>
-    
-    <!-- 本地商業結構化數據 -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": "BurnSky 燒天預測系統",
-        "description": "香港專業燒天預測服務，為攝影愛好者提供精準的火燒雲預測",
-        "url": "https://burnsky-api.onrender.com",
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "香港",
-            "addressRegion": "Hong Kong",
-            "addressCountry": "HK"
-        },
-        "geo": {
-            "@type": "GeoCoordinates",
-            "latitude": "22.3193",
-            "longitude": "114.1694"
-        },
-        "areaServed": {
-            "@type": "Place",
-            "name": "香港"
-        },
-        "serviceType": "天氣預測服務",
-        "priceRange": "免費"
     }
     </script>
     
@@ -1958,7 +1887,7 @@
                 </p>
                 
                 <p style="text-align: center; margin-top: 10px; font-size: 0.8rem; color: #868e96;">
-                    © 2025 千始創意 | 燒天預測系統<br>
+                    © {{ CURRENT_YEAR }} 千始創意 | BurnSky 燒天預測系統<br>
                     <a href="/privacy" style="color: #868e96; text-decoration: none; margin: 0 5px;">隱私政策</a> | 
                     <a href="/terms" style="color: #868e96; text-decoration: none; margin: 0 5px;">使用條款</a>
                 </p>

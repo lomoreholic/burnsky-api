@@ -20,8 +20,7 @@
     <link rel="canonical" href="https://burnsky-api.onrender.com/best-locations">
     
     <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9322481395670022"
-         crossorigin="anonymous"></script>
+    {% include 'adsense_fragment.html' %}
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
@@ -190,6 +189,24 @@
         </header>
         
         <main>
+            <section class="location-card" style="margin-bottom:24px; padding:24px;" aria-labelledby="location-choice">
+                <h2 id="location-choice">先選拍攝方向，再選地點</h2>
+                <p>日出大致在東面，日落大致在西面，實際方位會隨季節改變。城市天際線好看不代表鏡頭正對夕陽；請先比較<a href="/">目標時段</a>及<a href="/webcam-analysis">天空實況</a>。以下是行程準備建議，星號僅為編輯推薦，不代表用戶評分或燒天成功率。</p>
+                <div style="overflow-x:auto; margin:16px 0;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; line-height:1.8;">
+                        <caption>香港拍攝地點的視野與行程取捨</caption>
+                        <thead><tr><th scope="col">地點</th><th scope="col">適合的畫面</th><th scope="col">出發前確認</th></tr></thead>
+                        <tbody>
+                            <tr><th scope="row">尖沙咀海濱</th><td>港島城市輪廓與天空色彩；面向港島不一定面向落日。</td><td>留意西面雲層及人流；不要遮擋公共通道。</td></tr>
+                            <tr><th scope="row">山頂／盧吉道</th><td>高處俯瞰維港，適合城市與雲層同框。</td><td>山霧可能遮住視野；步道並非全段都有開闊景觀，確認回程安排。</td></tr>
+                            <tr><th scope="row">石澳海灘</th><td>東南面海景，較適合清晨暖色及海岸前景。</td><td>季節日出方位、潮汐、海浪與首班交通；勿為構圖走上濕滑礁石。</td></tr>
+                            <tr><th scope="row">獅子山</th><td>九龍城市全景，需要有行山經驗及足夠時間。</td><td>入黑前回程、照明、補給及天氣；初次追燒天宜先選市區海濱。</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p>海濱可作較易調整的備用點；山路或礁石不宜因分數上升而臨時趕路。日出時間每天不同，請依當天時間倒推交通與步行所需時間，避免把「清晨六點」當成全年通用安排。</p>
+                <p>最新天氣及潮汐可查閱<a href="https://www.hko.gov.hk/tc/" rel="noopener" target="_blank">香港天文台</a>；交通可查閱<a href="https://www.hkemobility.gov.hk/tc/" rel="noopener" target="_blank">香港出行易</a>。本頁未即時核實各場地開放狀況，歡迎<a href="/contact">回報更正</a>。</p>
+            </section>
             <div class="locations-grid">
                 <!-- 維多利亞港 -->
                 <div class="location-card">
@@ -236,17 +253,7 @@
                     </div>
                 </div>
                 
-                <!-- Google AdSense 廣告區域 -->
-                <div style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(248, 249, 250, 0.6); border-radius: 4px;">
-                    <ins class="adsbygoogle"
-                         style="display:block"
-                         data-ad-client="ca-pub-9322481395670022"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                    <script>
-                         (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                </div>
+
                 
                 <!-- 太平山頂 -->
                 <div class="location-card">
@@ -330,7 +337,7 @@
                         <div class="tips-section">
                             <h4>💡 拍攝貼士：</h4>
                             <ul>
-                                <li>清晨6點前到達，捕捉第一道曙光</li>
+                                <li>按當日日出時間倒推交通及準備時間，提早到達</li>
                                 <li>注意海浪安全，避免太接近水邊</li>
                                 <li>攜帶手電筒，清晨光線較暗</li>
                             </ul>
@@ -387,7 +394,7 @@
                 <div class="location-card">
                     <div class="location-header">
                         <h2>🌉 青馬大橋</h2>
-                        <p>世界最長懸索橋</p>
+                        <p>以橋樑結構與海峽作前景</p>
                         <div class="location-rating">
                             <span class="star">★★★★☆</span>
                         </div>

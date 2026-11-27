@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9322481395670022"
-         crossorigin="anonymous"></script>
+    {% include 'adsense_fragment.html' %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>關於我們 | BurnSky 燒天預測系統</title>
     <meta name="description" content="BurnSky 燒天預測系統是一個以香港天氣資料為基礎的燒天（火燒雲）預測工具，提供實用分析、拍攝建議與地點參考。了解數據來源、更新頻率與使用限制。">
+    <link rel="canonical" href="{{ SITE_URL }}/about">
     <style>
         * {
             margin: 0;
@@ -108,7 +108,7 @@
         <h2>數據來源與更新</h2>
         <p>系統會使用香港天文台相關的公開天氣資料與警告資訊，並結合本地化的計分邏輯與分析流程，提供「拍攝決策」層面的輔助判斷。</p>
         <div class="callout">
-            <p><strong>更新頻率：</strong>以系統排程為準（通常每小時更新；繁忙時段可能更密集）。</p>
+            <p><strong>更新時間：</strong>請以工具所列的觀測、預報及評估時間為準；快取刷新與上游資料發布並不一定同步。分層雲量另使用 MET Norway 模型預報，來源與限制詳見<a href="/how-it-works">運作原理</a>。</p>
         </div>
 
         <h2>如何理解預測結果</h2>
@@ -123,6 +123,10 @@
         <h2>使用限制與免責</h2>
         <p>本網站提供的資訊僅供參考，不構成任何形式的專業建議。由於天氣具有不確定性，實際情況可能與預測不同。</p>
 
+        <h2>維護與內容更正</h2>
+        <p>BurnSky 是獨立的開源專案，與香港天文台及 MET Norway 沒有隸屬關係。網站的指南是拍攝準備參考，地點介紹不代表已實地勘察或即時確認開放狀況。出發前應向場地管理方及交通營辦商確認最新安排。</p>
+        <p>預測留底及用戶回報可在<a href="/prediction-history">預測紀錄</a>查看；錯誤資料、交通變更或工具問題可透過<a href="/contact">聯絡頁</a>回報。內容更正應保留可查證來源，不能以示範資料或主觀評分宣稱固定準確率。</p>
+
         <h2>聯絡我們</h2>
         <p>如有合作、建議或錯誤回報，歡迎聯絡：</p>
         {% if CONTACT_EMAIL %}
@@ -130,7 +134,7 @@
         {% endif %}
         <p><strong>GitHub：</strong> <a href="{{ GITHUB_REPO_URL }}" rel="noopener" target="_blank">提交 Issue / 建議</a></p>
 
-        <p class="meta"><strong>更新日期：</strong> {{ SITE_LAST_UPDATED }}</p>
+        <p class="meta"><strong>內容更新日期：</strong>2026-11-26</p>
         </main>
     </div>
 

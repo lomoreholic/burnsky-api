@@ -9,8 +9,7 @@
     <link rel="canonical" href="{{ SITE_URL }}/how-it-works">
 
     <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9322481395670022"
-         crossorigin="anonymous"></script>
+    {% include 'adsense_fragment.html' %}
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4KLPHLD5EQ"></script>
@@ -126,8 +125,8 @@
 
             <h2>2) 資料來源與更新頻率</h2>
             <div class="callout">
-                <p><strong>主要資料來源：</strong>香港天文台公開天氣資料與警告資訊。</p>
-                <p><strong>更新頻率：</strong>以系統排程為準（通常每小時更新；遇到高變化時段可能更頻密）。</p>
+                <p><strong>主要資料來源：</strong><a href="https://www.hko.gov.hk/tc/abouthko/opendata_intro.htm" rel="noopener" target="_blank">香港天文台開放數據</a>的觀測、預報、警告及天空影像；分層雲量使用 <a href="https://api.met.no/weatherapi/locationforecast/2.0/documentation" rel="noopener" target="_blank">MET Norway Locationforecast</a> 模型預報（<a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener" target="_blank">CC BY 4.0</a>）。BurnSky 對輸入資料作整理及評分，並非上述機構發布的燒天預報。</p>
+                <p><strong>更新時間：</strong>排程、快取與上游發布時間各有不同；請以畫面的資料時間及香港評估時間為準。重新載入頁面不代表上游已提供新觀測。</p>
             </div>
             <p>我們會把觀測資料、預報資訊、以及警告狀態等，整理成預測所需的輸入；並以固定流程計算「燒天條件分數」。</p>
 
@@ -162,6 +161,11 @@
 
             <h2>6) 限制與免責</h2>
             <p>燒天具有高度偶然性，任何模型都無法保證準確。請把本網站視為輔助工具，而不是絕對答案。</p>
+            <h3>為何高分仍可能拍不到？</h3>
+            <p>模型的雲量描述某個網格及時刻的天空，未必等於你面向日落方向所見的雲。西面地平線若有厚雲，可能遮住照亮較高雲層的陽光；即使頭頂有薄雲、整體分數偏高，現場仍可能沒有明顯暖色。出發前應同時看目標方向的天空影像，並確認影像拍攝時間。</p>
+            <h3>資料缺失與驗證如何處理？</h3>
+            <p>缺少必要天氣輸入時，工具會顯示資料不足，而不是把空白當成零分或晴天。部分可用資料下的評估仍有較大不確定性；沒有可用機器學習結果時，計分可退回傳統規則，不代表 AI 已驗證結果。</p>
+            <p><a href="/prediction-history">預測紀錄</a>提供留底預測與後續回報的對照。用戶的主觀評分、拍攝方向及後製方式可能不同，樣本也可能集中在好天氣；評分差距不能直接解讀為燒天發生的準確率。我們不把示範情境當成實拍證據。</p>
             <div class="callout">
                 <p><strong>安全提醒：</strong>拍攝時請注意天氣變化、海邊浪湧與地形安全；請遵守場地規則與交通法規。</p>
             </div>
